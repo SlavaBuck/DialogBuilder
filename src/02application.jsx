@@ -1,0 +1,979 @@
+﻿/**************************************************************************
+ *  02application.jsx
+ *  DESCRIPTION: BuilderApplication: Основной класс приложения 
+ *  @@@BUILDINFO@@@ 02application.jsx 1.20 Sun May 25 2014 19:23:11 GMT+0300
+ * 
+ * NOTICE: 
+ * 
+/**************************************************************************
+ * © Вячеслав aka SlavaBuck, 10.02.2014.  slava.boyko#hotmail.com
+ */
+// #includepath нужно настроить на папку с библиотеками
+#includepath "../../Include/"
+#include "MVC.DOM.jsx"
+
+#include "SimpleUI.jsx"
+#include "PNGLib.jsx"
+
+function BuilderApplication (wtype) { // wtype = dialog || palette
+    if (!(this instanceof BuilderApplication)) return new BuilderApplication(wtype);
+    var wtype = (wtype) || "dialog";
+    BuilderApplication.prototype.__super__.constructor.call(this, {
+    name:"Dialog Builder",
+    version:"1.20",
+    caption:"1.20 Dialog Builder (build 0525, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    view:wtype + " {spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
+                                              pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
+                                              pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
+                                                                   LeftPnl:Panel { margins:[0,0,0,0], spacing:2, alignment:['left','fill'], alignChildren:['Left','top'], orientation:'column' }, \
+                                                                   MainPnl:Panel { preferredSize:[450,300], margins:[0,0,0,0], spacing:2, alignment:['fill','fill'], orientation:'column', properties:{borderStyle:'sunken'} }, \
+                                                                   sp:"+SUI.Separator + "\
+                                                                   RightPnl:Panel { margins:[0,0,0,0], spacing:2, alignment:['right','fill'], orientation:'column' } }, \
+                                              pBottom:Panel { margins:[0,2,0,4], spacing:0, alignment:['fill','bottom'], orientation:'column', properties:{borderStyle:'etched'}, \
+                                                                      pTabs:Group { margins:[4,0,4,0], spacing:4, alignment:['fill','top'], orientation:'row', alignChildren:['fill','fill'] } }, \
+                                              pStatusBar:Group { margins:[4,4,4,0], spacing:4, alignment:['fill','bottom'], orientation:'row' } \
+                                         }"
+    });
+    SUI.SeparatorInit(this.window.pMain.sp);
+    // Настройка главного окна:
+    var gfx = this.window.pMain.MainPnl.graphics;
+    gfx.disabledBackgroundColor = gfx.backgroundColor = gfx.newBrush(0, [0.5, 0.5, 0.5, 1]); // цвет области документов - серый 50%    
+    this._editors = new Collection();  // общий список всех въюшек свойств формируемых в app.buildTabs (для быстрого блокирования/разблокирования в app.updateTabs);
+    this._ceditors = new Collection(); // отдельный список въюшек для редактирования свойств цвета 
+    this.activeControl = null;              // Ссылка на модель текущий (добавляемый) элемент в контейнер документа
+};
+
+inherit (BuilderApplication, MVCApplication);
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Инициализация интерфейса и моделей
+BuilderApplication.prototype.Init = function() {
+    // Настройка папок приложения
+    this.appFolder = File.decode(File($.fileName).parent.absoluteURI +'/');
+    this.resFolder = (this.appFolder.match(/Required/) ?  this.appFolder : this.appFolder + "Required/");
+    $.localize = true;
+    
+    // Настройка локальных ссылок
+    var app = this,
+          w = this.window,
+          controllers = app.controllers,
+          models = app.models,
+          views = app.views,
+          title = app.version +" " + app.name + ": " + localize({ru:"Загрузка...", en:"Loading..."});
+    app.pBar = SUI.ProgressBar(title);
+    app.pBar.reset(title, 16);
+    app.pBar.hit(localize({ ru:"Загрузка настроек...", en:"Loading settings..."}));
+    // Загрузка настроек и метаданных
+    app.processingOptions();
+
+    app.pBar.hit(localize({ ru:"Загрузка ресурсов...", en:"Loading resources..."}));
+    // Загрузка ресурсов
+    app.loadResources();
+    app.initJsNames();      // Инициализация наименований объектов диалога (могут переопределяться в опциях)
+    
+    // Формирование представлений для главного окна и контеёнера документов (docView)
+    app.pBar.hit(localize({ ru:"Создание панели заголовка...", en:"Creating caption panel..."}));
+    app.buildCaption(w.pCaption);                   // id:"Caption"
+    app.pBar.hit(localize({ ru:"Загрузка элементов управления...", en:"Loading controls..."}));
+    app.buildControlsBtns(w.pMain.LeftPnl, 2);  // id:"Controls"
+    app.pBar.hit(localize({ ru:"Создание основного вида...", en:"Creating main view..."}));
+    app.buildTreeView(w.pMain.RightPnl);        // id:"Tree"
+    app.buildDocsView(w.pMain.MainPnl);         // id:"Documents" - Общий View-контейнер для всех документов
+    app.pBar.hit(localize({ ru:"Создание вкладок свойств: ", en:"Creating properties tabs: "}));
+    app.buildTabs(w.pBottom.pTabs);               // id:"Tab"
+    app.pBar.hit(localize({ ru:"Завершение настройки...", en:"Completion adjustment..."}));
+    app.buldStatusBar(w.pStatusBar);               // id:"SBar"        
+    app.treeView = app.getViewByID("Tree");   // создан в buildDialogTree
+    app.JsName = app.getViewByID("JsName"); // создан в buildDocsView 
+    // Инициализация списков (цветовых наборов и шрифтов)
+    app.initControls()
+    
+    // Регестрируем фабрику документов
+    app.registerDocumentFactory(); // app.getViewByID("Documents")
+    var docsView = app.documentsView.control; // инициализируется в app.documentsView()
+    
+    // Обеспечивает переключение указателя активного документа при клике на табе
+    docsView.onChange = function() { 
+        app.activeDocument = (this.selection ? app.getDocumentByName(this.selection.text) : null); 
+    };
+    // Нужно для переключение поля JsName на свойство jsname активного документа при клике на уже активной вкладке (когда событие onChange не генерируется)
+    docsView.addEventListener ('click', function(e) { 
+        if (app.activeDocument && e.target === this) { // e.target.type == 'tabbedpanel'
+            // переключаемся либо на объект документа, либо на активный объект в документе
+            app.activeControl = (app.activeDocument.activeControl ? app.getModelByID(app.activeDocument.activeControl.id) : app.getModelByID(app.activeDocument.id)); 
+        }
+    }); 
+
+    // Обеспечивает переинициализацию поля редактирования имени переменной и вкладок свойств
+    app.watch ('activeControl', function(key, oldVal, newVal) {
+        if (!newVal) { app.JsName.unbind(); app.JsName.control.enabled = false; } else {
+            app.JsName.control.enabled = true;
+            if (newVal.hasOwnProperty('document')) app.JsName.rebind(newVal, 'text', 'document.jsname'); else app.JsName.rebind(newVal, 'text', 'control.jsname'); 
+       }
+        app.updateTabs(newVal); // при null - всё отвяжеться
+        return newVal;
+    });
+
+    // Обеспечивает переключение табов при смене активного документа
+    app.watch ('activeDocument', function(key, oldVal, newVal) {
+        if (!newVal) { app.activeControl = null; app.window.text = app.caption; } else {
+            docsView.selection = newVal.window; // переключаемся на добавленный tab
+            var doc = app.getModelByID(newVal.id);
+            app.window.text = app.version + " " + app.name + " - " + (doc.document.name[0] == '*' ? doc.document.name.slice(1) : doc.document.name);
+            if (newVal.activeControl)  app.activeControl = app.getModelByID(newVal.activeControl.id); else app.activeControl = doc;
+        }
+        app.treeView.refreshItems(newVal);
+        return newVal;
+    });
+
+    // Обеспечивает обновление текста дерева в реальном времени
+    app.JsName.control.addEventListener("keyup", function (kb) {
+        app.treeView.control.activeItem.text = this.text;
+    });
+    app.pBar.close();
+} // app.Init()
+
+// ===================
+// Загрузка графических ресурсов, локализованных строк и метаданных объектов пользовательского графического интерфейса
+BuilderApplication.prototype.loadResources = function() {
+        var app = this;
+    try {
+        // Загрузка локализованных строк 
+        var f = new File(this.resFolder + "locales.jsxinc"); 
+        if (!f.exists) app.terminate(localize({ ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" }, "locales.jsxinc"));
+        try { f.open("r"); app.LStr = eval(f.read()); f.close(); } catch(e) { app.terminate("loadResources: " + e.description); }
+        
+        // Загрузка пиктограмм 
+        //#include "_resources.jsxinc"
+        f = new File(this.resFolder + "_resources.jsxinc"); 
+        if (!f.exists) app.terminate(localize(LStr.uiErr[0], "_resources.jsxinc"));
+        try { f.open("r"); eval(f.read()); f.close(); } catch(e) { app.terminate("loadResources: " + e.description, e, f); }
+        app.resources = appresources;
+        
+        // Загрузка основных методанных 
+        //#include "controls.jsxinc" 
+        f = new File(this.resFolder + "controls.jsxinc");
+        if (!f.exists) app.terminate(localize(LStr.uiErr[0], "controls.jsxinc"));
+        try { f.open("r"); eval(f.read()); f.close(); } catch(e) { app.terminate("loadResources: " + e.description, e, f); }
+        app.uiCategories = uiCategories;
+        app.uiProperties = uiProperties;
+        app.uiControls = uiControls;
+    } catch(e) { trace(e); app.terminate(localize({ ru:"Критичиская ошибка: ", en:"Critical error: " }) +e.description); } 
+ };
+
+// ===================
+// Инициализация наименований объектов диалога (могут переопределяться в опциях)
+//
+BuilderApplication.prototype.initJsNames = function() {
+    // Предполагается что опции и ресурсы уже загружены и корректно подготовлены
+    var app = this,
+           opt = app.options,
+           shema = opt.jsname,
+           controls = app.uiControls;
+    if (JSNAMES.hasOwnProperty(shema)) {
+        for (var p in controls) if (controls.hasOwnProperty(p)) controls[p].jsname = JSNAMES[shema][p];
+        opt.jsnames.myDialog = JSNAMES[shema].myDialog;
+    } else if (shema == "user" && opt.jsnames) {
+         for (var p in opt.jsnames) if (p != "myDialog" && opt.jsnames.hasOwnProperty(p)) controls[p].jsname = opt.jsnames[p];
+    };
+    if (!opt.jsnames.myDialog) opt.jsnames.myDialog = DEFOPTIONS.jsnames.myDialog;
+};
+
+// Строим заголовок
+BuilderApplication.prototype.buildCaption = function(cont) {
+    var app = this,
+           //dir = app.resFolder + "/icons/",
+           img = app.resources.images,
+           uiApp = app.LStr.uiApp,
+           stl = "toolbutton",
+           g = cont.add("group { alignment:['fill', 'top'], spacing:0 }");
+    // Кнопки в верхней панели:
+    var btNew = g.add("iconbutton { label:'new', helpTip:'"+uiApp[6]+"', enabled:true, properties:{style:'"+stl+"', toggle:false }}");
+           btNew.image =  img.btNew;
+    var btOpen = g.add("iconbutton { label:'open', helpTip:'"+uiApp[7]+"', enabled:true, properties:{style:'"+stl+"', toggle:false }}");
+           btOpen.image =  img.btOpen;
+    var btSave = g.add("iconbutton { label:'save', helpTip:'"+uiApp[9]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+           btSave.image = img.btSave;
+    var btSaveAs = g.add("iconbutton { label:'saveAs', helpTip:'"+uiApp[16]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+           btSaveAs.image = img.btSaveAs;
+    var btClose = g.add("iconbutton { label:'close', helpTip:'"+uiApp[8]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+           btClose.image = img.btClose;
+    var btSettings = g.add("iconbutton { label:'settings', helpTip:'"+uiApp[10]+"', enabled:true, properties:{style:'"+stl+"', toggle:false }}");
+           btSettings.image = img.btSettings
+    var sp = g.add(SUI.Separator);
+          SUI.SeparatorInit(sp, 'line', 2);
+    var btEval = g.add("iconbutton { label:'eval', helpTip:'"+uiApp[14]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+           btEval.image = img.btEval;
+    var btCode = g.add("iconbutton { label:'code', helpTip:'"+uiApp[15]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+           btCode.image = img.btCode;
+    var btOpenIn = g.add("iconbutton { label:'openIn', helpTip:'"+uiApp[17]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+           btOpenIn.image = img.btOpenIn;
+          sp = g.add(SUI.Separator);
+          SUI.SeparatorInit(sp, 'line', 2);
+    var grp = g.add("group { margins:[2,0,2,0], spacing:1, alignment:['left', 'fill'], alignChildren:['left', 'center'], orientation:'column', \
+                                           st:StaticText { text:'"+uiApp[20]+"' }, g:Group { spacing:1 }}");
+          grp.st.graphics.font = ScriptUI.newFont("dialog:8.5");
+    app.btBOLD = grp.g.bBOLD = grp.g.add("iconbutton { label:"+_BOLD+", preferredSize:[23,23], properties:{style:'button', toggle:true }}"); // Кнопка управления BOLD
+    app.btBOLD.image = img.bBOLD;
+    app.btITALIC = grp.g.bITALIC = grp.g.add("iconbutton { label:"+_ITALIC+", preferredSize:[23,23], properties:{style:'button', toggle:true }}"); // Кнопка управления ITALIC
+    app.btITALIC.image = img.bITALIC;
+    app.fontStyle = new MVC.View("fontStyle", grp.g); // Группа управления стилем шрифта  
+    app.views.add(app.fontStyle);
+    //app._editors.add(app.fontStyle);
+    sp = g.add(SUI.Separator);
+    SUI.SeparatorInit(sp, 'line', 2);
+    
+           grp = g.add("Group {  margins:[2,0,2,0], spacing:0, alignChildren:['left', 'center'], orientation:'column',   \
+                            g1:Group { spacing:2, \
+                                st:StaticText {text:'"+uiApp[21]+"', characters:6},  \
+                                dd:DropDownList {preferredSize:['90', '18']},  \
+                                et:EditText {preferredSize:['38', '18']}},  \
+                            g2:Group { spacing:2, \
+                                st:StaticText {text:'"+uiApp[22]+"', characters:6},  \
+                                dd:DropDownList { preferredSize:['90', '18']}, \
+                                bt:IconButton {helpTip:'"+uiApp[23]+"', preferredSize:[38,20], properties:{style:'button', toggle:false }}}}");
+          grp.g1.et.graphics.font = ScriptUI.newFont("dialog-bold:11");
+          grp.g1.st.graphics.font = grp.g2.st.graphics.font = ScriptUI.newFont("dialog:10");
+          grp.g1.dd.graphics.font = ScriptUI.newFont("dialog-bold:9");
+          grp.g2.dd.graphics.font = ScriptUI.newFont("dialog-bold:8.5");
+    app.btClearFont = grp.g2.bt;
+    app.btClearFont.image = img.bCancel;
+    app.fontName = new MVC.View("fontName", grp.g1.dd); // View для управления именем шрифта текста
+    app.views.add(app.fontName); app._editors.add(app.fontName);
+    app.fontSize = new MVC.View("fontSize", grp.g1.et); // View для управления размером текста
+    app.views.add(app.fontSize); app._editors.add(app.fontSize);    
+    app.fontColor = new MVC.View("fontColor", grp.g2.dd); // View для управления цветом текста
+    app.fontColor.control.__key = 'foregroundColor';
+    app.views.add(app.fontColor); app._editors.add(app.fontColor); 
+    app._ceditors.add(app.fontColor);
+    
+    //~     sp = g.add(SUI.Separator);
+    //~     SUI.SeparatorInit(sp, 'line', 2);
+          sp = cont.add(SUI.Separator);
+          SUI.SeparatorInit(sp, 'line', 2);
+    var btInfo = cont.add("iconbutton { label:'about', helpTip:'"+uiApp[11]+"', preferredSize:[32, 32], alignment:['right', 'fill'], properties:{style:'"+stl+"', toggle:false }}");
+           btInfo.image = img.btInfo;          
+
+    // Обработка кликов по кнопкам-меню:
+    cont.addEventListener ("click", function (e) {
+        var _enableButtons = function() { btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = true; }
+        var _disableButtons = function() { btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = false; }
+        if (e.target.type == 'iconbutton') {
+            switch (e.target.label) {
+                case "new":        app.addDocument(); _enableButtons();      break;
+                case "open":       if (app.loadDocument()) _enableButtons(); break;
+                case "openIn":    app.openInDocument();   break;
+                case "save":       app.saveDocument();      break;
+                case "saveAs":    app.saveAsDocument();  break;
+                case "close":       app.closeDocument(); if (app.documents.length == 0) _disableButtons(); break;
+                case "settings":   app.editOptions(); break;
+                case "eval":        app.evalDialog();  break;
+                case "code":       app.showCode();  break;
+                case "about":      app.about();         break;
+                default:
+            }
+        }
+    });  
+
+    // Формирование объекта View
+    return app.views.add(new MVC.View("Caption", cont));
+};
+
+// ===================
+// Строим дерево
+BuilderApplication.prototype.buildTreeView = function(cont) {
+    // Получаем локальные ссылки
+    var app = this,
+           //dir = app.resFolder + "/icons/",
+           img = app.resources.images,
+           LStr = app.LStr;
+    // Дерево контролов
+    var tree = app.addView({
+        id:"Tree",
+        parent:cont,
+        view:"treeview { alignment:['fill','fill']}",
+        Init:function() { this.preferredSize[0] = 140; },
+        selectItem:function(model) { // model - объект model в области видимости Document (doc.activeControl)
+            var tree = this.control;
+            tree.activeItem = tree.findItem (model, 'model');
+            tree.selectItem(tree.activeItem); 
+            tree.activeNode = (tree.activeItem.type == 'node') ? tree.activeItem : tree.activeItem.parent;
+        },
+        refreshItems:function(doc) { // Обновление текущего представление данными диалога текущего документа
+            // Функция полного обновления дерева элементов, вызывается при смене активного документа (передаётся через doc так как вызов проис-
+            // ходит из обработчика watch и до конца выполнения данной функции указатель activeDocument указывает на старое значение и обновиться 
+            // он только после выхода из данной функции);
+            var tree = this.control;
+            tree.activeNode = tree.activeItem = null;
+            tree.removeAll();
+            if (!doc || doc.window.children.length == 0) return;
+            //delete tree['onChange']; // временно заглушаем! 
+            (function _buildTree(node, doc, cont) {
+                var model = doc.findController(cont).model,
+                       item = node.add("node", model.control.jsname),
+                       _item = null;
+                item.model = model;
+                for (var i=0; i<cont.children.length; i++) {
+                    if (SUI.isContainer(cont.children[i]) && !cont.children[i].isSeparator) _buildTree(item, doc, cont.children[i]); else {
+                        model = doc.findController(cont.children[i]).model;
+                        _item = item.add("item", model.control.jsname);
+                        _item.model = model;
+                    }
+                }
+            }(tree, doc, doc.window.children[0]));
+            // Бывают проблемы с doc.activeControl !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            app.treeView.selectItem(doc.activeControl);
+             if (tree.activeItem.type == "node") tree.activeNode = tree.activeItem; else tree.activeNode = tree.activeItem.parent;
+             doc.activeContainer = tree.activeNode.model.view.control;
+        },
+        addItem:function(item) { // Вызывается из doc.addItem()
+            var tree = this.control, 
+                   type = (item.control.type == 'Container') ? "node" : "item";
+            if (tree.activeNode == null) {
+                tree.activeNode = tree.activeItem = tree.add( type, item.control.jsname );
+            } else {
+                tree.activeItem = tree.activeNode.add( type, item.control.jsname );
+            }
+            tree.activeItem.model = item;
+            tree.selectItem(tree.activeItem);
+            tree.active = true;
+        },
+        removeItem:function(item) {
+            // см. doc.removeItem(...);
+            if (item && item.parent) item.parent.remove(item);
+        },
+        swapItems:function(direction) { // "Up" || "Down" Вызывается нажатием кнопок Up, Down 
+            // функция будет производит перемещение активного элемента
+            // ...
+        },
+        control:{
+            activeItem:null,  // Соответствует doc.activeControl
+            activeNode:null, // Соответствует doc.activeContainer
+            onChanging:false,
+            onChange:false,
+            selectItem:function (item) { // Выделение объекта ListItem в дереве с разворачиванием всей родительской цепочки ветвей, содержащих элемент
+                var node = item;
+                while (node.parent) { node.parent.expanded = true; node = node.parent; } // предварительно развернём все родительские группы
+                this.selection = item;
+            },
+            findItem:function(item, prop) {
+                // Функция поиска укзанных данных в дереве. Поиск производиться по всей глубине ветвей дерева. Возвращает первый обнаруженный 
+                // объект ListItem (указатель на него) либо null если соответствие отсутствует.
+                // item - любой объект данных, который требуется найти в дереве; prop - свойство объекта ListItem по которому будет происходить сравнение
+                // с искомым аргументом item.
+                var prop = (prop)||'text',
+                      cursor = this.items[0], 
+                      res = null;
+                //log ('this.items =', cursor.model.id);
+                res = (function _find(item, cursor, prop) {
+                    var res = null; 
+                    if (cursor[prop] === item) return cursor;
+                    for (var i=0; i<cursor.items.length; i++) {
+                        if(cursor.items[i].type == 'node') res = _find(item, cursor.items[i], prop); else {
+                            if (cursor.items[i][prop] === item) res = cursor.items[i];
+                        }
+                        if (res) break;
+                    }
+                    return res;
+                })(item, cursor, prop); // _find
+                return res;
+            }
+        }
+    });
+    // Группа с кнопками управления контролами (под деревом элементов)
+    var g = cont.add("group { margins:[1,4,1,4], spacing:5, alignment:['fill','bottom'] }" ),
+           st = "button", sz = [24,24],           
+           bt = g.add("iconbutton", undefined, img.btDel, {style:st, toggle:false});
+    bt.label = "Del"; bt.alignment = ['left','bottom']; bt.helpTip = LStr.uiApp[2]; bt.preferredSize = sz;
+    bt = g.add("iconbutton", undefined, img.btUp, {style:st, toggle:false});
+    bt.label = "Up"; bt.alignment = ['right','bottom']; bt.helpTip = LStr.uiApp[3]; bt.preferredSize = sz;
+    bt = g.add("iconbutton", undefined, img.btDown, {style:st, toggle:false});
+    bt.label = "Down"; bt.alignment = ['right','bottom']; bt.helpTip = LStr.uiApp[4]; bt.preferredSize = sz;
+    // Обработка кликов по кнопкам:
+    g.addEventListener ("click", function (e) {
+        var doc = app.activeDocument;
+        if (doc && e.target.type == 'iconbutton') {
+            if (e.target.label == 'Del') return doc.removeItem(doc.activeControl);
+            if (e.target.label == 'Up') return doc.swapItem(doc.activeControl, 'Up');           // пока не реализовано
+            if (e.target.label == 'Down') return doc.swapItem(doc.activeControl, 'Down');   // пока не реализовано
+        }
+    });
+    tree.control.addEventListener ("click", function (e) { // onChange для дерева
+        // При клике по дереву переустнавливаются все активные указатели как в самом дереве (this.activeNode & this.activeItem), так и в документе
+        // (doc.activeContainer & doc.activeControl), что также приведёт к автоматической переустановке указателя приложения app.activeControl и
+        // переустановки всех полей редактирования свойств.
+        var sel = this.selection,
+              doc = app.activeDocument;
+         if (sel) {
+            this.activeItem = sel;
+            if (sel.model !== doc.activeControl) doc.activeControl = sel.model;
+            if (doc.activeControl.control.type == "Container") this.activeNode = this.activeItem; else this.activeNode = this.activeItem.parent;
+            doc.activeContainer = this.activeNode.model.view.control;
+            //if (e.detail == 2) app.showModelCode(this.activeItem.model);
+            if (e.detail == 2) this.activeItem.model.getCode();
+        }              
+    });
+
+    return app.views.add(tree);
+};
+
+// =================== 
+// Строим панель кнопок
+BuilderApplication.prototype.buildControlsBtns = function(cont, columns) {
+    // Получаем локальные ссылки
+    var app = this,
+           uiControls = app.uiControls;
+    // Добавляем кнопки исходя из содержимого uiControls
+    var img = app.resources.images,
+           //dir = app.resFolder + "/icons/",
+           prop, i, j, max, jmax,
+           ctrls_arr = [],                   // Все элементы
+           grps_arr = [],                   // Группы по типам элементов
+           columns = (columns)||2;  // Кол-во кнопок в строке, в левой панели кнопок
+    // Формируем массивы контролов и групп
+    for (prop in uiControls) {
+        if (uiControls.hasOwnProperty(prop)) {
+            ctrls_arr.push(prop);
+            if (grps_arr.toString().indexOf(uiControls[prop].type) == -1) grps_arr.push(uiControls[prop].type);
+        }
+    }
+    var btns = {};
+    // Формируем хеш из групп с массивами входящих в них контролов btns.группа.[контролы]
+    for (i=0, max=grps_arr.length; i<max; i++) {
+        btns[grps_arr[i]] = [];
+        for (prop in uiControls)
+            if (uiControls.hasOwnProperty(prop) && uiControls[prop].type == grps_arr[i] && prop != 'Window') btns[grps_arr[i]].push(uiControls[prop]);
+    }
+    // Добавляем контролы в Панель с группировкой по группам
+    var grpRes = "group {text:'', margins:[0,0,0,0], spacing:0, alignChildren:['Left','top'], orientation:'row'  }",
+           grp = null, sp = null, bt = null;
+    for (prop in btns) {
+        if (!btns.hasOwnProperty(prop)) continue;
+        sp = cont.add(SUI.Separator); 
+        SUI.SeparatorInit(sp, 'line', 5);
+        SUI.SeparatorInit(sp.line, 'line', 2);sp.line.visible = true;
+        // в пределах группы группируем по колонкам
+        for (i in btns[prop]) {
+            if (! (i%columns)) grp = cont.add(grpRes);
+            bt = grp.add("iconbutton", undefined,  img[btns[prop][i].icon], {style: "button", toggle:false}); 
+            bt.helpTip = btns[prop][i].description;
+            bt.label = btns[prop][i].label; // метка кнопки соответствует названию элемента управления
+        }
+    }
+    // Обработка кликов по контролам:
+    cont.addEventListener ("click", function (e) {
+        if (e.target.type == 'iconbutton') {
+            if (app.activeDocument) app.activeDocument.addItem(e.target.label);
+        }
+    });
+    // Формирование объекта View
+    return app.views.add(new MVC.View("Controls", cont));
+};
+// =================== 
+// Строим панель вкладок Properties
+BuilderApplication.prototype.buildTabs = function(cont) {
+    // Получаем локальные ссылки
+    var app = this,
+           uiCategories = this.uiCategories,
+           uiProperties = this.uiProperties,
+           uiControls = this.uiControls,
+           controllers = this.controllers,
+           models = this.models,
+           views = this.views,
+           Lstr = this.LStr.uiApp;
+           //dir = this.resFolder + "/icons/";
+   var CPROPS = COLORSTYLES.CS;
+    // Кол-во и имена вкладок соответствуют списку категорий в uiCategories
+    var prop, tabs = [], maxlength, val, tval, i, j, n, max, t, p, g, fmax = Math.max, text, view, lt, type, hstr, ctrl, ch;
+    var chrs = 20, mstr = (new Array(chrs+1)).join("0");        // общая длинна в символах группы полей редактирования (и подстановочная строка той же длинны)
+//~     var stBtn = ScriptUI.newImage(dir + "btClear16_RO.png", undefined, dir + "btClear16.png", dir + "btClear16.png"),
+//~           st = "toolbutton", sz = [22, 22];                                    // Кнопка "очистка" для группы полей редактирования
+    var tb = cont.add("tabbedpanel");
+    // Размер символов текущего шрифта в точках для масштабирования полей ввода (списков и эдитбоксов)
+    var gfx = tb.graphics;
+    //ox  = gfx.measureString(',')[0];
+    var oxy = gfx.measureString(mstr);  // Длинна символа и высота символа в точках текущим шрифтом + поправка (пока расчёт только на моноширинные шрифты)
+    var oy = oxy[1] + 5;    // Поправка на dropdownlist-ы (edittext-ы уже на 5 тч.)
+    var ps = 175,               // общая ширина для группы ввода (без подписи и кнопки)
+          counts = 0, scrl,
+          hgt = 4*(5+oy);
+    var view = null;  // дежурный view для связывания полей ввода с model
+    for (prop in uiCategories) if (uiCategories.hasOwnProperty(prop)) { // =============== Добавляем табы по кол-ву категорий в модели (соответствует uiCategories)
+       app.pBar.hit(localize({ ru:"Создание вкладок свойств: ", en:"Creating properties tabs: "}) + uiCategories[prop].label);        
+       t = tb.add("tab { text:'"+uiCategories[prop].label+"', helpTip:'"+uiCategories[prop].description+"', margins:[5,5,5,5], spacing:0, alignChildren:['Left','top'] }");
+       g = t.add("group", [0, 5, 450, hgt]); 
+       extend (g, { margins:0, spacing:0, alignChildren:['left','top'], orientation:'row' } );  
+       // упреждающий просмотр для определения самой длинной строки label в точках
+       maxlength = counts = 0;  
+       for (p in uiProperties) if (uiProperties.hasOwnProperty(p) && uiProperties[p].category == prop ) { maxlength = fmax(maxlength, gfx.measureString(p)[0]);  counts++ };       
+       // ==== Добавляем в таб скроллируемую панель, если кол-во групп(свойств) больше 4 (counts*5) ======        
+       if ((counts)*oy+counts*5 > hgt) {
+            scrl = SUI.addScrollablePanel(g, 0, 0, 435, hgt+10, false, (counts+1)*oy+counts, 20);
+            extend (scrl, { margins:0, spacing:0, alignChildren:['left','center'], orientation:'column' } ); 
+        } else {
+            scrl = g; scrl.orientation = 'column'; scrl.margins = [15,10,0,0];
+        }
+        // ==== Заполняем табы ======
+        for (p in uiProperties) if (uiProperties.hasOwnProperty(p) && uiProperties[p].category == prop ) {
+            hstr =  uiProperties[p].description + "\n" + Lstr[0]+uiProperties[p].type + "\n" + Lstr[1] + uiProperties[p].defvalue;
+            g = scrl.add("group");      // Общая группа редактирования свойства, включает подпись + группа полей ввода + чекбокс
+            extend (g, { margins:0, spacing:5, alignChildren:['left','top'], orientation:'row', helpTip:hstr, label:p } );  
+            with (g.add("statictext { text:'"+p+":'}")) { preferredSize[0] = maxlength+5; helpTip = hstr };             // Подпись
+            grp =  extend(g.add("group",[0, 0, ps, oy]), { margins:[0,0,0,0], spacing:5, alignChildren:['fill','fill'], orientation:'row' } ); // Общая группа для полей ввода
+            ch = g.add("checkbox"); ch.helpTip = Lstr[5]; ch.enabled = false;      // Флажок "Определить";
+            // Заполняем группу полями ввода:
+            g = grp;
+            val = uiProperties[p].value;   // Представляет объект из uiProperties.value типа '' или массив (['',''] или ['','','',''])
+            tval = uiProperties[p].values; // Представляет объект из uiProperties.values типа undefined или массив предустановленных значений ['',''] или ['','','','']
+            if (prop == "Graphics") {
+                if (p == "font") {
+                    view = this.addView({ id:p, parent:g, view:"edittext { properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
+                    //var btFont = g.add("iconbutton { title:'. . .', titleLayout:{alignment:['center', 'center'] }, alignment:['right', 'fill'] }"); 
+                    //var btFont = g.add("iconbutton { text:'. . .', preferredSize:["+24+","+oy+"] }, alignment:['right', 'fill'] }"); 
+                    view.check.label = p;
+                    this._editors.add(view);
+                    continue; // for (p in uiProperties)...
+                } else if (CPROPS.hasOwnProperty(p)) {
+                    view = this.addView({ id:p, parent:g, view:"dropdownlist", check:ch, control:{ __key:p, helpTip:hstr, enabled:false } });
+                    view.check.label = p;
+                    this._editors.add(view);
+                    this._ceditors.add(view);   // отдельная коллекция контролов для управления цветом
+                    continue; // for (p in uiProperties)...
+                }
+            } // Другие графические свойства (opacity... обрабатываем стандартно:)
+            // Парсинг типа значения из uiProperties[p].values и добавления соответствующих полей ввода (dropdownlist для предустановленных значений 
+            // и edittext - для всех прочих). Для каждого поля ввода - создаём объекты представлений (по одному на каждое поле ввода в группе).           
+            if ( tval instanceof Array) {  // Для всех свойств с предустановленными значениями добавляем dropdownlist-ы
+                if ( val instanceof Array) { // свойство массив (двухмерный) и имеет предустановленные знчения
+                    for (i=0, n=val.length; i<n; i ++) {
+                        view = this.addView({ id:p+i, parent:g, view:"dropdownlist", check:ch, control:{ helpTip:hstr, enabled:false } });
+                        view.control.add("item", ""); // Для возможности обнуления списка!
+                        for (j=0, max=tval.length; j<max; j++) { view.control.add("item", tval[j]); }; // Добавляем все значения из uiProperties.values
+                        view.control.selection = 0;
+                        view.check.label = p;
+                        this._editors.add(view); // общий список всех контроллёров свойств (для быстрого блокирования/разблокирования)
+                    } // for
+                } else { // val не массив также имеет предустановленные знчения
+                    view = this.addView({ id:p, parent:g, view:"dropdownlist", check:ch, control:{ helpTip:hstr, enabled:false } });
+                    view.control.add("item", ""); // Для возможности обнуления списка!
+                    for (j=0, max=tval.length; j<max; j++) { view.control.add("item", tval[j]); }; // Добавляем все значения из uiProperties.values
+                    view.control.selection = 0;
+                    view.check.label = p;
+                    this._editors.add(view); // общий список всех контроллёров свойств (для быстрого блокирования/разблокирования)                   
+                } // else
+            } else { // tval не массив (предустановленных значений нет)
+                if (val instanceof Array) { // свойство - массив без предустановленных значений
+                    for (i=0, max=val.length; i<max; i++) {
+                        view = (p in {'bounds':0, 'frameLocation':0, 'image':0}) ? this.addView({ id:p+i, parent:g, view:"edittext { properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } }) :
+                                                                                                            this.addView({ id:p+i, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
+                        view.check.label = p;
+                        this._editors.add(view);
+                    }
+                } else { // свойство - значение без предустановленных значений
+                    if (p == 'items' ) {
+                        view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
+                        var btList = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"' }");
+                    } else {
+                        view = this.addView({ id:p, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
+                    }
+                    view.check.label = p;
+                    this._editors.add(view);
+                }
+            }
+            //g.enabled = false; // По умолчанию все недоступно - будем включать в зависимости от добавляемого элемента
+        } // for (p in uiCategories[prop])
+    } // for (prop in uiCategories)  - Конец добавления табов
+    //for (i = 0; i<this._editors.length; i++) log ((i < 10) ? "0" + i : i,"-", this._editors[i].id);
+    p = app._getField('alignment0').control; p.remove('top'); p.remove('bottom');
+    p = app._getField('alignment1').control; p.remove('left'); p.remove('right');
+    p = app._getField('alignChildren0').control; p.remove('top'); p.remove('bottom');
+    p = app._getField('alignChildren1').control; p.remove('left'); p.remove('right');    
+    // 
+    //btFont.size = [24, oy]; btFont.parent.layout.layout(true);
+    
+    // Обработка чекбокса (установленный значок означает добавлять свойство в элемент при формировании диалога, снятый - игнорировать)
+    tb.addEventListener ("click", function (e) {
+            var model = app.activeControl;
+            if (e.target.type == 'checkbox') { // && model && model.hasOwnProperty('control')) {
+                var check = e.target, 
+                       val = !check.value, // нужно, так как обработчик onClick вызывается до смены значения
+                       label = check.label, // имя свойства управляемое данным чекбоксом (определяется на этапе добавления самого чекбокса)
+                       control = model.view.control,
+                       prop = model.properties,
+                       model_obj = model.control.properties;
+            // Вносим метку в описательной части модели 
+            if (!control.hasOwnProperty(label)) {
+                if (!control.properties.hasOwnProperty(label)) {
+                    if (!control.graphics.hasOwnProperty(label)) return; else { prop.graphics[label] = val; model_obj = model_obj.graphics; }
+                } else { prop.properties[label] = val; model_obj = model_obj.properties; }
+            } else { prop[label] = val; }
+            // Красим текст в полях редактирования
+            //for (var i=0, cont = check.parent.children[1].children, gfx = cont[i].graphics, S_CLR = gfx.PenType.SOLID_COLOR; i<cont.length; gfx = cont[i++].graphics) {
+            for (var i=0, cont = check.parent.children[1].children, gfx = cont[i].graphics, S_CLR = gfx.PenType.SOLID_COLOR; i<cont.length; i++) {
+                gfx = cont[i].graphics;
+                gfx.foregroundColor = (val === true ? gfx.newPen(S_CLR, [0,0,0], 1) : gfx.newPen(S_CLR, toRGBA(app.options.disabledForegroundColor), 1));
+            }
+        }
+    });
+    
+    btList.onClick = function() {
+        alert({ ru:"В стадии разработки ...", en:"Under constraction..." }, app.name + " " + app.version, true);
+    }
+    // Формирование объекта View
+    return app.views.add(MVC.View("Tab", tb));
+};
+
+// Вспомогательная функция для быстрого получения полей редактирования свойств
+BuilderApplication.prototype._getField = function(id) {
+    return this._editors.getFirstByKeyValue('id', id);
+};
+// =================== 
+// строим родительский View документов
+BuilderApplication.prototype.buildDocsView = function(cont) {
+    var app = this,
+           LStr = app.LStr;
+    // Родительский View для документов основан на TabbedPanel, каждый Tab которого будет представлять родительский View самого документа
+    app.views.add(new MVC.View("Documents", cont.add("tabbedpanel { alignment:['fill','fill'] }")));
+    // Панелька содержащая подпись 'Имя элемента' и поле редактирования JsName
+    var pPnl = cont.add("group { margins:[5,1,5,1], spacing:5, alignChildren:'left', alignment:['fill','bottom'], st:StaticText {text:'"+LStr.uiApp[12]+"'} }");
+    var gfx = pPnl.graphics;
+    gfx.backgroundColor = gfx.newBrush(_BSOLID, toRGBA(app.options.backgroundColor)); // [0.94, 0.94, 0.94, 1]
+    gfx.disabledBackgroundColor = gfx.newBrush(_BSOLID, toRGBA(app.options.doc.disabledBackgroundColor));
+    // Собственно само поле редактирования JsName
+    app.addView({ id:"JsName", parent:pPnl, view:"edittext { enabled:false, alignment:['fill','bottom'] }" });//, Init:function() { this.enabled = false;}
+    return app.views; // возвращаем родительский View документов
+};
+
+// =================== 
+// Строим StatusBar
+BuilderApplication.prototype.buldStatusBar = function(cont) {
+    var app = this,
+          LStr = app.LStr.uiApp;
+    var g = cont.add("group { alignment:['fill','bottom'], spacing:5 }" );
+    var st = g.add("statictext { text:'© Slava Boyko aka SlavaBuck | 2013-2014 | slava.boyko@hotmail.com', alignment:['left','center'] }");
+    st.graphics.foregroundColor = st.graphics.newPen (st.graphics.PenType.SOLID_COLOR, [0, 0, 0.54509803921569, 1], 1); // DarkBlue
+    var sp = cont.add(SUI.Separator);
+           SUI.SeparatorInit(sp, 'line', 2);
+    var btClose = cont.add("button { text:'"+LStr[18]+"', alignment:['right','center'] }");
+    
+    btClose.onClick = function() { app.window.close(); }
+    // Формирование объекта View
+    return this.views.add(new MVC.View("SBar", g));
+};
+
+// =================== 
+// Строим окно About
+BuilderApplication.prototype.about = function() {
+    var app = this,
+           img = app.resources.images;
+    //var w = new Window ("palette { preferredSize:[640,480], alignChildren:'stack', margins:0, properties:{ borderless: true } }"); //, properties:{ borderless: true } }");
+    var sz1 = [80, 300],                // картинка
+           sz2 = [370, sz1[1]-140];   // текст с описанием
+    var w = new Window ("dialog { margins:0, properties:{ borderless: true }, \
+                                           pPnl:Panel { margins:[0,0,1,1], orientation:'row', \
+                                                gImg:Group { preferredSize:["+sz1[0]+","+sz1[1]+"], \
+                                                    gPic:Group { preferredSize:["+(sz1[0]-36)+","+68+"], margins:[0,6,0,6], spacing:1, alignment:['center', 'top'], alignChildren:['center', 'bottom'], orientation:'column' } }, \
+                                                gMain:Group { margins:10, spacing:10, orientation:'column', \
+                                                    gCaption:Group { orientation:'row', margins:[0,0,0,0], spacing:4, alignment:['fill', 'fill'], alignChildren:['left','bottom'] }, \
+                                                    sp1:"+SUI.Separator + " \
+                                                    about:Group { margins:0, spacing:2, orientation:'column' },\
+                                                    sp2:"+SUI.Separator + " \
+                                                    btOk:Button { alignment:['right','bottom'], text:'Ok' } \
+                                                } } }");
+       var lic = { 
+           // Creative Commons Attribution-NonCommercial-ShareAlike 3.0 - http://creativecommons.org/licenses/by-nc-sa/3.0/
+           ru:"РАЗРЕШЕНО СВОБОДНОЕ ИСПОЛЬЗОВАНИЕ ПРОИЗВЕДЕНИЯ, ПРИ УСЛОВИИ УКАЗАНИЯ ЕГО АВТОРА, НО ТОЛЬКО В НЕКОММЕРЧЕСКИХ ЦЕЛЯХ. ТАКЖЕ ВСЕ ПРОИЗВОДНЫЕ ПРОИЗВЕДЕНИЯ, ДОЛЖНЫ РАСПРОСТРАНЯТЬСЯ ПОД ЛИЦЕНЗИЕЙ CC BY-NC-SA.", 
+           en:"THE WORK (AS DEFINED BELOW) IS PROVIDED UNDER THE TERMS OF THIS CREATIVE COMMONS PUBLIC LICENSE (''CCPL'' OR ''LICENSE''). THE WORK IS PROTECTED BY COPYRIGHT AND/OR OTHER APPLICABLE LAW. ANY USE OF THE WORK OTHER THAN AS AUTHORIZED UNDER THIS LICENSE OR COPYRIGHT LAW IS PROHIBITED." 
+       };
+       var cpt =  " (© SlavaBuck, 2013-2014)\r";
+       var libs =  MVC.name+ " v" + MVC.version + cpt +
+                        MVC.DOM.name + " v" +MVC.DOM.version + cpt +
+                        Collection.libname + " v" + Collection.libversion + cpt +
+                        SUI.name + " v" +SUI.version + cpt +
+                        PNGLib.name +" v"+PNGLib.version+" (© SlavaBuck, 2013-2014 - based on Marc Autret's and David Jones works)\r\r";
+       var tittle = "Dialog Builder ver "+ app.version + " (ScriptUI 6.1.8)\r";
+       var msg = { 
+                    ru: tittle +
+                        "Конструктор диалоговых окон для Adobe ESTK СS...\r\r" +
+                        "Лицензионное соглашение Creative Commons:\rCC Attribution Non-Commercial ShareAlike (CC BY-NC-SA).\r\r" + 
+                        lic.ru + "\rhttp://creativecommons.org/licenses/by-nc-sa/3.0/)" +
+                        "\r\rБиблиотеки:\r" + libs + "© Slava Boyko aka SlavaBuck | 2013-2014 | slava.boyko@hotmail.com",
+                    en: tittle +
+                        "Designer of dialog boxes for Adobe ESTK CS...\r\r" + 
+                        "Creative Commons License agriment:\rCC Attribution Non-Commercial ShareAlike (CC BY-NC-SA).\r\r" + 
+                        lic.en + "\rhttp://creativecommons.org/licenses/by-nc-sa/3.0/" +
+                        "\r\rLibraries used:\r" + libs + "© Slava Boyko aka SlavaBuck | 2013-2014 | slava.boyko@hotmail.com"
+    };
+    //w.pPnl.img.add("image",undefined, dir + "About2.png");
+    //w.pPnl.gImg.image = img.pAbout;
+    var gfx = w.pPnl.gImg.graphics;
+    gfx.backgroundColor =  gfx.newBrush(_BSOLID, [0.3843, 0.2039, 0.2235, 1]);
+    gfx = w.pPnl.gImg.gPic.graphics;
+    gfx.backgroundColor =  gfx.newBrush(_BSOLID, [1, 0, 0, 1]);
+    var txt0 = w.pPnl.gImg.gPic.add("statictext { alignment:['center','top'] text:'S c r i p t U I'}");
+    var txt1 = w.pPnl.gImg.gPic.add("statictext { text:'Dialog'}");
+    var txt2 = w.pPnl.gImg.gPic.add("statictext { text:'Builder'}");
+    txt0.graphics.font = ScriptUI.newFont ("Arial", "Bold", 7);
+    txt1.graphics.font = ScriptUI.newFont ("Verdana", "Bold", 10);
+    txt2.graphics.font = ScriptUI.newFont ("Verdana", "Bold", 9.5);
+    txt0.graphics.foregroundColor = txt1.graphics.foregroundColor = txt2.graphics.foregroundColor = txt2.graphics.newPen (_PSOLID, [1, 1, 1, 1], 1);
+    // Текст справа
+    txt1 = w.pPnl.gMain.gCaption.add("statictext { text:'"+app.name+"'}");
+    txt2 = w.pPnl.gMain.gCaption.add("statictext { text:'v"+app.version+"', alignment:['left','top']}");
+    txt1.graphics.font = ScriptUI.newFont ("Helvetica", "Bold", 20);
+    txt2.graphics.font = ScriptUI.newFont ("Verdana", "Bold", 14); 
+    txt2.graphics.foregroundColor = txt2.graphics.newPen (_PSOLID, [0.4392, 0.5019, 0.5647, 1], 1); //  SlateGray // DimGray[0.4117, 0.4117, 0.4117, 1]
+    w.pPnl.gMain.btOk.onClick = function() { w.close(); }
+    var c = 0.1,
+    txt = w.pPnl.gMain.about.add("statictext { preferredSize:["+sz2[0]+","+sz2[1]+"], properties:{ multiline:true, scrolling:true } }");
+    txt.text = localize(msg); 
+    txt.graphics.foregroundColor = w.graphics.newPen (_PSOLID, [c,c,c,1], 1);
+    
+    txt = w.pPnl.gMain.about.add("statictext { alignment:['left','bottom'] }");
+    txt.text = "slavabuck.wordpress.com";
+    SUI.addWebLink(txt, "http://slavabuck.wordpress.com/");
+    SUI.SeparatorInit(w.pPnl.gMain.sp1,'line');
+    SUI.SeparatorInit(w.pPnl.gMain.sp2,'line');
+    
+    w.show();
+};
+// ========================================================= 
+BuilderApplication.prototype.CreateDocument = function() {
+    var app = this,
+          uiControls = app.uiControls,
+          doc = new BuilderDocument(app);
+    // doc.activeContainer меняется только по клику в документе или в дереве:
+    doc.window.addEventListener ('click', function(e) {
+        doc.activeControl = doc.findController(e.target).model;
+        if (e.target !== this) {
+            if (SUI.isContainer(e.target)) {
+                doc.activeContainer = e.target; 
+            } else {
+                if (e.target !== doc.window) doc.activeContainer = e.target.parent; 
+                    else doc.activeContainer = doc.window;
+            }
+            app.treeView.selectItem(doc.activeControl);
+        }
+    }, true);
+
+    // Каждое переключение активного контрола документа также переключает активный контрол в приложении
+    doc.watch ('activeControl', function(key, oldVal, newVal) {
+        if (oldVal) app.unmarkControl(oldVal.view.control, oldVal);
+        if (newVal) app.markControl(newVal.view.control, newVal);
+        doc.app.activeControl = (newVal) ? doc.app.getModelByID(newVal.id) : null;
+        return newVal;
+    });
+    // Добавляем звёздочку в таб документа при его модификации // звёздочка убивается автоматом в doc.save()
+    doc.watch ('modified', function(key, oldVal, newVal) {
+        if (newVal) if (doc.name[0] != "*") doc.name = "*" + doc.name;
+        return newVal;
+    });
+    
+    return doc;
+};
+
+BuilderApplication.prototype.addDocument = function() {
+     // Вызываем перекрытый родительский метод:
+    MVCApplication.prototype.addDocument.call(this);
+    var app = this,
+           doc = app.activeDocument;
+    // Добавляем и настраиваем родительский контейнер для всех элементов диалога
+    var model = doc.addItem("dialog { preferredSize:[80, 20] }"), //, alignment:['','']
+           pPnl = model.view.control,
+           gfx = pPnl.graphics;
+    pPnl.alignment = ['left','top']; //
+    model.control.properties.text = "";
+    doc.window.layout.layout(true);
+    // Искусственно переименовываем имя переменной дилога с pPanel0 на myDialog
+    doc.activeControl.control.jsname = app.treeView.control.items[0].text = app.options.jsnames.myDialog;
+    doc.activeControl.code.initcode = doc.activeControl.control.jsname +".show()";
+    doc.activeContainer = pPnl;
+    doc.activeControl = doc.activeControl; // что бы обновить поле JsName
+    return doc;
+};
+
+// Быстрое отвязывание всех контролов
+BuilderApplication.prototype.disableAllTabs = function() {
+    var editors = this._editors;
+//~     app.fontStyle.unbind();
+//~     app.fontColor.unbind();
+//~     app.fontName.unbind();
+//~     app.fontSize.unbind();
+    app._updateFontField(null);
+    for (var i=0, max=editors.length; i<max; i++) {
+        editors[i].unbind();
+        editors[i].control.enabled = false;
+        if (editors[i].hasOwnProperty('check')) editors[i].check.enabled = false;
+    }
+};
+
+
+BuilderApplication.prototype.updateTabs = function(newVal) {
+    var app = this;
+    app.disableAllTabs();   // Быстрая блокировка всех контролов - нужные потом последовательно разблокируем
+    if (!newVal || newVal.hasOwnProperty('document')) return;
+    var view_obj = newVal.view.control,
+          cGray = view_obj.graphics.newPen(_PSOLID, toRGBA(app.options.disabledForegroundColor), 1),
+          cBlack = view_obj.graphics.newPen(_PSOLID, [0, 0, 0], 1);
+    // ========= Обходим свойства модели для контрола newVal, разблокируем и перепривязываем нужные модели и представления (по алгоритму из buildTabs)
+    _updateTabs(newVal, newVal.control.properties, newVal.properties, 'control.properties.', view_obj);
+    _updateTabs (newVal, newVal.control.properties.properties, newVal.properties.properties, 'control.properties.properties.', view_obj.properties);
+    _updateTabs (newVal, newVal.control.properties.graphics, newVal.properties.graphics, 'control.properties.graphics.', view_obj.graphics);
+    
+    return;
+    // ========= Конец updateTabs() ========= //
+    function _updateTabs(newVal, control, flags, str, view_obj) { // str = control.properties. || control.properties.properties. || control.properties.graphics.
+        var val, p, i, view, ch,
+              CPROPS = COLORSTYLES.CS;
+try {
+        for (p in control) if (control.hasOwnProperty(p) && p != 'properties' && p != 'graphics') {
+            if (p == "font") {
+                app.fontStyle.rebind(newVal);
+                app.fontName.rebind(newVal);
+                app.fontSize.rebind(newVal);
+                view = app._editors.getFirstByKeyValue('id', p);
+                view.control.enabled = view.check.enabled = true; view.check.value = flags[p];
+                view.control.graphics.foregroundColor = (view.check.value ? cBlack : cGray);
+                app._updateFontField(newVal);
+                continue;
+            }
+            if (CPROPS.hasOwnProperty(p)) {
+                view = app._ceditors.getFirstByKeyValue('id', p); 
+                view.control.enabled = view.check.enabled = true; view.check.value = flags[p];
+                view.control.graphics.foregroundColor = (view.check.value ? cBlack : cGray);
+                view.rebind(newVal);
+                if (p == "foregroundColor") app._ceditors.getFirstByKeyValue('id', "fontColor").rebind(newVal);
+                if (!newVal.control.properties.hasOwnProperty("text")) app._ceditors.getFirstByKeyValue('id', "fontColor").unbind(); //control.enabled = false;
+                continue;
+            }
+
+            val = view_obj[p];
+            if (typeof val == 'object') {
+                for (i=0; i<control[p].length; i++) {
+                    view = app._editors.getFirstByKeyValue('id', p+i); 
+                    view.control.enabled = view.check.enabled = true; view.check.value = flags[p];
+                    view.control.graphics.foregroundColor = (view.check.value ? cBlack : cGray);
+                    if (view.control.hasOwnProperty('selection')) view.rebind(newVal, 'selection.text', str+p+'.'+i); else view.rebind(newVal, 'text', str+p+'.'+i);
+                } // for ()
+            } else { // control[p] not Array
+                view = app._editors.getFirstByKeyValue('id', p);
+                view.control.enabled = view.check.enabled = true; view.check.value = flags[p];
+                view.control.graphics.foregroundColor = (view.check.value ? cBlack : cGray );
+                if (view.control.hasOwnProperty('selection')) view.rebind(newVal, 'selection.text', str+p); else view.rebind(newVal, 'text', str+p);
+            }
+        } // for (p in control)
+ } catch(e) { log('updateTabs:', p, e.description) }
+    }; // function _updateTabs
+};
+
+BuilderApplication.prototype._updateFontField = function(newVal) {
+    if (!(newVal && newVal.control && newVal.control.properties.hasOwnProperty('text'))) return app._getField("font").control.text = "";
+    app._getField("font").control.text = newVal.view.control.graphics.font.toString();
+};
+// Функции выделения doc.activeControl:
+BuilderApplication.prototype.unmarkControl = function(cont, model) {
+    cont._marked_ = false; // см. castomDraw (определена в doc.addItem(item))
+    var gfx = cont.graphics,
+           cBrush =  toRGBA(model.control.properties.graphics.backgroundColor),
+          type = cont.type;
+    if (type == 'listbox') return gfx.backgroundColor = gfx.newBrush(_BSOLID, [1, 1, 1, 1]);
+    if (SUI.isContainer(cont) ||  type == 'separator' ) return gfx.backgroundColor = gfx.newBrush(_BSOLID, cBrush);
+    if (type == 'progressbar' || type == 'image') { cont.enabled = !cont.enabled; cont.enabled = !cont.enabled; return; }
+    cont.notify ('onDraw');
+};
+
+BuilderApplication.prototype.markControl = function(cont, model) {
+    cont._marked_ = true; // см. castomDraw (определена в doc.addItem(item))
+    var gfx = cont.graphics,
+           cBrush = this.options.highlightColor,
+           type = cont.type;
+    if (cont.type == 'listbox') return gfx.backgroundColor = gfx.newBrush(_BSOLID, [cBrush[0], cBrush[1], cBrush[2], 1]);
+    if (SUI.isContainer(cont) || type == 'separator' ) return gfx.backgroundColor = gfx.newBrush(_BSOLID, cBrush);
+    if (type == 'progressbar' || type == 'image') { cont.enabled = !cont.enabled; cont.enabled = !cont.enabled; return; }
+    cont.notify ('onDraw');
+};
+
+BuilderApplication.prototype.evalDialog = function(rc) {
+    var app = this,
+           rc = (rc)||this.activeDocument.getSourceString();
+    if (!rc) return app.alert(localize(app.LStr.uiErr[3]) );
+    try { log (eval(rc)); } catch(e) { app.alert(localize(app.LStr.uiErr[4])+':\r'+e.description); }
+};
+
+BuilderApplication.prototype.openInDocument = function(doc) {
+    var app = this,
+           doc = (doc)||app.activeDocument;
+    if (!doc) return false;
+    try {
+        doc.save();
+        if (doc.file && doc.file.exists) return doc.file.execute(); else return false;
+    } catch(e) { log(e.description) }
+};
+
+BuilderApplication.prototype.alert = function(msg, caption) {
+    var app = this;
+    var caption = (caption)||app.name +": "+ localize({ru:"Ошибка!", en:"Error!"});
+    var size = [370, 260];
+    var w = new Window ("dialog { text:'"+caption+"', spacing:5, margins:[5,5,5,5], spacing:5, properties:{resizeable:true }, \
+                                                    msg:StaticText { preferredSize:["+size[0]+","+size[1]+"], alignment:['fill','fill'], properties:{ multiline:true, scrolling:true } }, \
+                                                    sp:"+SUI.Separator + " \
+                                                    grp:Group { alignment:['fill','bottom'],  \
+                                                        btOk:Button { alignment:['right','bottom'], text:'Ok', helpTip:'"+localize({ ru:'Закрыть', en:'Close'})+"' } \
+                                                   }               }");
+    w.msg.text = msg;                                                   
+    SUI.SeparatorInit(w.sp, 'line');
+    w.onResizing = w.onResize = function() { w.layout.resize(); }
+    w.show();
+};
+
+BuilderApplication.prototype.showModelCode = function(model) {
+    if(!model) return;
+    log(model.control.toSource() +"\r" + model.view.control.toSource());
+};
+
+BuilderApplication.prototype.showCode = function(doc) {
+    var app = this,
+           LStr = app.LStr,
+           doc = (doc)||app.activeDocument;
+    if (!doc) return;
+    var size = [470, 320];
+    var w = new Window ("dialog { text:'"+localize(LStr.uiApp[14])+"', spacing:5, margins:[5,5,5,5], spacing:5, properties:{resizeable:true }, \
+                                                    txt:StaticText { text:'"+localize({ru:"Код диалога:", en:"Code of Dialog:"})+"', alignment:['left','top'] }, \
+                                                    code:EditText { preferredSize:["+size[0]+","+size[1]+"], alignment:['fill','fill'], properties:{ multiline:true, scrolling:true, readonly:false } }, \
+                                                    sp:"+SUI.Separator + " \
+                                                    grp:Group { alignment:['fill','bottom'],  \
+                                                        btView:Button { alignment:['left','bottom'], text:'eval', helpTip:'"+localize({ ru:'Выполнить', en:'Run dialog'})+"' }, \
+                                                        btOk:Button { alignment:['right','bottom'], text:'Ok', helpTip:'"+localize({ ru:'Закрыть', en:'Close'})+"' } \
+                                                   }               }");
+    SUI.SeparatorInit(w.sp, 'line');
+    w.code.text = doc.getSourceString();
+    w.grp.btOk.onClick = function() { w.close(); }
+    w.grp.btView.onClick = function() { app.evalDialog(w.code.text) }
+    w.onResizing = w.onResize = function() { w.layout.resize(); }
+
+    w.show();
+};
+
+BuilderApplication.prototype.onExit = function() {
+    var app = this, 
+           notsaved = false;
+    for (var i=0, docs =app.documents; i<docs.length; i++) notsaved = docs[i].modified;
+    if (notsaved && confirm(localize(app.LStr.uiApp[19]), false, this.name))  app.saveAllDocument();
+};
+
+BuilderApplication.prototype.terminate = function(msg, err, file) {
+    var msg = (msg)||"Critical error. Application is terminated",
+          txt = msg;
+    if (err instanceof Error) {
+        if (file instanceof File) err.fileName = File.decode(file.displayName);
+        txt = trace(err, msg);
+    }
+    alert(txt, (app.name)||"Application", true); 
+    if (this.window && this.window.visible) this.window.close();
+    throw Error(msg);
+};
+
+// Заглушка...
+BuilderApplication.prototype.loadDocument = function() {
+    alert({ ru:"В стадии разработки ...", en:"Under constraction..." }, app.name + " " + app.version, true);
+};

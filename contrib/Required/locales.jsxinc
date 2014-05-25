@@ -1,0 +1,237 @@
+﻿/**************************************************************************
+*  locales.jsxinc
+*  DESCRIPTION: локализованные строки для ресурсов и интерфейса DBuilder.jsx
+*  @@@BUILDINFO@@@ locales.jsxinc 0.1.1 Sun Oct 29 2013 23:48:59 GMT+0300
+* 
+* NOTICE: объявление LStr замыкает определения строк чтобы корректно
+*         возвращаться из eval();
+* 
+/**************************************************************************
+* © Вячеслав aka SlavaBuck, 26.10.2013.  slava.boyko#hotmail.com
+*/
+
+var LStr = {};
+LStr.uiCat = [];
+LStr.uiCat[0]  = { ru:"Текст", en:"Text" };
+LStr.uiCat[1]  = { ru:"Текст и текстовые метки", en:"Text and text labels" };
+LStr.uiCat[2]  = { ru:"Картинка", en:"Image" };
+LStr.uiCat[3]  = { ru:"Изображени[е|я], связанные с элементом  управления", en:"Image/s associated with the control" };
+LStr.uiCat[4]  = { ru:"Выравнивание", en:"Alignment" };
+LStr.uiCat[5]  = { ru:"Опции выравнивания элемента и связанного с ним текста", en:"The alignment style for this element" };
+LStr.uiCat[6]  = { ru:"Размеры", en:"Measurements" };
+LStr.uiCat[7]  = { ru:"Размеры и расположение элементов", en:"Dimensions and locations" };
+LStr.uiCat[8]  = { ru:"Инициализация", en:"Initialize" };
+LStr.uiCat[9]  = { ru:"Опции начальной инициализации элемента", en:"Initialization options" };
+LStr.uiCat[10] = { ru:"Создание", en:"Creation properties" };
+LStr.uiCat[11] = { ru:"Свойства, используемые только при создании элемента", en:"Properties used only when the element is created" };
+LStr.uiCat[12] = { ru:"Оформление", en:"Appearence" };
+LStr.uiCat[13] = { ru:"Свойства, определяющие внешний вид элементов управления (цвет и шрифт)", en:"Properties that define the appearance of controls (color and font)" };
+LStr.uiCat[14] = { ru:"Дополнительно...", en:"Additional" };
+LStr.uiCat[15] = { ru:"Дополнительный JavaScript код для инициализации элемента", en:"Additional JavaScript code to initialize element" };
+
+LStr.uiProp = [];
+LStr.uiProp[0] = { ru:"Отображаемый текст элемента. Неприменим для элементов Group и TabbedPanel (применим для Tab)", 
+                    en:"The title, label, or displayed text. Does not apply to containers of type group or tabbedpanel." };
+//LStr.uiProp[1] = { ru:"Текущий выделенный текст (или пустая строка).", en:"The currently selected text in a control that displays text, or the empty string if there is no text selected." };
+LStr.uiProp[2]  = { ru:"Текстовая метка-подпись элемента. Применима только для DropDownList, FlashPlayer, IconButton, Image или TabbedPanel.", 
+                    en:"For a DropDownList, FlashPlayer, IconButton, Image, or TabbedPanel only, a text label for the element." };
+LStr.uiProp[3]  = { ru:"Всплывающая подсказка при наведении мыши на область элемента.", 
+                    en:"A brief help message (also called a tool tip) that is displayed in a small floating window when the mouse cursor hovers over a user-interface control element." };
+LStr.uiProp[4]  = { ru:"Текстовая метка для идентификации элемента (может быть назначена произвольно).", 
+                    en:"An arbitrary text label to identify the item" };
+LStr.uiProp[5]  = { ru:"Изображение, связанное с элементом управления.", 
+                    en:"A ScriptUIImage object, or the name of an icon resource, or the pathname or File object for a file that contains a platform-specific image in PNG or JPEG format, or for a shortcut or alias to such a file." };
+LStr.uiProp[6]  = { ru:"Именованный ресурс, объект ScriptUIImage или путь к файлу изображения, связанного с элементом управления (в формате PNG).", 
+                    en:"Optional. The named resource for the icon or family of icons displayed in the image control, or a pathname or File object for an image file. Images must be in PNG format." };
+LStr.uiProp[7]  = { ru:"Стиль выравнивания элемента в контейнере (переопределяет свойство alignChildren контейнера).", 
+                    en:"Applies to child elements of a container. If defined, this value overrides the alignChildren setting for the parent container." };
+LStr.uiProp[8]  = { ru:"Способ компоновки элементов в контейнере ('row' - горизонтальный в строку; 'column' - вертикальный в колонку; 'stack' - стековый, один над другим).", 
+                    en:"The layout orientation of children in a container. Object accepts the (case-insensitive) values row , column , or stack ." };
+LStr.uiProp[9]  = { ru:"Способ выравнивания элементов в контейнере.", 
+                    en:"Tells the layout manager how unlike-sized children of a container should be aligned within a column or row." };
+LStr.uiProp[10] = { ru:"Отступы в точках от левой (left), верхней (top), правой (right) и нижней (bottom) строн контейнера для элементов, помещаемых в данный контейнер (задаётся как массив или как одно число).", 
+                    en:"Defines the number of pixels between the edges of a container and its outermost child elements. Contains an array [left, top, right, bottom]." };
+LStr.uiProp[11] = { ru:"Отступы в точках между элементами, помещёнными в контейнер.", 
+                    en:"The number of pixels separating one child element from its adjacent sibling element." };
+LStr.uiProp[12] = { ru:"Кол-во пикселей отступа при автоматическом выравнивании элемента (слева для вертикального 'column' и сверху для горизонтального 'row' расположения).", 
+                    en:"A number of pixels by which to indent the element during automatic layout. Applies for column orientation and left alignment, or row orientation and top alignment." };
+LStr.uiProp[13] = { ru:"Стиль выравнивания текста элемента.", 
+                    en:"The justification of text in static text and edit text controls. One of: left (default), center, right" };
+LStr.uiProp[14] = { ru:"Объект, определяющий выравнивание и положение подписи (title) если она определена.", 
+                    en:"For a DropDownList, FlashPlayer, IconButton, Image, or TabbedPanel with a title value, the way the text label is shown in relation to the element." };
+LStr.uiProp[15] = { ru:"Положение и размер элемента в контейнере [ left(x), top(y), width, higth ]", 
+                    en:"Defines the boundaries of a window within the screen’s coordinate space, or of a user-interface element within the container’s coordinate space." };
+LStr.uiProp[16] = { ru:"Размер элемента (изначально undefined (неопределён), по умолчанию (если неопределён) вычисляется LayoutManager-ом.",
+                    en:"Defines the size of a Window or user-interface element. Contains an array, [width, height], that defines the element’s size in pixels." };
+LStr.uiProp[17] = { ru:"Длинна и высота в точках, задающие размер строк списка.", 
+                    en:"For a list object (ListBox, DropDownList or TreeView list), a Dimension object describing the width and height in pixels of each item in the list." };
+LStr.uiProp[18] = { ru:"Предпочтительный начальный размер элемента (переопределяет вычисляемый автоматически размер при первоначальном размещения элемента в контейнере).", 
+                    en:"A Dimension object for the preferred size of the window, used in automatic layout and resizing. To set a specific value for only one dimension, specify other dimension as -1." };
+LStr.uiProp[19] = { ru:"Максимальный размер элемента (при динамическом изменении размеров контейнера).", 
+                    en:"A Dimension object for the largest rectangle to which the window can be resized, used in automatic layout and resizing." };
+LStr.uiProp[20] = { ru:"Минимальный размер элемента (при динамическом изменении размеров контейнера).", 
+                    en:"A Dimension object for the smallest rectangle to which the window can be resized, used in automatic layout and resizing." };
+LStr.uiProp[21] = { ru:"Расположение верхнего левого угла элемента (в координатах родительского контейнера).", 
+                    en:"Defines the location of a Window or user-interface element. Contains an array, [x, y]." };
+LStr.uiProp[22] = { ru:"Минимальное значение свойства.", 
+                    en:"The minimum value that the value property can have." };
+LStr.uiProp[23] = { ru:"Максимальное значение свойства.", 
+                    en:"The maximum value that the value property can have." };
+LStr.uiProp[24] = { ru:"Пошаговая величина изменения значения элемента типа Scrollbar.", 
+                    en:"The amount by which to increment or decrement a Scrollbar element’s position when the user clicks a stepper button." };
+LStr.uiProp[25] = { ru:"Постраничная величина изменения значения элемента.", 
+                    en:"The amount to increment or decrement a Scrollbar indicator’s position when the user clicks ahead or behind the moveable element." };
+LStr.uiProp[26] = { ru:"True если элемент активен.", 
+                    en:"When true, the object is active, false otherwise." };
+LStr.uiProp[27] = { ru:"Если False элемент становится серым (не активным).", 
+                    en:"True if this element is enabled. An enabled element can accept input, according to its type. When false, control elements do not accept input, and all types of elements have a dimmed appearance." };
+LStr.uiProp[28] = { ru:"Сочетание клавиш, для функции обратного вызова  onShortcutKey() - только для Windows.", 
+                    en:"The key sequence that invokes this user-interface element’s onShortcutKey callback (in Windows only)." };
+LStr.uiProp[29] = { ru:"Текущее значение элемента (для Checkbox или RadioButton - true или false; для Scrollbar или Slider - число, текущая позиция ползунка).", 
+                    en:"For a Checkbox or RadioButton, true if the control is in the selected or set state, false if it is not. For a Scrollbar or Slider, the current position of the indicator." };
+LStr.uiProp[30] = { ru:"True если элемент виден и False если скрыт (значение сохраняется при скрытии/открытии родительского контейнера).", 
+                    en:"When true, the element is shown, when false it is hidden. When a container is hidden, its children are also hidden." };
+LStr.uiProp[31] = { ru:"Свойства колонок для многоколоночных списков в формате { titles:['...', ...], preferredWidths:['...', ...], visible:['bool', ...] }.", 
+                    en:"For a multi-column list box, the column properties { titles:['...', ...], preferredWidths:['...', ...], visible:['bool', ...] }." };
+LStr.uiProp[32] = { ru:"Текущий выбранный элемент списка (или массив элементов для multi-selection списков).", 
+                    en:"The currently selected item for a single-selection list, or an array of items for current selection in a multi-selection list." };
+LStr.uiProp[33] = { ru:"Массив строк, представляющих содержимое строк списка ('-' может использоваться как разделитель).", 
+                    en:"For a list object (ListBox, DropDownList or TreeView list), a collection of ListItem objects for the items in the list." };
+LStr.uiProp[34] = { ru:"Массив значений, представляющих ширину колонок для списков.", 
+                    en:"An array of numbers for the preferred width in pixels of each column." };
+LStr.uiProp[35] = { ru:"Массив строк, представляющих заголовки колонок для списков.", 
+                    en:"A corresponding array of strings for the title of each column, to be shown if showHeaders is true." };
+LStr.uiProp[36] = { ru:"True позволяет элементу иметь более одной строки текста.", 
+                    en:"When false (the default), the control displays a single line of text. When true, the control displays multiple lines, in which case the text wraps within the width of the control." };
+LStr.uiProp[37] = { ru:"True позволяет делать множественный выбор в списке.", 
+                    en:"When false (the default), only one item can be selected. When true, multiple items can be selected." };
+LStr.uiProp[38] = { ru:"True позволяет элементу вертикальную прокрутку текста.", 
+                    en:"When false (the default), the displayed text cannot be scrolled." };
+LStr.uiProp[39] = { ru:"True разрешает отображение заголовков в колонках.", 
+                    en:"True to display column titles." };
+LStr.uiProp[40] = { ru:"Определяет внешний вид элемента и специфику реакции на нажатие.", 
+                    en:"A string for the visual style, either 'button', which has a visible border with a raised or 3D appearance, or 'toolbutton', which has a flat appearance, appropriate for inclusion in a toolbar." };
+LStr.uiProp[41] = { ru:"Если True элемент не позволяет редактировать своё содержимое (текст).", 
+                    en:"When false (the default), the control accepts text input." };
+LStr.uiProp[42] = { ru:"Если True элемент не отображает вводимый текст (используется в edittext для ввода паролей).", 
+                    en:"When false (the default), the control displays input text. When true, the control does not display input text (used for password input fields)." };
+LStr.uiProp[43] = { ru:"Кол-во колонок списка (по умолчанию 1).", 
+                    en:"A number of columns in which to display the items; default is 1." };
+LStr.uiProp[44] = { ru:"Если True элемент генерирует событие onChange() только после нажатия Enter.", 
+                    en:"When true, the control only signals an  onChange()  event when the editable text is changed and the user types Enter; other changes to the keyboard focus do not signal the event. " };
+LStr.uiProp[45] = { ru:"Только для многострочного элемента редактирования (edittext: { multiline:true }) влияет на обработку нажатия Enter (только для ScriptUI ver6.0 и выше).", 
+                    en:"Only applies to multiple line edit controls in ScriptUI Version 6.0 or later. When true the RETURN/ENTER keystroke is considered as text-input advancing the cursor to the next line." };
+LStr.uiProp[46] = { ru:"Стиль бордюра (рамки) у панели.", 
+                    en:"A string that specifies the appearance of the border drawn around the panel." };
+LStr.uiProp[47] = { ru:"Только для Photoshop, включает или отменяет автоматическое рассположение элементов в контейнере", 
+                    en:"Photoshop only. When true, this panel automatically adjusts the positions of its children for compatability with Photoshop CS. Default is false." };
+LStr.uiProp[48] = { ru:"Произвольный текст, ассоциированный с элементом (предполагается, что текст должен быть уникальным и может использоваться для идентификации элемента).", 
+                    en:"A unique name for the control." };
+LStr.uiProp[49] = { ru:"Определяет стиль элемента Разделитель (Separator). Если true - элемент является подвижным и позволяет перетягивать себя мышкой, изменяя размеры соседей.", 
+                    en:"Style for Separator. When true the element can be dragable." };
+LStr.uiProp[50] = { ru:"Количество символов для которых резервируется место при расчете предпочтительного размер элемента (preferredSize).", 
+                    en:"Define the default preferredSize for a StaticText or EditText control. The control will be made wide enough to display the given number of 'X' characters in the font used by the control." };
+LStr.uiProp[51] = { ru:"Цвет фона для контейнеров, для не-контейнеров - цвет заднего фона", 
+                    en:"The background color for containers; for non-containers, the parent background color." };
+LStr.uiProp[52] = { ru:"Цвет текста", 
+                    en:"The text color" };
+LStr.uiProp[53] = { ru:"Шрифт, используемый для отображения текста в рамках элемента", 
+                    en:"The font to use for displaying text." };
+LStr.uiProp[54] = { ru:"Цвет фона для элемdisabledBackgroundColorентов, когда элемент отключён или неактивен", 
+                    en:"The background color for containers when disabled or inactive; for non-containers, the parent background color." };
+LStr.uiProp[55] = { ru:"Цвет текста для элементов, когда элемент отключён или неактивен", 
+                    en:"The text color when the element is disabled or inactive." };
+LStr.uiProp[56] = { ru:"Расположение верхнего левого угла окна (в координатах экрана).", 
+                    en:"A Point object for the location of the top left corner of the Window’s frame. The same as [frameBounds.x, frameBounds.y]." };
+LStr.uiProp[57] = { ru:"Для окон типа dialog, элемент пользовательского интерфейса, уведомляемый, при нажатии пользователем клавиши Enter (по умолчанию уведомляется кнопка со свойством text или name равным 'ok').", 
+                    en:"For a window of type dialog, the control to notify when a user types the ENTER key. By default, looks for a button whose name or text is 'ok' (case disregarded)." };
+LStr.uiProp[58] = { ru:"Для окон типа dialog, элемент пользовательского интерфейса, уведомляемый, при нажатии пользователем клавиши Esc (по умолчанию уведомляется кнопка со свойством text или name равным 'cancel').", 
+                    en:"For a window of type dialog, the control to notify when a user types the ESC key. By default, looks for a button whose name or text is 'cancel' (case disregarded)." };
+LStr.uiProp[59] = { ru:"Если True - окно позволяет пользователю изменять свой размер (по умолчанию: false).", 
+                    en:"When true, the window can be resized by the user. Default is false." };
+LStr.uiProp[60] = { ru:"Если True - окно не имеет строки заголовка или границы (по умолчанию: false).", 
+                    en:"When true, the window has no title bar or borders." };
+LStr.uiProp[61] = { ru:"Только с окнами Bridge: если True - окно в области заголовка содержит кнопку закрытия окна (по умолчанию: true).", 
+                    en:"Bridge only. When true, the title bar includes a button to close the window, if the platform and window type allow it. When false, it does not. Default is true. Not used for dialogs." };
+LStr.uiProp[62] = { ru:"Только с окнами Bridge: если True - окно в области заголовка содержит кнопку распахивания окна на весь экран (по умолчанию: false).", 
+                    en:"Bridge only. When true, the title bar includes a button to expand the window to its maximum size" };
+LStr.uiProp[63] = { ru:"Только с окнами Bridge: если True - окно в области заголовка содержит кнопку сворачивания окна (по умолчанию: false).", 
+                    en:"Bridge only. When true, the title bar includes a button to minimize or iconify the window" };
+LStr.uiProp[64] = { ru:"Прозрачность окна, числовое значение с плавающей точкой в диапазоне [0 .. 1] (по умолчанию 1.0 - полностью непрозрачное).", 
+                    en:"The opacity of the window, in the range [0..1]. A value of 1.0 (the default) makes the window completely opaque" };
+LStr.uiCtrl = [];  
+LStr.uiCtrl[0]  = { ru:"Panel: Панель (контейнер для элементов управления с рамкой)", 
+                    en:"Panel: A container for other types of controls, with an optional frame." };
+LStr.uiCtrl[1]  = { ru:"Group: Группа (контейнер для элементов управления без рамки)", 
+                    en:"Group: A container for other controls within a window." };
+LStr.uiCtrl[2]  = { ru:"TabbedPanel: Панель с вкладками, непосредственно содержать только сами вкладки (элементы управления Tab)", 
+                    en:"TabbedPanel: A TabbedPanel is a frame that contains only Tab elements." };
+LStr.uiCtrl[3]  = { ru:"Tab: Вкладка, добавляется непосредственно в элемент управления TabbedPanel", 
+                    en:"Tab: A general container whose parent is a TabbedPanel, with a selectable tab showing a localizable text value." };
+LStr.uiCtrl[4]  = { ru:"StaticText: Статический текст", 
+                    en:"StaticText: A text label that the user cannot change." };
+LStr.uiCtrl[5]  = { ru:"EditText: Редактируемое поле текста", 
+                    en:"EditText: An editable text field that the user can select and change." };
+LStr.uiCtrl[6]  = { ru:"Button: Кнопка", 
+                    en:"Button: A pushbutton element containing a mouse-sensitive text string." };
+LStr.uiCtrl[7]  = { ru:"IconButton: Кнопка c изображением вместо текста", 
+                    en:"IconButton: A mouse-sensitive pushbutton that displays an image instead of text." };
+LStr.uiCtrl[8]  = { ru:"Slider: Ползунок", 
+                    en:"Slider: A slider bar that indicates a numeric value with a moveable position indicator." };
+LStr.uiCtrl[9]  = { ru:"Separator: Разделитель", 
+                    en:"Separator: " };
+LStr.uiCtrl[10] = { ru:"CheckBox: Флажок", 
+                    en:"CheckBox: A dual-state control showing a box that has a checkmark when the  value  is true, and is empty when the  value  is false." };
+LStr.uiCtrl[11] = { ru:"RadioButton: Переключатель", 
+                    en:"RadioButton: A dual-state control, grouped with other radiobuttons, of which only one can be in the selected state." };
+LStr.uiCtrl[12] = { ru:"ListBox: Список", 
+                    en:"ListBox: Displays a list of choices, represented by ListItem objects." };
+LStr.uiCtrl[13] = { ru:"DropDownList: Поле со списоком", 
+                    en:"DropDownList: Displays a single visible item. When you click the control, a list drops down or pops up, and allows you to select one of the other items in the list." };
+LStr.uiCtrl[14] = { ru:"TreeView: Иерархический (древовидный) список, элементы которого могут включать другие списки", 
+                    en:"TreeView: A hierarchical list whose items can contain child items." };
+LStr.uiCtrl[15] = { ru:"Image: Изображение (в формате PNG, ICO, JPG, JPEG, IDRC, TIFF)", 
+                    en:"Image: Displays an iconic image (PNG, ICO, JPG, JPEG, IDRC, TIFF)" };
+LStr.uiCtrl[16] = { ru:"Scrollbar: Полоса прокрутки", 
+                    en:"Scrollbar: A scrollbar with a draggable scroll indicator and stepper buttons to move the indicator." };
+LStr.uiCtrl[17] = { ru:"Progressbar: Индикатор выполнения операции", 
+                    en:"Progressbar: A horizontal bar with an indicator that shows the progress of an operation." };
+LStr.uiCtrl[18] = { ru:"Window: Элемент окно (dialog или palette)", 
+                    en:"Window: The instance represents a top-level window or dialog box, which contains user-interface elements." };
+LStr.uiApp = [];
+LStr.uiApp[0]  = { ru:"Тип значения: ", en:"Type of value: " };
+LStr.uiApp[1]  = { ru:"Значение по умолчанию: ", en:"Default value: " };
+LStr.uiApp[2]  = { ru:"Удалить", en:"Delete" };
+LStr.uiApp[3]  = { ru:"Переместить вверх", en:"Move Up" };
+LStr.uiApp[4]  = { ru:"Переместить вниз", en:"Move Down" };
+LStr.uiApp[5]  = { ru:"Отметьте для определения в элементе", en:"Check for define in the control element " };
+LStr.uiApp[6]  = { ru:"Создать новый документ", en:"Create new document" };
+LStr.uiApp[7]  = { ru:"Открыть документ", en:"Open document"  };
+LStr.uiApp[8]  = { ru:"Закрыть документ", en:"Close document" };
+LStr.uiApp[9]  = { ru:"Сохранить документ", en:"Save document" };
+LStr.uiApp[10] = { ru:"Настройки...", en:"Settings" };
+LStr.uiApp[11] = { ru:"О программе...", en:"About..." };
+LStr.uiApp[12] = { ru:"Имя элемента:", en:"Control name:" };
+LStr.uiApp[13] = { ru:"Название соответствующей JavaScript переменной", en:"Name of the corresponding JavaScript Name of the corresponding variable (JavaScript)" };
+LStr.uiApp[14] = { ru:"Выполнить код диалога", en:"Execute code of dialog" };
+LStr.uiApp[15] = { ru:"Просмотр JavaScript кода диалога", en:"View JavaScript code of dialog" };
+LStr.uiApp[16] = { ru:"Сохранить как...", en:"Save as..." };
+LStr.uiApp[17] = { ru:"Сохранить и открыть в ESTK...", en:"Save & Open in ESTK..." };
+LStr.uiApp[18] = { ru:"Выход", en:"Exit" };
+LStr.uiApp[19] = { ru:"Сохранить изменения в открытых документах?", en:"Save changes in open documents?" };
+LStr.uiApp[20] = { ru:"Стиль:", en:"Style:" };
+LStr.uiApp[21] = { ru:"Шрифт:", en:"Name:" };
+LStr.uiApp[22] = { ru:"Цвет:", en:"Color:" };
+LStr.uiApp[23] = { ru:"Сброс всех настроек шрифта в значения по умолчанию", en:"Rezet all font settings" };
+LStr.uiApp[24] = { ru:"Сохранение документа: ", en:"Save document: "};
+LStr.uiApp[25] = { ru:"Редактирование настроек: ", en:"Settings: "};
+LStr.uiApp[26] = { ru:"Текущие настройки приложения: ", en:"Current settings: "};
+LStr.uiApp[27] = { ru:"Настройка списка...", en:"Customizing the \"items\" property..."};
+LStr.uiErr = [];
+LStr.uiErr[0] = { ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" };
+LStr.uiErr[1] = { ru:"Файл уже существует. Переписать?", en:"File already exists. Overwrite?" };
+LStr.uiErr[2] = { ru:"Файл уже открыт для редактирования!\r\rСохранить под другим именем?", en:"File is already open in application! Save under a different name?" };
+LStr.uiErr[3] = { ru:"Ошибка получения кода диалога", en:"Missing code of dialog"};
+LStr.uiErr[4] = { ru:"Ошибка в коде диалога", en:"Error in code of dialog"};
+
+LStr;

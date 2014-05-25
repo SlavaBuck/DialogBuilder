@@ -1,0 +1,250 @@
+﻿/**************************************************************************
+*  controls.jsxinc
+*  DESCRIPTION: 
+*  @@@BUILDINFO@@@ controls.jsxinc 1,0 Sun Oct 20 2013 23:48:59 GMT+0300
+* 
+* NOTICE: требует локализованные строки LStr из locales.jsxinc 
+* 
+/**************************************************************************
+* © Вячеслав aka SlavaBuck, 26.10.2013.  slava.boyko#hotmail.com
+*/
+
+var uiCategories = {
+    "TextLabels": { label:LStr.uiCat[0], description:LStr.uiCat[1] },
+    "Image": { label:LStr.uiCat[2], description:LStr.uiCat[3] },
+    "Alignment": {label:LStr.uiCat[4], description:LStr.uiCat[5] },
+    "Measurements": { label:LStr.uiCat[6], description:LStr.uiCat[7] },
+    "InitialProperties": { label:LStr.uiCat[8], description:LStr.uiCat[9] },
+    "Properties": { label:LStr.uiCat[10], description:LStr.uiCat[11] },                      //  Свойства properties: "borderStyle":'', "su1PanelCoordinates":'', "name":'', "multiline":false, "scrolling":false, "readonly":false, "noecho":'', "enterKeySignalsOnChange":'',"wantReturn":'',  "style":'', "items":'', "multiselect":'', "numberOfColumns":'', "showHeaders":'',"columnTitles":'', "columnWidths":''
+    "Graphics": { label:LStr.uiCat[12], description:LStr.uiCat[13] },
+    "InitialCode": { label:LStr.uiCat[14], description:LStr.uiCat[15] }
+};
+
+var uiProperties = {
+    "text":{ category:"TextLabels", type:"String", value:'', description:LStr.uiProp[0], defvalue:undefined, values:undefined }, 
+    "helpTip":{ category:"TextLabels", type:"String", value:'', description:LStr.uiProp[3], defvalue:undefined, values:undefined },
+    "label":{ category:"TextLabels", type:"String", value:'', description:LStr.uiProp[4], defvalue:undefined, values:undefined },
+    "title":{ category:"TextLabels", type:"String", value:'', description:LStr.uiProp[2], defvalue:undefined, values:undefined },
+    //"textselection":{name:"textselection", category:"TextLabels", type:"String", description:LStr.uiProp[1], defvalue:undefined, values:undefined },     
+    "image":{ category:"Image", type:"ScriptUIImage|Array(4) of images", value:['','','',''], description:LStr.uiProp[5], defvalue:undefined, values:undefined },
+    "icon":{ category:"Image", type:"ScriptUIImage|string", value:'', description:LStr.uiProp[6], defvalue:undefined, values:undefined },
+    "alignment":{ category:"Alignment", type:"String|Array(2) of strings", value:['',''], description:LStr.uiProp[7], defvalue:undefined, values:["left", "right", "top", "bottom", "center", "fill"] },
+    "orientation":{ category:"Alignment", type:"String", value:'', description:LStr.uiProp[8], defvalue:undefined, values:["row", "column", "stack"] },
+    "alignChildren":{ category:"Alignment", type:"String|Array(2) of strings", value:['',''], description:LStr.uiProp[9], defvalue:undefined, values:["left", "right", "top", "bottom", "center", "fill"] },
+    "margins":{ category:"Alignment", type:"Number|Array(4) of numbers", value:['','','',''], description:LStr.uiProp[10], defvalue:undefined, values:undefined },
+    "spacing":{ category:"Alignment", type:"Number", value:'', description:LStr.uiProp[11], defvalue:"10", values:undefined },
+    "indent":{ category:"Alignment", type:"Number", value:'', description:LStr.uiProp[12], defvalue:undefined, values:undefined },
+    "justify":{ category:"Alignment", type:"String", value:'', description:LStr.uiProp[13], defvalue:"left", values:["left","right", "center"] },
+    "titleLayout":{ category:"Alignment", type:"Object", value:'', description:LStr.uiProp[14], defvalue:{ alignment:['center','center'], characters:1, justify:'left', truncate:'none' }, values:undefined},
+    "bounds":{ category:"Measurements", type:"Bounds|Array(4) of numbers", value:['','','',''], description:LStr.uiProp[15], defvalue:undefined, values:undefined },
+    "characters":{ category:"Measurements", type:"Number", value:'', description:LStr.uiProp[50], defvalue:undefined, values:undefined },    
+    "size":{ category:"Measurements", type:"Dimension|Array(2) of numbers", value:['',''], description:LStr.uiProp[16], defvalue:undefined, values:undefined },
+    "preferredSize":{ category:"Measurements", type:"Dimension|Array(2) of numbers", value:['',''], description:LStr.uiProp[18], defvalue:undefined, values:undefined },        
+    "maximumSize":{ category:"Measurements", type:"Dimension|Array(2) of numbers", value:['',''], description:LStr.uiProp[19], defvalue:undefined, values:undefined },
+    "minimumSize":{ category:"Measurements", type:"Dimension|Array(2) of numbers", value:['',''], description:LStr.uiProp[20], defvalue:undefined, values:undefined },
+    "itemSize":{ category:"Measurements", type:"Dimension|Array(2) of numbers", value:['',''], description:LStr.uiProp[17], defvalue:undefined, values:undefined },    
+    "location":{ category:"Measurements", type:"Point|Array(2) of numbers", value:['',''], description:LStr.uiProp[21], defvalue:undefined, values:undefined },
+    "frameLocation":{ category:"Measurements", type:"Point|Array(2) of numbers", value:['',''], description:LStr.uiProp[56], defvalue:undefined, values:undefined },
+    "active":{ category:"InitialProperties", type:"Boolean", value:'', description:LStr.uiProp[26], defvalue:undefined, values:["true", "false"] },
+    "enabled":{ category:"InitialProperties", type:"Boolean", value:'', description:LStr.uiProp[27], defvalue:true, values:["true", "false"] },
+    "visible":{ category:"InitialProperties", type:"Boolean", value:'', description:LStr.uiProp[30], defvalue:undefined, values:["true", "false"] },
+    "defaultElement":{ category:"InitialProperties", type:"Object", value:'', description:LStr.uiProp[57], defvalue:undefined, values:undefined },
+    "cancelElement":{ category:"InitialProperties", type:"Object", value:'', description:LStr.uiProp[58], defvalue:undefined, values:undefined },
+    "shortcutKey":{ category:"InitialProperties", type:"String", value:'', description:LStr.uiProp[28], defvalue:undefined, values:["Enter","Backspace","Delete","Left","Right","Up","Down","Pageup","Pagedown","Home","End"] },
+    "columns":{ category:"InitialProperties", type:"Object", value:'', description:LStr.uiProp[31], defvalue:undefined, values:undefined },
+    //"selection":{name:"selection", category:"InitialProperties", type:"ListItem", value:'', description:LStr.uiProp[32], defvalue:undefined, values:undefined },
+    "minvalue":{ category:"InitialProperties", type:"Number", value:'', description:LStr.uiProp[22], defvalue:"0", values:undefined },
+    "maxvalue":{ category:"InitialProperties", type:"Number", value:'', description:LStr.uiProp[23], defvalue:"100", values:undefined },
+    "stepdelta":{ category:"InitialProperties", type:"Number", value:'', description:LStr.uiProp[24], defvalue:"1", values:undefined },
+    "jumpdelta":{ category:"InitialProperties", type:"Number", value:'', description:LStr.uiProp[25], defvalue:"20", values:undefined },
+    "value":{ category:"InitialProperties", type:"Boolean", value:'', description:LStr.uiProp[29], defvalue:undefined, values:undefined },
+    "dragable":{ category:"InitialProperties", type:"Boolean", value:'', description:LStr.uiProp[100], defvalue:undefined, values:["true", "false"] },    
+    "items":{ category:"Properties", type:"Array of ListItems|strings",value:'',  description:LStr.uiProp[33], defvalue:undefined, values:undefined },
+    "columnWidths":{ category:"Properties", type:"Array of numbers", value:'', description:LStr.uiProp[34], defvalue:undefined, values:undefined},
+    "columnTitles":{ category:"Properties", type:"Array of strings", value:'', description:LStr.uiProp[35], defvalue:undefined, values:undefined},
+    "multiline":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[36], defvalue:false, values:["true", "false"] },
+    "multiselect":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[37], defvalue:false, values:["true", "false"] },
+    "scrolling":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[38], defvalue:false, values:["true", "false"] },
+    "showHeaders":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[39], defvalue:true, values:["true", "false"] },
+    "style":{ category:"Properties", type:"String", value:'', description:LStr.uiProp[40], defvalue:undefined, values:undefined },
+    "readonly":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[41], defvalue:false, values:["true", "false"] },
+    "noecho":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[42], defvalue:false, values:["true", "false"] },
+    "numberOfColumns":{ category:"Properties", type:"Number", value:'', description:LStr.uiProp[43], defvalue:"1", values:undefined},
+    "enterKeySignalsOnChange":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[44], defvalue:false, values:["true", "false"] },
+    "wantReturn":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[45], defvalue:false, values:["true", "false"] },
+    "borderStyle":{ category:"Properties", type:"String", value:'', description:LStr.uiProp[46], defvalue:"etched", values:["black", "etched", "gray", "raised", "sunken"] }, 
+    "resizeable":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[59], defvalue:false, values:["true", "false"] },
+    "borderless":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[60], defvalue:false, values:["true", "false"] },
+    "closeButton":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[61], defvalue:true, values:["true", "false"] },
+    "maximizeButton":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[62], defvalue:false, values:["true", "false"] },
+    "minimizeButton":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[63], defvalue:false, values:["true", "false"] },
+    "su1PanelCoordinates":{ category:"Properties", type:"Boolean", value:'', description:LStr.uiProp[47], defvalue:false, values:["true", "false"] },
+    "name":{ category:"Properties", type:"String", value:'', description:LStr.uiProp[48], defvalue:undefined, values:undefined },
+    "font":{ category:"Graphics", type:"ScriptUIFont", value:'', description:LStr.uiProp[53], defvalue:undefined, values:undefined },
+    "backgroundColor":{ category:"Graphics", type:"ScriptUIBrush", value:'', description:LStr.uiProp[51], defvalue:undefined, values:undefined }, // is only supported for controls like dropdownlist, edittext, and listbox.
+    "foregroundColor":{ category:"Graphics", type:"ScriptUIPen", value:'', description:LStr.uiProp[52], defvalue:undefined, values:undefined },
+    "disabledBackgroundColor":{ category:"Graphics", type:"ScriptUIBrush", value:'', description:LStr.uiProp[54], defvalue:undefined, values:undefined },
+    "disabledForegroundColor":{ category:"Graphics", type:"ScriptUIPen", value:'', description:LStr.uiProp[55], defvalue:undefined, values:undefined },
+    "opacity":{ category:"Graphics", type:"Number", value:1, description:LStr.uiProp[64], defvalue:undefined, values:undefined }    
+};
+// true означает - определять данное значение в елементе при добавлении его в диалог. При значении false - параметр в елементе не определяется (используется его значение по-умолчанию)
+// В поле редактирования свойств управляется с помощью флажка:
+var uiControls = {
+    "Window": { label:"dialog", type:"Container", jsname:"win", description:LStr.uiCtrl[18], icon:"panel", defaults:{ "size":[0, 0], "orientation":'column', "margins":[15, 10, 15, 10]  },
+                          properties:{"text":false, "label":false, "helpTip":false, // Text & Labels
+                                             "orientation":false, "alignment":false, "alignChildren":false, "margins":false, "spacing":false, "indent":false, "justify":false, // Alignment porperies
+                                             "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, "frameLocation":false, // Measurements
+                                             "enabled":false, "visible":false, "defaultElement":false, "cancelElement":false, // Initial properties
+                                             properties:{ "resizeable":false, "borderless":false, "su1PanelCoordinates":false, "closeButton":false, "maximizeButton":false, "minimizeButton":false }, // Creation properties
+                                             graphics:{ "opacity":false, "backgroundColor":false, "foregroundColor":false, "font":false, "disabledBackgroundColor":false, "disabledForegroundColor":false }
+                       }                  },
+    "Panel": { label:"Panel", type:"Container", jsname:"pPanel", description:LStr.uiCtrl[0], icon:"panel", defaults:{ "size":[0, 0], "orientation":'column', "margins":[15, 10, 15, 10]  },
+                          properties:{"text":true, "label":false, "helpTip":false, // Text & Labels
+                                             "orientation":false, "alignment":false, "alignChildren":false, "margins":false, "spacing":false, "indent":false, "justify":false, // Alignment porperies
+                                             "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
+                                             "enabled":false, "visible":false, // Initial properties
+                                             properties:{ "borderStyle":false, "su1PanelCoordinates":false }, // Creation properties
+                                             graphics:{ "backgroundColor":false, "foregroundColor":false, "font":false, "disabledBackgroundColor":false, "disabledForegroundColor":false }
+                       }                  },
+    "Group": { label:"Group", type:"Container", jsname:"gGroup", description:LStr.uiCtrl[1], icon:"group", defaults:{ "size":[0, 0], "orientation":'row', "margins":[0, 0, 0, 0] },
+                          properties:{"label":false, "helpTip":false, // Text & Labels
+                                             "orientation":false, "alignment":false, "alignChildren":false, "margins":false, "spacing":false,  "indent":false, "justify":false, // Alignment porperies
+                                             "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
+                                             "enabled":false, "visible":false, // Initial properties
+                                             properties:{},
+                                             graphics:{ "backgroundColor":false, "foregroundColor":false, "font":false, "disabledBackgroundColor":false, "disabledForegroundColor":false }
+                       }                  },
+    "TabbedPanel": { label:"TabbedPanel", type:"Container", jsname:"tPanel", description:LStr.uiCtrl[2], icon:"tabbedpanel", defaults:{ "size":[63, 70], "orientation":'stack', "margins":[0, 0, 0, 0] },
+                          properties:{"text":false, "title":false, "label":false, "helpTip":false, // Text & Labels
+                                             "orientation":false, "alignment":false, "alignChildren":false, "margins":false, "spacing":false, "indent":false, "justify":false, "titleLayout":false,// Alignment porperies
+                                             "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
+                                             "enabled":false, "visible":false, // Initial properties  "selection":false, 
+                                             properties:{ "name":false }, // Creation properties
+                                             graphics:{ "backgroundColor":false, "foregroundColor":false, "font":false, "disabledBackgroundColor":false, "disabledForegroundColor":false }
+                       }                  },
+    "Tab": { label:"Tab", type:"Container", jsname:"tTab", description:LStr.uiCtrl[3], icon:"tab", defaults:{ "size":[50, 37], "orientation":'row', "margins":[5, 5, 5, 5] },
+                          properties:{"text":true, "label":false, "helpTip":false, // Text & Labels
+                                            "orientation":false, "alignChildren":false, "margins":false, "spacing":false, "alignment":false, "indent":false, "justify":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
+                                            "enabled":false, "visible":false, // Initial properties
+                                            properties:{ "name":false },// Creation properties
+                                            graphics:{ "backgroundColor":false, "foregroundColor":false, "font":false, "disabledBackgroundColor":false, "disabledForegroundColor":false }
+                       }                  },
+    "StaticText": { label:"StaticText", type:"Control", jsname:"stText", description:LStr.uiCtrl[4], icon:"statictext", defaults:{ "size":[0, 15] },
+                          properties:{"text":true, "label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, "justify":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
+                                            "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                             properties:{ "multiline":false, "scrolling":false }, // Creation properties
+                                             graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                       }                  },
+     "EditText": { label:"EditText", type:"Control", jsname:"eText", description:LStr.uiCtrl[5], icon:"edittext", defaults:{ "size":[24, 21] },
+                          properties:{"text":false, "label":false, "helpTip":false, // Text & Labels  "textselection":false, 
+                                            "alignment":false, "indent":false, "justify":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
+                                            "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{ "multiline":false, "readonly":false, "noecho":false, "enterKeySignalsOnChange":false,"wantReturn":false },// Creation properties   
+                                            graphics:{ "backgroundColor":false, "foregroundColor":false, "font":false, "disabledBackgroundColor":false, "disabledForegroundColor":false }
+                        }                  },
+    "Button": { label:"Button", type:"Control", jsname:"btButton", description:LStr.uiCtrl[6], icon:"button", defaults:{ "size":[80, 23] },
+                          properties:{"text":true, "label":false, "helpTip":false,  // Text & Labels
+                                            "alignment":false, "indent":false, "justify":false,  // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false,  // Measurements
+                                            "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{},
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                       }                  }, 
+    "IconButton": { label:"IconButton", type:"Control", jsname:"ibtButton", description:LStr.uiCtrl[7], icon:"iconbutton", defaults:{ "size":[37, 37] },
+                          properties:{"title":false, "label":false, "helpTip":false,  "image":false, // Text & Labels
+                                            "alignment":false, "indent":false, "justify":false, "titleLayout":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, // Measurements
+                                            "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{ "style":false },// Creation properties
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }                                            
+                       }                  },
+    "Slider": { label:"Slider", type:"Control", jsname:"slSlider", description:LStr.uiCtrl[8], icon:"slider", defaults:{ "size":[100, 17] },
+                          properties:{"label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
+                                            "value":false, "minvalue":false, "maxvalue":false, "active":false, "stepdelta":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{},
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                       }                  },
+/*               
+    "Separator": { label:"Separator", type:"Control", jsname:"spSeparator", description:LStr.uiCtrl[9], icon:"separator", 
+                          properties:{ "label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
+                                            "value":0, "minvalue":false, "maxvalue":false, "active":false, "stepdelta":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                       }                  },
+*/
+    "Separator": { label:"Separator", type:"Control", jsname:"sp", description:LStr.uiCtrl[9], icon:"separator", defaults:{ "size":[1, 1], "dragable":false }, 
+                          properties:{"dragable":false,
+                                            properties:{},
+                                            graphics:{}
+                       }                  },                              
+     "Checkbox": { label:"Checkbox", type:"Control", jsname:"chBox", description:LStr.uiCtrl[10], icon:"checkbox", defaults:{ "size":[15, 17] },
+                          properties:{"text":true, "label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, "justify":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
+                                            "value":false, "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{},
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                       }                  },              
+     "RadioButton": { label:"RadioButton", type:"Control", jsname:"rBox", description:LStr.uiCtrl[11], icon:"radiobutton", defaults:{ "size":[15, 17] },
+                          properties:{"text":true, "label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, "justify":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
+                                            "value":false, "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{},
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                       }                  }, 
+     "ListBox": { label:"ListBox", type:"Control", jsname:"lstBox", description:LStr.uiCtrl[12], icon:"listbox", defaults:{ "size":[101, 41] },
+                          properties:{"label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, // Alignment porperies
+                                            "bounds":false, "size":false, "itemSize":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
+                                            "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties "selection":false, 
+                                            properties:{ "items":false, "multiselect":false, "numberOfColumns":false, "showHeaders":false,"columnTitles":false, "columnWidths":false },// Creation properties   
+                                            graphics:{ "backgroundColor":false, "foregroundColor":false, "font":false, "disabledBackgroundColor":false, "disabledForegroundColor":false }
+                        }                  },
+    "DropDownList": { label:"DropDownList", type:"Control", jsname:"ddList", description:LStr.uiCtrl[13], icon:"dropdownlist", defaults:{ "size":[33, 23] }, 
+                          properties:{"label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, // Alignment porperies
+                                            "bounds":false, "size":false, "itemSize":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
+                                            "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties "selection":false, 
+                                            properties:{ "items":false },// Creation properties   
+                                            graphics:{ "backgroundColor":false, "foregroundColor":false, "font":false, "disabledBackgroundColor":false, "disabledForegroundColor":false }
+                        }                  },
+     "TreeView": { label:"TreeView", type:"Control", jsname:"treeView", description:LStr.uiCtrl[14], icon:"treeview", defaults:{ "size":[103, 43] },  
+                          properties:{"label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, // Alignment porperies
+                                            "bounds":false, "size":false, "itemSize":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
+                                            "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties "selection":false, 
+                                            properties:{ "items":false },// Creation properties   
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                        }                  },
+    "Image": { label:"Image", type:"Control", jsname:"imgImage", description:LStr.uiCtrl[15], icon:"image", defaults:{ "size":[1, 1] },  
+                          properties:{"title":false, "label":false, "helpTip":false, "icon":false, // Text & Labels
+                                            "alignment":false, "indent":false, "titleLayout":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, // Measurements
+                                            "active":false, "enabled":false, "visible":false, // Initial properties
+                                            properties:{},
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                       }                  },
+    "Scrollbar": { label:"Scrollbar", type:"Control", jsname:"scrBar", description:LStr.uiCtrl[16], icon:"scrollbar",  defaults:{ "size":[120, 16] },  
+                          properties:{"label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
+                                            "value":false, "minvalue":false, "maxvalue":false, "active":false, "stepdelta":false, "jumpdelta":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{},
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                       }                  },
+    "Progressbar": { label:"Progressbar", type:"Control", jsname:"pBar", description:LStr.uiCtrl[17], icon:"progressbar", defaults:{ "size":[100, 17] },  
+                          properties:{"label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
+                                            "value":false, "minvalue":false, "maxvalue":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{},
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                       }                  }
+};

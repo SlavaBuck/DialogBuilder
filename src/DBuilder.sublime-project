@@ -1,0 +1,21 @@
+{
+	"folders":
+	[
+		{
+			"follow_symlinks": true,
+			"path": "C:\\Program Files (x86)\\Adobe\\Adobe InDesign CS6\\Scripts\\Scripts Panel\\_extendscript\\Javascript"
+		},
+		{
+			"follow_symlinks": true,
+			"path": "C:\\Program Files (x86)\\Adobe\\Adobe InDesign CS6\\Scripts\\Scripts Panel\\_extendscript\\ScriptUI"
+		},
+		{
+			"follow_symlinks": true,
+			"path": "C:\\Program Files (x86)\\Adobe\\Adobe InDesign CS6\\Scripts\\Scripts Panel\\DBuilder"
+		},
+		{
+			"follow_symlinks": true,
+			"path": "C:\\Program Files (x86)\\Adobe\\Adobe InDesign CS6\\Scripts\\Scripts Panel\\Include"
+		}
+	]
+}
