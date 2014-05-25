@@ -1,0 +1,10 @@
+#ignore thumbnails created by windows
+Thumbs.db
+#WebStorm
+.idea
+#Sublime
+*.sublime-*
+**/*.sublime-*
+#tmp
+~$*.*
+**/~$*.*
