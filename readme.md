@@ -1,5 +1,5 @@
-DialogBuilder
-=============
+# ExtendScript DialogBuilder
+***Status:*** *В разработке...* | ***Version:*** *1.20* | ***Last update:*** *25.05.2014*
 
 Дизанер и конструктор диалоговых окон для **Adobe ExtendScript© & InDesign©**, написан на чистом **JavaScript** (**ExtendScript**).
 
@@ -37,4 +37,3 @@ DialogBuilder
 **РУС:** РАЗРЕШЕНО СВОБОДНОЕ ИСПОЛЬЗОВАНИЕ ПРОИЗВЕДЕНИЯ, ПРИ УСЛОВИИ УКАЗАНИЯ ЕГО АВТОРА, НО ТОЛЬКО В НЕКОММЕРЧЕСКИХ ЦЕЛЯХ. ТАКЖЕ ВСЕ ПРОИЗВОДНЫЕ ПРОИЗВЕДЕНИЯ, ДОЛЖНЫ РАСПРОСТРАНЯТЬСЯ ПОД ЛИЦЕНЗИЕЙ CC BY-NC-SA.
 
 **ENG:** THE WORK (AS DEFINED BELOW) IS PROVIDED UNDER THE TERMS OF THIS CREATIVE COMMONS PUBLIC LICENSE (''CCPL'' OR ''LICENSE''). THE WORK IS PROTECTED BY COPYRIGHT AND/OR OTHER APPLICABLE LAW. ANY USE OF THE WORK OTHER THAN AS AUTHORIZED UNDER THIS LICENSE OR COPYRIGHT LAW IS PROHIBITED.
->>>>>>> v1
