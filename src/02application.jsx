@@ -786,7 +786,7 @@ BuilderApplication.prototype.addDocument = function() {
     doc.window.layout.layout(true);
     // Искусственно переименовываем имя переменной дилога с pPanel0 на myDialog
     doc.activeControl.control.jsname = app.treeView.control.items[0].text = app.options.jsnames.myDialog;
-    doc.activeControl.code.initcode = doc.activeControl.control.jsname +".show()";
+    doc.activeControl.code.initcode = doc.activeControl.control.jsname +".show();";
     doc.activeContainer = pPnl;
     doc.activeControl = doc.activeControl; // что бы обновить поле JsName
     return doc;
