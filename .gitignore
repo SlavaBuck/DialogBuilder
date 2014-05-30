@@ -4,7 +4,7 @@ Thumbs.db
 .idea
 #Sublime
 *.sublime-*
-**/*.sublime-*
 #tmp
 ~$*.*
-**/~$*.*
+#DBuilder options.jsxinc (local)
+/src/Required/options.jsxinc
