@@ -597,8 +597,10 @@ BuilderDocument.prototype.getSourceString = function() {
     str = str.replace(/{,/g,"{").replace(/\r}, /g,"},").replace(/, }/g,",}").replace(/,}/g,"}").replace(/\r/g," \\\r");
     str = str.replace(/:Separator {}/g, ":Panel { isSeparator:true }"); // временное решение для сепараторов
     code.splice(0, 1);
-    str += (dlg.code.initgfx ?  "\r" + dlg.code.initgfx : "") + "\r" + code.join("\r") +"\r" + dlg.code.initresizing + dlg.code.initcode;
-
+    // fix Замена имени окна на правильное в нижней скриптовой строке "<window>.show()"
+    // TODO: перенести в обработчик смены jsName:
+    var initcode = dlg.code.initcode.replace(/\w+\.show\(/, dlg.control.jsname + ".show(");
+    str += (dlg.code.initgfx ?  "\r" + dlg.code.initgfx : "") + "\r" + code.join("\r") +"\r" + dlg.code.initresizing + initcode;
     //str += "\r"+ tree.items[0].model.control.jsname + ".show();";
     return str;
 };
