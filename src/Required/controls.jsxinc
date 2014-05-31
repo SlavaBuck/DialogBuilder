@@ -27,7 +27,7 @@ var uiProperties = {
     "title":{ category:"TextLabels", type:"String", value:'', description:LStr.uiProp[2], defvalue:undefined, values:undefined },
     //"textselection":{name:"textselection", category:"TextLabels", type:"String", description:LStr.uiProp[1], defvalue:undefined, values:undefined },     
     "image":{ category:"Image", type:"ScriptUIImage|Array(4) of images", value:['','','',''], description:LStr.uiProp[5], defvalue:undefined, values:undefined },
-    "icon":{ category:"Image", type:"ScriptUIImage|string", value:'', description:LStr.uiProp[6], defvalue:undefined, values:undefined },
+    //"icon":{ category:"Image", type:"ScriptUIImage|string", value:'', description:LStr.uiProp[6], defvalue:undefined, values:undefined },
     "alignment":{ category:"Alignment", type:"String|Array(2) of strings", value:['',''], description:LStr.uiProp[7], defvalue:undefined, values:["left", "right", "top", "bottom", "center", "fill"] },
     "orientation":{ category:"Alignment", type:"String", value:'', description:LStr.uiProp[8], defvalue:undefined, values:["row", "column", "stack"] },
     "alignChildren":{ category:"Alignment", type:"String|Array(2) of strings", value:['',''], description:LStr.uiProp[9], defvalue:undefined, values:["left", "right", "top", "bottom", "center", "fill"] },

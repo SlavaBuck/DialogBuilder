@@ -21,7 +21,7 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
     version:"1.20",
-    caption:"1.20 Dialog Builder (build 0525, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    caption:"1.20 Dialog Builder (build 0531, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + " {spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                                               pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                                               pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -499,16 +499,23 @@ BuilderApplication.prototype.buildTabs = function(cont) {
           hgt = 4*(5+oy);
     var view = null;  // дежурный view для связывания полей ввода с model
     for (prop in uiCategories) if (uiCategories.hasOwnProperty(prop)) { // =============== Добавляем табы по кол-ву категорий в модели (соответствует uiCategories)
-       app.pBar.hit(localize({ ru:"Создание вкладок свойств: ", en:"Creating properties tabs: "}) + uiCategories[prop].label);        
-       t = tb.add("tab { text:'"+uiCategories[prop].label+"', helpTip:'"+uiCategories[prop].description+"', margins:[5,5,5,5], spacing:0, alignChildren:['Left','top'] }");
-       g = t.add("group", [0, 5, 450, hgt]); 
-       extend (g, { margins:0, spacing:0, alignChildren:['left','top'], orientation:'row' } );  
-       // упреждающий просмотр для определения самой длинной строки label в точках
-       maxlength = counts = 0;  
-       for (p in uiProperties) if (uiProperties.hasOwnProperty(p) && uiProperties[p].category == prop ) { maxlength = fmax(maxlength, gfx.measureString(p)[0]);  counts++ };       
-       // ==== Добавляем в таб скроллируемую панель, если кол-во групп(свойств) больше 4 (counts*5) ======        
-       if ((counts)*oy+counts*5 > hgt) {
-            scrl = SUI.addScrollablePanel(g, 0, 0, 435, hgt+10, false, (counts+1)*oy+counts, 20);
+        app.pBar.hit(localize({ ru:"Создание вкладок свойств: ", en:"Creating properties tabs: "}) + uiCategories[prop].label);        
+        t = tb.add("tab { text:'"+uiCategories[prop].label+"', helpTip:'"+uiCategories[prop].description+"', margins:[5,5,5,5], spacing:0, alignChildren:['Left','top'] }");
+        g = t.add("group", [0, 5, 550, hgt]); 
+        extend (g, { margins:0, spacing:0, alignChildren:['left','top'], orientation:'row' } );  
+        // ==== Персональная обработка для вкладки "Image" ====
+        if (prop == "Image") {
+            scrl = SUI.addScrollablePanel(g, 0, 0, 550, 106, false, 180, 20);
+            var parentGrp = scrl.add("group { preferredSize:[500,204] }");
+            app.buldImageFields(parentGrp);
+            continue; // for (prop in uiCategories)...
+        }        
+        // упреждающий просмотр для определения самой длинной строки label в точках
+        maxlength = counts = 0;  
+        for (p in uiProperties) if (uiProperties.hasOwnProperty(p) && uiProperties[p].category == prop ) { maxlength = fmax(maxlength, gfx.measureString(p)[0]);  counts++ };       
+        // ==== Добавляем в таб скроллируемую панель, если кол-во групп настройки больше 4 (counts*5) ======
+        if ((counts)*oy+counts*5 > hgt) {
+            scrl = SUI.addScrollablePanel(g, 0, 0, 485, hgt+10, false, (counts+1)*oy+counts, 20);
             extend (scrl, { margins:0, spacing:0, alignChildren:['left','center'], orientation:'column' } ); 
         } else {
             scrl = g; scrl.orientation = 'column'; scrl.margins = [15,10,0,0];
@@ -517,7 +524,7 @@ BuilderApplication.prototype.buildTabs = function(cont) {
         for (p in uiProperties) if (uiProperties.hasOwnProperty(p) && uiProperties[p].category == prop ) {
             hstr =  uiProperties[p].description + "\n" + Lstr[0]+uiProperties[p].type + "\n" + Lstr[1] + uiProperties[p].defvalue;
             g = scrl.add("group");      // Общая группа редактирования свойства, включает подпись + группа полей ввода + чекбокс
-            extend (g, { margins:0, spacing:5, alignChildren:['left','top'], orientation:'row', helpTip:hstr, label:p } );  
+            extend (g, { margins:0, spacing:5, alignChildren:['left','top'], orientation:'row', helpTip:hstr, label:p } );
             with (g.add("statictext { text:'"+p+":'}")) { preferredSize[0] = maxlength+5; helpTip = hstr };             // Подпись
             grp =  extend(g.add("group",[0, 0, ps, oy]), { margins:[0,0,0,0], spacing:5, alignChildren:['fill','fill'], orientation:'row' } ); // Общая группа для полей ввода
             ch = g.add("checkbox"); ch.helpTip = Lstr[5]; ch.enabled = false;      // Флажок "Определить";
@@ -525,6 +532,7 @@ BuilderApplication.prototype.buildTabs = function(cont) {
             g = grp;
             val = uiProperties[p].value;   // Представляет объект из uiProperties.value типа '' или массив (['',''] или ['','','',''])
             tval = uiProperties[p].values; // Представляет объект из uiProperties.values типа undefined или массив предустановленных значений ['',''] или ['','','','']
+            // Специальная обработка для вкладки Graphics:
             if (prop == "Graphics") {
                 if (p == "font") {
                     view = this.addView({ id:p, parent:g, view:"edittext { properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
@@ -643,6 +651,40 @@ BuilderApplication.prototype.buildDocsView = function(cont) {
     app.addView({ id:"JsName", parent:pPnl, view:"edittext { enabled:false, alignment:['fill','bottom'] }" });//, Init:function() { this.enabled = false;}
     return app.views; // возвращаем родительский View документов
 };
+// =================== 
+// строим панель для редактирования изображений
+BuilderApplication.prototype.buldImageFields = function(cont) {
+    var app = this,
+        LStr = app.LStr.uiApp,
+        states = ['normal', 'disabled', 'pressed', 'rollower'],
+        grpView = "group { stName:StaticText {text:'normal:', characters:8}," +
+                            "etName:EditText {characters:20, properties:{readonly:true}}," +
+                            "ddImage:DropDownList {preferredSize:['120', 23]}," +
+                            "btImage:Button {text:'Image...'}," +
+                            "ch:Checkbox { enabled:false }}";
+    var parent = cont.add("group { alignChildren:['left', 'center'], orientation:'column', margins:[0, 10, 0, 0], spacing:1 }");
+    // Группы для добавления картинок
+    each(states, function(val, index, arr){
+        var grp = parent.add(grpView);
+        grp.stName.text = val + ":";
+    });
+
+    // Группа настроек опций включения
+    var helpTip1 = localize(LStr[28]),
+        helpTip2 = localize(LStr[29]),
+        txtGrp = localize(LStr[30]),
+        txtchToString = localize(LStr[31]),
+        txtchFixSize = localize(LStr[32]);
+    var grpViewOpt = "panel {text:'"+txtGrp+"', orientation:'row', alignment:['fill', 'center'], margins:[15, 10, 15, 5]," +
+						"g0:Group {alignment:['left', 'center'], preferredSize:['100', '40']}," +
+						"g1:Group {orientation:'column', alignChildren:['left', 'top'], spacing:5," +
+							"ch0:Checkbox {text:'"+txtchToString+"', helpTip:'"+helpTip1+"'}," +
+								"g3:Group {alignment:['fill', 'top'], alignChildren:['left', 'center'], spacing:5," +
+									"ch1:Checkbox {text:'"+txtchFixSize+"', helpTip:'"+helpTip2+"'}," +
+									"et0:EditText {characters:6} }}}";
+    parent.add(grpViewOpt);
+    return parent;    
+}
 
 // =================== 
 // Строим StatusBar
