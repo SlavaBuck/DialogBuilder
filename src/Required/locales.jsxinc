@@ -237,6 +237,8 @@ LStr.uiApp[31] = { ru:"Преобразовать в UIстроку и вклю�
                    en:"Convert to the UIstring and include in the script"};
 LStr.uiApp[32] = { ru:"Зафиксировать размер (только x, или: x, y):",
                    en:"Fix the image size (set only x, or:  x, y):"};
+LStr.uiApp[33] = { ru:"Дополнительные настроки изображения:",
+                   en:"Additional Image settings:"};
 LStr.uiErr = [];
 LStr.uiErr[0] = { ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" };
 LStr.uiErr[1] = { ru:"Файл уже существует. Переписать?", en:"File already exists. Overwrite?" };

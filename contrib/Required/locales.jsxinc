@@ -227,6 +227,18 @@ LStr.uiApp[24] = { ru:"Сохранение документа: ", en:"Save docu
 LStr.uiApp[25] = { ru:"Редактирование настроек: ", en:"Settings: "};
 LStr.uiApp[26] = { ru:"Текущие настройки приложения: ", en:"Current settings: "};
 LStr.uiApp[27] = { ru:"Настройка списка...", en:"Customizing the \"items\" property..."};
+LStr.uiApp[28] = { ru:"После включения изображения в скрипт, оригинальный файл становится не нужен.",
+                   en:"After turning the image into the script, the original file becomes necessary."};
+LStr.uiApp[29] = { ru:"Требуемый размер изображения. Если указано только одно значение - оно трактуется как значение для обоих сторон (квадрат). Значения для ширины и высоты указываются через запятую.",
+                   en:"The desired image size. If only one value - it is treated as the value for both sides (square). Values ​​for the width and height specified using a comma."};               
+LStr.uiApp[30] = { ru:"Опции включения:",
+                   en:"Image integration options:"};
+LStr.uiApp[31] = { ru:"Преобразовать в UIстроку и включить в файл скрипта",
+                   en:"Convert to the UIstring and include in the script"};
+LStr.uiApp[32] = { ru:"Зафиксировать размер (только x, или: x, y):",
+                   en:"Fix the image size (set only x, or:  x, y):"};
+LStr.uiApp[33] = { ru:"Дополнительные настроки изображения:",
+                   en:"Additional Image settings:"};
 LStr.uiErr = [];
 LStr.uiErr[0] = { ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" };
 LStr.uiErr[1] = { ru:"Файл уже существует. Переписать?", en:"File already exists. Overwrite?" };

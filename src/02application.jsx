@@ -260,16 +260,16 @@ BuilderApplication.prototype.buildCaption = function(cont) {
         var _disableButtons = function() { btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = false; }
         if (e.target.type == 'iconbutton') {
             switch (e.target.label) {
-                case "new":        app.addDocument(); _enableButtons();      break;
-                case "open":       if (app.loadDocument()) _enableButtons(); break;
-                case "openIn":    app.openInDocument();   break;
-                case "save":       app.saveDocument();      break;
-                case "saveAs":    app.saveAsDocument();  break;
-                case "close":       app.closeDocument(); if (app.documents.length == 0) _disableButtons(); break;
-                case "settings":   app.editOptions(); break;
-                case "eval":        app.evalDialog();  break;
-                case "code":       app.showCode();  break;
-                case "about":      app.about();         break;
+                case "new":     app.addDocument(); _enableButtons();         break;
+                case "open":    if (app.loadDocument()) _enableButtons();    break; // возвращает activeDocument, если загрузка удачная
+                case "close":   if (!app.closeDocument()) _disableButtons(); break; // возвращает activeDocument, null - если всё закрыто.
+                case "openIn":  app.openInDocument();   break;
+                case "save":    app.saveDocument();     break;
+                case "saveAs":  app.saveAsDocument();   break;
+                case "settings":app.editOptions();      break;
+                case "eval":    app.evalDialog();       break;
+                case "code":    app.showCode();         break;
+                case "about":   app.about();            break;
                 default:
             }
         }
@@ -480,9 +480,8 @@ BuilderApplication.prototype.buildTabs = function(cont) {
            controllers = this.controllers,
            models = this.models,
            views = this.views,
-           Lstr = this.LStr.uiApp;
-           //dir = this.resFolder + "/icons/";
-   var CPROPS = COLORSTYLES.CS;
+           Lstr = this.LStr.uiApp,
+           CPROPS = COLORSTYLES.CS;
     // Кол-во и имена вкладок соответствуют списку категорий в uiCategories
     var prop, tabs = [], maxlength, val, tval, i, j, n, max, t, p, g, fmax = Math.max, text, view, lt, type, hstr, ctrl, ch;
     var chrs = 20, mstr = (new Array(chrs+1)).join("0");        // общая длинна в символах группы полей редактирования (и подстановочная строка той же длинны)
@@ -499,15 +498,23 @@ BuilderApplication.prototype.buildTabs = function(cont) {
           hgt = 4*(5+oy);
     var view = null;  // дежурный view для связывания полей ввода с model
     for (prop in uiCategories) if (uiCategories.hasOwnProperty(prop)) { // =============== Добавляем табы по кол-ву категорий в модели (соответствует uiCategories)
+        // hit при инициализации
         app.pBar.hit(localize({ ru:"Создание вкладок свойств: ", en:"Creating properties tabs: "}) + uiCategories[prop].label);        
+        // добавляем вкладку группы:
         t = tb.add("tab { text:'"+uiCategories[prop].label+"', helpTip:'"+uiCategories[prop].description+"', margins:[5,5,5,5], spacing:0, alignChildren:['Left','top'] }");
         g = t.add("group", [0, 5, 550, hgt]); 
         extend (g, { margins:0, spacing:0, alignChildren:['left','top'], orientation:'row' } );  
         // ==== Персональная обработка для вкладки "Image" ====
         if (prop == "Image") {
+            // Добавляем в таб скроллируемую панель (TODO: размеры внутренней панели учитывают только стандартный размер оконного шрифта!!! 
+            // Переделать /0, 0, 550, 106, false, 180, 20)/ с учётом возможной смены оформления.)
             scrl = SUI.addScrollablePanel(g, 0, 0, 550, 106, false, 180, 20);
             var parentGrp = scrl.add("group { preferredSize:[500,204] }");
-            app.buldImageFields(parentGrp);
+            // получаем группу со всеми полями настройки Image
+            parentGrp = app.buldImageFields(parentGrp);
+            // Настрока imageView для редактирования свойств - то что должно происходить в for (p in uiProperties) {...}:
+            
+            
             continue; // for (prop in uiCategories)...
         }        
         // упреждающий просмотр для определения самой длинной строки label в точках
@@ -659,7 +666,7 @@ BuilderApplication.prototype.buldImageFields = function(cont) {
         states = ['normal', 'disabled', 'pressed', 'rollower'],
         grpView = "group { stName:StaticText {text:'normal:', characters:8}," +
                             "etName:EditText {characters:20, properties:{readonly:true}}," +
-                            "ddImage:DropDownList {preferredSize:['120', 23]}," +
+                            "ddImage:DropDownList {preferredSize:['140', 23]}," +
                             "btImage:Button {text:'Image...'}," +
                             "ch:Checkbox { enabled:false }}";
     var parent = cont.add("group { alignChildren:['left', 'center'], orientation:'column', margins:[0, 10, 0, 0], spacing:1 }");
@@ -667,6 +674,7 @@ BuilderApplication.prototype.buldImageFields = function(cont) {
     each(states, function(val, index, arr){
         var grp = parent.add(grpView);
         grp.stName.text = val + ":";
+        app._initImageFields(grp.ddImage);
     });
 
     // Группа настроек опций включения
@@ -904,7 +912,7 @@ try {
                 if (view.control.hasOwnProperty('selection')) view.rebind(newVal, 'selection.text', str+p); else view.rebind(newVal, 'text', str+p);
             }
         } // for (p in control)
- } catch(e) { log('updateTabs:', p, e.description) }
+ } catch(e) { trace(e, 'updateTabs: p =', p) }
     }; // function _updateTabs
 };
 

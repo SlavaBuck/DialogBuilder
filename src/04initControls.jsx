@@ -288,3 +288,19 @@ BuilderApplication.prototype._addToColorList = function(value, name) {
         }
     } catch(e) { log('addcolor:', e.description) };
 };
+
+// ===================
+// инициализация списков стандартных (ESTK) картинок
+BuilderApplication.prototype._initImageFields = function(ddList) {
+    // Пустое значение undefined (актуально для multistate images)
+    with (ddList.add("item", '\u00A0\u00A0undefined')) {
+        image = getImage(ICONS.UNDEFINED);
+    }
+    // всё остальное (кроме predefined multistate)
+    for (var prop in ICONS) if (ICONS.hasOwnProperty(prop) && !(ICONS[prop] instanceof Array)) {
+        with (ddList.add("item", '\u00A0'+ICONS[prop])) {
+            image = getImage(ICONS[prop]);
+        }
+    }
+    ddList.selection = ddList.items[0];
+}
