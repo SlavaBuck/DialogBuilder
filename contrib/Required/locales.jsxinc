@@ -239,6 +239,10 @@ LStr.uiApp[32] = { ru:"Зафиксировать размер (только x, 
                    en:"Fix the image size (set only x, or:  x, y):"};
 LStr.uiApp[33] = { ru:"Дополнительные настроки изображения:",
                    en:"Additional Image settings:"};
+LStr.uiApp[34] = { ru:"Выбрать файл изображения...",
+                   en:"Select file..."};
+LStr.uiApp[35] = { ru:"В стадии разработки...", 
+                   en:"Under constraction..." };
 LStr.uiErr = [];
 LStr.uiErr[0] = { ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" };
 LStr.uiErr[1] = { ru:"Файл уже существует. Переписать?", en:"File already exists. Overwrite?" };

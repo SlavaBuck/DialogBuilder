@@ -21,7 +21,7 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
     version:"1.20",
-    caption:"1.20 Dialog Builder (build 0531, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    caption:"1.20 Dialog Builder (build 0601, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + " {spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                                               pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                                               pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -504,28 +504,25 @@ BuilderApplication.prototype.buildTabs = function(cont) {
         t = tb.add("tab { text:'"+uiCategories[prop].label+"', helpTip:'"+uiCategories[prop].description+"', margins:[5,5,5,5], spacing:0, alignChildren:['Left','top'] }");
         g = t.add("group", [0, 5, 550, hgt]); 
         extend (g, { margins:0, spacing:0, alignChildren:['left','top'], orientation:'row' } );  
-        // ==== Персональная обработка для вкладки "Image" ====
-        if (prop == "Image") {
-            // Добавляем в таб скроллируемую панель (TODO: размеры внутренней панели учитывают только стандартный размер оконного шрифта!!! 
-            // Переделать /0, 0, 550, 106, false, 180, 20)/ с учётом возможной смены оформления.)
-            scrl = SUI.addScrollablePanel(g, 0, 0, 550, 106, false, 180, 20);
-            var parentGrp = scrl.add("group { preferredSize:[500,204] }");
-            // получаем группу со всеми полями настройки Image
-            parentGrp = app.buldImageFields(parentGrp);
-            // Настрока imageView для редактирования свойств - то что должно происходить в for (p in uiProperties) {...}:
-            
-            
-            continue; // for (prop in uiCategories)...
-        }        
         // упреждающий просмотр для определения самой длинной строки label в точках
         maxlength = counts = 0;  
         for (p in uiProperties) if (uiProperties.hasOwnProperty(p) && uiProperties[p].category == prop ) { maxlength = fmax(maxlength, gfx.measureString(p)[0]);  counts++ };       
         // ==== Добавляем в таб скроллируемую панель, если кол-во групп настройки больше 4 (counts*5) ======
-        if ((counts)*oy+counts*5 > hgt) {
-            scrl = SUI.addScrollablePanel(g, 0, 0, 485, hgt+10, false, (counts+1)*oy+counts, 20);
-            extend (scrl, { margins:0, spacing:0, alignChildren:['left','center'], orientation:'column' } ); 
+        if (prop == "Image") {
+            // Специальная обработка для Image: учитываем размер группы дополнительных настроек для скроллируемой панели:
+            // 550, 110 - внешние видимые размеры панели;
+            // 487, 226 - опытно определены для Additional settings panel
+            // к размерам Additional settings panel прибавляем высоты одной стандартной группы image:
+            scrl = SUI.addScrollablePanel(g, 0, 0, 550, 110, false, 226 + oy, 20); // oy - высота image:
+            scrl.margins = [5,10,0,0];
         } else {
-            scrl = g; scrl.orientation = 'column'; scrl.margins = [15,10,0,0];
+            if ((counts)*oy+counts*5 > hgt) {
+
+                scrl = SUI.addScrollablePanel(g, 0, 0, 485, hgt+10, false, (counts+1)*oy+counts, 20);
+                extend (scrl, { margins:0, spacing:0, alignChildren:['left','center'], orientation:'column' } ); 
+            } else {
+                scrl = g; scrl.orientation = 'column'; scrl.margins = [15,10,0,0];
+            }
         }
         // ==== Заполняем табы ======
         for (p in uiProperties) if (uiProperties.hasOwnProperty(p) && uiProperties[p].category == prop ) {
@@ -579,15 +576,29 @@ BuilderApplication.prototype.buildTabs = function(cont) {
             } else { // tval не массив (предустановленных значений нет)
                 if (val instanceof Array) { // свойство - массив без предустановленных значений
                     for (i=0, max=val.length; i<max; i++) {
-                        view = (p in {'bounds':0, 'frameLocation':0, 'image':0}) ? this.addView({ id:p+i, parent:g, view:"edittext { properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } }) :
-                                                                                                            this.addView({ id:p+i, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
+                        view = (p in {'bounds':0, 'frameLocation':0, 'image':0}) ? 
+                                this.addView({ id:p+i, parent:g, view:"edittext { properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } }) :
+                                this.addView({ id:p+i, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
                         view.check.label = p;
                         this._editors.add(view);
+                    }
+                    // дополнительно для image добавляем панель Additional settings
+                    if (p == 'image') {
+                        g.size = [430, oy+2];
+                        g.ddImage = g.add("dropdownlist {preferredSize:['140', 23], enabled:false}");
+                        app._initImageFields(g.ddImage);
+                        var btImage = g.btImage = g.add("button {text:'Image...', helpTip:'"+Lstr[34]+"', enabled:false }");
+                        g.parent.parent.orientation = 'column';
+                        view = this.addView({id:"imageSettings", parent:g.parent.parent, view:"group { preferredSize:[500,200] }"});
+                        // получаем группу со всеми полями настройки Image
+                        view.control.imageSettings = app.buildImageFields(view.control);
+                        view.control.imageSettings.text += ' (not implemented in this version)';
+                        view.control.imageSettings.enabled = false;
                     }
                 } else { // свойство - значение без предустановленных значений
                     if (p == 'items' ) {
                         view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
-                        var btList = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"' }");
+                        var btList = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false }");
                     } else {
                         view = this.addView({ id:p, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
                     }
@@ -627,17 +638,22 @@ BuilderApplication.prototype.buildTabs = function(cont) {
             for (var i=0, cont = check.parent.children[1].children, gfx = cont[i].graphics, S_CLR = gfx.PenType.SOLID_COLOR; i<cont.length; i++) {
                 gfx = cont[i].graphics;
                 gfx.foregroundColor = (val === true ? gfx.newPen(S_CLR, [0,0,0], 1) : gfx.newPen(S_CLR, toRGBA(app.options.disabledForegroundColor), 1));
+                // При отжатом checkbox-е всё вырубается и наоборот:
+                // TODO: пересмотреть перекрашивание в updateTabs...
+                if ("button, dropdownlist".indexOf(cont[i].type) != -1) cont[i].enabled = val;
             }
         }
     });
     
-    btList.onClick = function() {
-        alert({ ru:"В стадии разработки ...", en:"Under constraction..." }, app.name + " " + app.version, true);
-    }
+    btImage.onClick = btList.onClick = function() { app._notImplemented(); }
     // Формирование объекта View
     return app.views.add(MVC.View("Tab", tb));
 };
 
+BuilderApplication.prototype._notImplemented = function() {
+    var app = this;
+    alert(localize(app.LStr.uiApp[35]), app.version + " " + app.name, false);
+}
 // Вспомогательная функция для быстрого получения полей редактирования свойств
 BuilderApplication.prototype._getField = function(id) {
     return this._editors.getFirstByKeyValue('id', id);
@@ -660,7 +676,7 @@ BuilderApplication.prototype.buildDocsView = function(cont) {
 };
 // =================== 
 // строим панель для редактирования изображений
-BuilderApplication.prototype.buldImageFields = function(cont) {
+BuilderApplication.prototype.buildImageFields = function(cont) {
     var app = this,
         LStr = app.LStr.uiApp,
         states = ['normal', 'disabled', 'pressed', 'rollower'],
@@ -669,7 +685,7 @@ BuilderApplication.prototype.buldImageFields = function(cont) {
                             "ddImage:DropDownList {preferredSize:['140', 23]}," +
                             "btImage:Button {text:'Image...'}," +
                             "ch:Checkbox { enabled:false }}";
-    var parent = cont.add("group { alignChildren:['left', 'center'], orientation:'column', margins:[0, 10, 0, 0], spacing:1 }");
+    var parent = cont.add("panel { text:'"+localize(LStr[33])+"', alignChildren:['left', 'center'], orientation:'column', margins:[10, 15, 10, 5], spacing:1 }");
     // Группы для добавления картинок
     each(states, function(val, index, arr){
         var grp = parent.add(grpView);
@@ -691,6 +707,7 @@ BuilderApplication.prototype.buldImageFields = function(cont) {
 									"ch1:Checkbox {text:'"+txtchFixSize+"', helpTip:'"+helpTip2+"'}," +
 									"et0:EditText {characters:6} }}}";
     parent.add(grpViewOpt);
+    // суммарный размер панели для 1.20 (build 0601) 487,199 px
     return parent;    
 }
 
