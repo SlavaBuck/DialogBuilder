@@ -27,7 +27,7 @@ var uiProperties = {
     "title":{ category:"TextLabels", type:"String", value:'', description:LStr.uiProp[2], defvalue:undefined, values:undefined },
     //"textselection":{name:"textselection", category:"TextLabels", type:"String", description:LStr.uiProp[1], defvalue:undefined, values:undefined },     
     "image":{ category:"Image", type:"ScriptUIImage|Array(4) of images", value:['','','',''], description:LStr.uiProp[5], defvalue:undefined, values:undefined },
-    "icon":{ category:"Image", type:"ScriptUIImage|string", value:'', description:LStr.uiProp[6], defvalue:undefined, values:undefined },
+    //"icon":{ category:"Image", type:"ScriptUIImage|string", value:'', description:LStr.uiProp[6], defvalue:undefined, values:undefined },
     "alignment":{ category:"Alignment", type:"String|Array(2) of strings", value:['',''], description:LStr.uiProp[7], defvalue:undefined, values:["left", "right", "top", "bottom", "center", "fill"] },
     "orientation":{ category:"Alignment", type:"String", value:'', description:LStr.uiProp[8], defvalue:undefined, values:["row", "column", "stack"] },
     "alignChildren":{ category:"Alignment", type:"String|Array(2) of strings", value:['',''], description:LStr.uiProp[9], defvalue:undefined, values:["left", "right", "top", "bottom", "center", "fill"] },
@@ -155,7 +155,7 @@ var uiControls = {
                                             graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
                        }                  }, 
     "IconButton": { label:"IconButton", type:"Control", jsname:"ibtButton", description:LStr.uiCtrl[7], icon:"iconbutton", defaults:{ "size":[37, 37] },
-                          properties:{"title":false, "label":false, "helpTip":false,  "image":false, // Text & Labels
+                          properties:{"title":false, "label":false, "helpTip":false, "image":false, // Text & Labels
                                             "alignment":false, "indent":false, "justify":false, "titleLayout":false, // Alignment porperies
                                             "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, // Measurements
                                             "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
@@ -224,7 +224,7 @@ var uiControls = {
                                             graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
                         }                  },
     "Image": { label:"Image", type:"Control", jsname:"imgImage", description:LStr.uiCtrl[15], icon:"image", defaults:{ "size":[1, 1] },  
-                          properties:{"title":false, "label":false, "helpTip":false, "icon":false, // Text & Labels
+                          properties:{"title":false, "label":false, "helpTip":false, "image":false, // Text & Labels
                                             "alignment":false, "indent":false, "titleLayout":false, // Alignment porperies
                                             "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, // Measurements
                                             "active":false, "enabled":false, "visible":false, // Initial properties
