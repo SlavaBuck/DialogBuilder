@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  04initControls.jsx
 *  DESCRIPTION: 
-*  @@@BUILDINFO@@@ 04initControls.jsx 1.18 Mon Mar 10 2014 01:02:32 GMT+0200
+*  @@@BUILDINFO@@@ 04initControls.jsx 1.22 Tue Jun 03 2014 02:24:46 GMT+0300
 * 
 * NOTICE: 
 *   initControls() - инициализация всех списков (цветовых наборов и шрифтов) для елементов управления в заголовке и в панели свойств
@@ -19,11 +19,113 @@
 // Инициализация списков (цветовых наборов и шрифтов)
 BuilderApplication.prototype.initControls = function() {
     var app = this;
+    app._initImageListView();
     app._initColorListView();
     app.fontColor.control.selection = app.fontColor.control.find(" Black");
     app._initFontListView(app.fontName);
     app._initCaptionFontControls();
     app.fontSize.control.text = _FONT.size;
+};
+
+// ===================
+// инициализация елемента управления image
+BuilderApplication.prototype._initImageListView = function() {
+    var app = this,
+        view = app.getViewByID("image0");
+    
+    app.btImage.onClick = function() {
+        var filter = ["All files:*.*","All supported:*.JPEG;*.GIF;*.TIFF;*.PNG;*.IDRC;*.PICT"];
+        var file = File.openDialog (app.version +" v"+app.name + " - " + localize(app.LStr.uiApp[34]), filter);
+        if (!file) return;
+        var img;
+        try { 
+            img = ScriptUI.newImage(file);
+        } catch(e) { img = null }
+        
+        // TODO: Сделать определения для списков в view:imageSettings
+        var index = 0;
+        var name = File.decode(file.absoluteURI);
+        
+        _updateImageView(app.activeControl, img, index, name);
+        app.updateTabs(app.activeControl);
+    }
+
+    view.unbind = function() {
+        var control = this.control,
+            ddImage = control.parent.ddImage;
+        delete ddImage.onChange;
+        delete control.onChange; 
+        
+        ddImage.selection = null;
+        control.text = "";
+        
+        ddImage.model = null;
+        control.enabled = ddImage.enabled = false;
+    };
+
+    view.rebind = function(newVal) {
+        var model = (newVal)||null,
+            control = this.control,
+            ddImage = control.parent.ddImage;
+        if (!(model && model.control.properties.hasOwnProperty('image'))) return this.unbind();
+        // TODO: Сделать определения для списков в view:imageSettings
+        var index = 0;
+        //control.text = (model.view.control.image && model.view.control.image.name ? model.view.control.image.name : "undefined");
+        control.text = (model.control.properties.image[index])||"undefined";
+        
+        var pict = control.text == "undefined" ? "\u00A0\u00A0undefined" :
+                   "\u00A0" + ( (control.text.indexOf(".") == -1) ? control.text :
+                                 File.decode(File(control.text).absoluteURI).split("/").slice(-1)[0].split(".").slice(0, -1).join("."));
+        ddImage.selection = ddImage.find(pict);
+        
+        ddImage.model = model;
+        ddImage.onChange = _changeImageList;
+        
+        control.helpTip = "image: " + control.text;
+        ddImage.enabled = true;
+    };
+    
+    // Обработчики списков
+    function _changeImageList() {
+        if (!this.model) return;
+        var model = this.model,
+            pict = this.selection.text.replace(/^\s+/, ""), // избаляемся от лишних пробелов
+            img = (pict == "undefined" ? null : getImage(pict));
+
+        var etEdit = this.parent.children[0];
+        etEdit.text = pict;
+        etEdit.helpTip = "image: " + etEdit.text;
+        // TODO: Сделать определения для списков в view:imageSettings
+        var index = 0;
+        _updateImageView(model, img, index, pict);
+    };
+    
+    function _updateImageView (model, newimg, index, name) {
+    try {
+        if (!model) return;
+        var control = model.view.control,
+            model_prop = model.control.properties,
+            img = (newimg ? newimg : getImage("#Undefined")),
+            imgname = (name)||File.decode(img.pathname);
+        
+        model_prop.image[index] = imgname;
+        control.onDraw = undefined;
+        control.image = img;
+        // Если размер зафиксированный - не меняем!
+        if (!(model.properties.preferredSize || model.properties.size)) {
+            if (imgname != "undefined") {
+                control.size = (control.type == 'image' ? img.size : [img.size[0]+12, img.size[1]+12]);
+            } else {
+                control.size = model.control.defaults.size;
+            }
+            app.activeDocument.window.layout.layout(true);
+            app._getField('size0').control.text = model_prop.size[0] = control.size[0];
+            app._getField('size1').control.text = model_prop.size[1] = control.size[1];
+            app._getField('bounds2').control.text = model_prop.bounds[2] = control.bounds[2];
+            app._getField('bounds3').control.text = model_prop.bounds[3] = control.bounds[3];
+        }
+    } catch(e) { trace (e) }
+    };
 }
 // ===================
 // инициализация елементов управления в заголовке, управляющие шрифтом и его цветом
