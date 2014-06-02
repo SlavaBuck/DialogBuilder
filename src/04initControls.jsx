@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  04initControls.jsx
 *  DESCRIPTION: 
-*  @@@BUILDINFO@@@ 04initControls.jsx 1.18 Mon Mar 10 2014 01:02:32 GMT+0200
+*  @@@BUILDINFO@@@ 04initControls.jsx 1.22 Tue Jun 03 2014 02:24:46 GMT+0300
 * 
 * NOTICE: 
 *   initControls() - инициализация всех списков (цветовых наборов и шрифтов) для елементов управления в заголовке и в панели свойств
@@ -14,7 +14,7 @@
 /**************************************************************************
 * © Вячеслав aka SlavaBuck, 10.03.2014.  slava.boyko#hotmail.com
 */
-#include "../../Include/Tools/ObjectBrowser.jsx"
+
 // ===================
 // Инициализация списков (цветовых наборов и шрифтов)
 BuilderApplication.prototype.initControls = function() {
