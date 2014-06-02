@@ -21,7 +21,7 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
     version:"1.20",
-    caption:"1.20 Dialog Builder (build 0601, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    caption:"1.20 Dialog Builder (build 0603, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + " {spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                                               pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                                               pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -39,7 +39,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     var gfx = this.window.pMain.MainPnl.graphics;
     gfx.disabledBackgroundColor = gfx.backgroundColor = gfx.newBrush(0, [0.5, 0.5, 0.5, 1]); // цвет области документов - серый 50%    
     this._editors = new Collection();  // общий список всех въюшек свойств формируемых в app.buildTabs (для быстрого блокирования/разблокирования в app.updateTabs);
-    this._ceditors = new Collection(); // отдельный список въюшек для редактирования свойств цвета 
+    this._ceditors = new Collection(); // отдельный список въюшек для редактирования свойств цвета
+    this._ieditors = new Collection(); // отдельный список въюшек для отображающих имена для изображений
     this.activeControl = null;              // Ссылка на модель текущий (добавляемый) элемент в контейнер документа
 };
 
@@ -409,8 +410,8 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
             if (sel.model !== doc.activeControl) doc.activeControl = sel.model;
             if (doc.activeControl.control.type == "Container") this.activeNode = this.activeItem; else this.activeNode = this.activeItem.parent;
             doc.activeContainer = this.activeNode.model.view.control;
-            //if (e.detail == 2) app.showModelCode(this.activeItem.model);
-            if (e.detail == 2) this.activeItem.model.getCode();
+            if (e.detail == 2) app.showModelCode(this.activeItem.model);
+            //if (e.detail == 2) this.activeItem.model.getCode();
         }              
     });
 
@@ -581,19 +582,20 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                                 this.addView({ id:p+i, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
                         view.check.label = p;
                         this._editors.add(view);
+                        if (p == 'image') this._ieditors.add(view); // отдельная коллекция контролов для отображения имён картинок
                     }
-                    // дополнительно для image добавляем панель Additional settings
+                    // дополнительно для image добавляем панель Additional settings (view:imageSettings)
                     if (p == 'image') {
                         g.size = [430, oy+2];
                         g.ddImage = g.add("dropdownlist {preferredSize:['140', 23], enabled:false}");
                         app._initImageFields(g.ddImage);
-                        var btImage = g.btImage = g.add("button {text:'Image...', helpTip:'"+Lstr[34]+"', enabled:false }");
+                        // app.btImage инициализирцется в _initImageListView();
+                        app.btImage = g.btImage = g.add("button {text:'Image...', helpTip:'"+Lstr[34]+"', enabled:false }");
                         g.parent.parent.orientation = 'column';
-                        view = this.addView({id:"imageSettings", parent:g.parent.parent, view:"group { preferredSize:[500,200] }"});
-                        // получаем группу со всеми полями настройки Image
-                        view.control.imageSettings = app.buildImageFields(view.control);
-                        view.control.imageSettings.text += ' (not implemented in this version)';
-                        view.control.imageSettings.enabled = false;
+                        view = app.buildImageSettings(g.parent.parent.add("group { preferredSize:[500,200] }")); // создание view:imageSettings
+                        // получаем подгруппу с дополнительными полями настройки Image
+                        view.control.text += ' (not implemented in this version)';
+                        view.control.enabled = false;
                     }
                 } else { // свойство - значение без предустановленных значений
                     if (p == 'items' ) {
@@ -645,7 +647,7 @@ BuilderApplication.prototype.buildTabs = function(cont) {
         }
     });
     
-    btImage.onClick = btList.onClick = function() { app._notImplemented(); }
+    btList.onClick = function() { app._notImplemented(); }
     // Формирование объекта View
     return app.views.add(MVC.View("Tab", tb));
 };
@@ -676,7 +678,7 @@ BuilderApplication.prototype.buildDocsView = function(cont) {
 };
 // =================== 
 // строим панель для редактирования изображений
-BuilderApplication.prototype.buildImageFields = function(cont) {
+BuilderApplication.prototype.buildImageSettings = function(cont) {
     var app = this,
         LStr = app.LStr.uiApp,
         states = ['normal', 'disabled', 'pressed', 'rollower'],
@@ -691,6 +693,12 @@ BuilderApplication.prototype.buildImageFields = function(cont) {
         var grp = parent.add(grpView);
         grp.stName.text = val + ":";
         app._initImageFields(grp.ddImage);
+        // Добавляем управляющие вьюхи в коллекции
+        var view = new MVC.View({id:val+"Image", control:grp.etName });
+        app.views.add(view);
+        app._editors.add(view);
+        app._ieditors.add(view);
+        
     });
 
     // Группа настроек опций включения
@@ -706,9 +714,11 @@ BuilderApplication.prototype.buildImageFields = function(cont) {
 								"g3:Group {alignment:['fill', 'top'], alignChildren:['left', 'center'], spacing:5," +
 									"ch1:Checkbox {text:'"+txtchFixSize+"', helpTip:'"+helpTip2+"'}," +
 									"et0:EditText {characters:6} }}}";
-    parent.add(grpViewOpt);
+    parent.imageSettings = parent.add(grpViewOpt);
+    var view = new MVC.View("imageSettings", parent);
+    app.views.add(view);
     // суммарный размер панели для 1.20 (build 0601) 487,199 px
-    return parent;    
+    return view;
 }
 
 // =================== 
@@ -894,6 +904,7 @@ BuilderApplication.prototype.updateTabs = function(newVal) {
               CPROPS = COLORSTYLES.CS;
 try {
         for (p in control) if (control.hasOwnProperty(p) && p != 'properties' && p != 'graphics') {
+            // Специальная обработка для font (поля в заголовке и в табах)
             if (p == "font") {
                 app.fontStyle.rebind(newVal);
                 app.fontName.rebind(newVal);
@@ -904,6 +915,7 @@ try {
                 app._updateFontField(newVal);
                 continue;
             }
+            // Специальная обработка для обновления colors (поля в заголовке и в табах)
             if (CPROPS.hasOwnProperty(p)) {
                 view = app._ceditors.getFirstByKeyValue('id', p); 
                 view.control.enabled = view.check.enabled = true; view.check.value = flags[p];
@@ -913,6 +925,16 @@ try {
                 if (!newVal.control.properties.hasOwnProperty("text")) app._ceditors.getFirstByKeyValue('id', "fontColor").unbind(); //control.enabled = false;
                 continue;
             }
+            // Специальная обработка для image (поля в табах)
+//~             if (p == "image") {
+//~                 view = app._ceditors.getFirstByKeyValue('id', p); 
+//~                 view.control.enabled = view.check.enabled = true; view.check.value = flags[p];
+//~                 view.control.graphics.foregroundColor = (view.check.value ? cBlack : cGray);
+//~                 view.rebind(newVal);
+//~                 if (p == "foregroundColor") app._ceditors.getFirstByKeyValue('id', "fontColor").rebind(newVal);
+//~                 if (!newVal.control.properties.hasOwnProperty("text")) app._ceditors.getFirstByKeyValue('id', "fontColor").unbind(); //control.enabled = false;
+//~                 continue;
+//~             }
 
             val = view_obj[p];
             if (typeof val == 'object') {
@@ -995,7 +1017,7 @@ BuilderApplication.prototype.alert = function(msg, caption) {
 
 BuilderApplication.prototype.showModelCode = function(model) {
     if(!model) return;
-    log(model.control.toSource() +"\r" + model.view.control.toSource());
+    log(model.control.toSource() +"\r----\r" + model.view.control.toSource());
 };
 
 BuilderApplication.prototype.showCode = function(doc) {

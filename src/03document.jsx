@@ -143,6 +143,8 @@ BuilderDocument.prototype.addItem = function (item) {
                 for (var p in prop_obj) if (prop_obj.hasOwnProperty(p) && p != 'properties' && p != 'graphics' && prop_obj[p] === true) {
                     str += p + ":"
                     val = control_obj[p];
+                    // специальная обработка для image
+                    if (p == 'image') { val = model_obj[p][0]; }
                     switch (typeof val) {
                         case 'boolean': 
                         case 'number': str += val+", "; break;
@@ -250,7 +252,7 @@ BuilderDocument.prototype.addItem = function (item) {
                 gfx._marked = gfx.newBrush(_BSOLID, [c[0], c[1]/1.5, c[2], 0.5]);
                 //gfx._unmarked = gfx.newBrush(_BSOLID, [c[0], c[1]/1.5, c[2], 0]);
                 //if (model.control.type == 'Container') gfx.foregroundColor =  gfx.newPen(_PSOLID, [0,0,0,1], 1); 
-                
+
                 // Обновляем размеры окна документа
                 doc.window.layout.layout(true);
             } catch(e) { log('addView: Init():', e.description) }
@@ -259,7 +261,7 @@ BuilderDocument.prototype.addItem = function (item) {
             _marked_:true, // сигнализирует о том, что элемент выбран и выделен
             text: (uiControls[item].properties.hasOwnProperty('text') && type != 'tabbedpanel') ? model.control.jsname : "",
             //onDraw:customDraw
-            onDraw:(model.control.type == 'Container' || type in { 'listbox':0, 'separator':0 } ) ? undefined : customDraw
+            onDraw:(model.control.type == 'Container' || "listbox,separator".indexOf(type) != -1 ) ? undefined : customDraw
         }
     });
     /*
@@ -279,8 +281,6 @@ BuilderDocument.prototype.addItem = function (item) {
     // для соответствующих контролёров:
     // - обработчик _updViewMsts (размер и положение объекта)                 - в связи с необходимостью дополнительного обхода связанных свойств
     // - обработчик _updViewAlign (выравнивания объекта в контеёнере) - из за каличного поведения некоторых свойств в ScripUI - alignment и т.п.)
-    // - обработчик _updViewColor (все свойства цвет) - из за необходимости преобразования данных между моделью и представлением на лету)
-    // - обработчик _updViewFont (свойство font)             - из за необходимости преобразования данных между моделью и представлением на лету)
     if (!model.view.control.properties) model.view.control.properties = {};
     var model_bstr = "", view_bstr = "", 
            view_prop, val, defval, p, i, 
@@ -310,7 +310,7 @@ try {
             if (!model_prop[p]) model_prop[p] = new Array(val.length);
             for (i=0; i<val.length; i ++) {
                 if (model_prop[p][i] !== view_prop[p][i]) model_prop[p][i] = view_prop[p][i];
-                _modifyController(p, doc.addController({ binding:model_bstr+"."+i+":"+view_bstr+"."+i , bind:false })); // Переопределяем _updateView
+                _modifyController(p, doc.addController({ binding:model_bstr+"."+i+":"+view_bstr+"."+i, bind:false })); // Переопределяем _updateView
             } // for
         } else { // свойство объекта - одно значение или объект
              if (!model_prop[p]) model_prop[p] = view_prop[p];
@@ -349,7 +349,8 @@ try {
     function customUpdate(ctrl, newVal, oldVal, key) {
         // this указывает на элемент управления!!
         // Исключаем из обработки случаи, для которых были предусмотрены специальные обработчики:
-        if (ctrl.special) return; // Ставим метку в котроллёре, чтобы повторно не отрабатывать в customUpdate: 
+        if (ctrl.special) return; // _updViewMsts и _updViewAlign повторно обрабатывать не нужно!
+        if (ctrl.binding.indexOf(".image.") != -1) return; // исключаем работу для свойства image;
         try {
             //log('customUpdate', key, ctrl.binding, '\r', oldVal, newVal);
             if (key == 'text' && this.hasOwnProperty('text') && !ctrl.model.properties.size) { 
@@ -368,6 +369,7 @@ try {
                 }
                 app._getField('size0').control.text = ctrl.model.control.properties.size[0] = x;
             } else {
+                log(ctrl.binding);
                 var prop = ctrl.binding.split(':')[0].split('.'),
                       prop = (parseInt(prop[prop.length -1]) ? prop[prop.length - 2] : prop[prop.length - 1]);
                 if (uiProperties[prop].type == "Boolean") {
@@ -386,8 +388,9 @@ try {
     // после присвоения ему нового значения). В связи с этим такие свойства нужно обновлять "в-ручном" режиме, для них нужны отдельные обновлялки.
     function _modifyController(p, ctrl) {  // Переопределяем _updateView
         switch (uiProperties[p].category) {
-            case "Measurements":   if (p != "indent" || p != "justify") ctrl._updateView = _updViewMsts; break;
-            case "Alignment":          if (p != "orientation") ctrl._updateView =  _updViewAlign;                 break;
+            case "Measurements":    if (p != "indent" || p != "justify") ctrl._updateView = _updViewMsts;   break;
+            case "Alignment":       if (p != "orientation") ctrl._updateView =  _updViewAlign;              break;
+            //case "Image":           if (p != "orientation") ctrl._updateView =  _updViewAlign;              break;
             default:
         }
     };
