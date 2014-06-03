@@ -369,7 +369,6 @@ try {
                 }
                 app._getField('size0').control.text = ctrl.model.control.properties.size[0] = x;
             } else {
-                log(ctrl.binding);
                 var prop = ctrl.binding.split(':')[0].split('.'),
                       prop = (parseInt(prop[prop.length -1]) ? prop[prop.length - 2] : prop[prop.length - 1]);
                 if (uiProperties[prop].type == "Boolean") {
