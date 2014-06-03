@@ -22,17 +22,17 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     name:"Dialog Builder",
     version:"1.22",
     caption:"1.22 Dialog Builder (build 0603, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
-    view:wtype + " {spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
-                                              pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
-                                              pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
-                                                                   LeftPnl:Panel { margins:[0,0,0,0], spacing:2, alignment:['left','fill'], alignChildren:['Left','top'], orientation:'column' }, \
-                                                                   MainPnl:Panel { preferredSize:[450,300], margins:[0,0,0,0], spacing:2, alignment:['fill','fill'], orientation:'column', properties:{borderStyle:'sunken'} }, \
-                                                                   sp:"+SUI.Separator + "\
-                                                                   RightPnl:Panel { margins:[0,0,0,0], spacing:2, alignment:['right','fill'], orientation:'column' } }, \
-                                              pBottom:Panel { margins:[0,2,0,4], spacing:0, alignment:['fill','bottom'], orientation:'column', properties:{borderStyle:'etched'}, \
-                                                                      pTabs:Group { margins:[4,0,4,0], spacing:4, alignment:['fill','top'], orientation:'row', alignChildren:['fill','fill'] } }, \
-                                              pStatusBar:Group { margins:[4,4,4,0], spacing:4, alignment:['fill','bottom'], orientation:'row' } \
-                                         }"
+    view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
+                      pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
+                      pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
+                                           LeftPnl:Panel { margins:[0,0,0,0], spacing:2, alignment:['left','fill'], alignChildren:['Left','top'], orientation:'column' }, \
+                                           MainPnl:Panel { preferredSize:[450,300], margins:[0,0,0,0], spacing:2, alignment:['fill','fill'], orientation:'column', properties:{borderStyle:'sunken'} }, \
+                                           sp:"+SUI.Separator + "\
+                                           RightPnl:Panel { margins:[0,0,0,0], spacing:2, alignment:['right','fill'], orientation:'column' } }, \
+                      pBottom:Panel { margins:[0,2,0,4], spacing:0, alignment:['fill','bottom'], orientation:'column', properties:{borderStyle:'etched'}, \
+                                              pTabs:Group { margins:[4,0,4,0], spacing:4, alignment:['fill','top'], orientation:'row', alignChildren:['fill','fill'] } }, \
+                      pStatusBar:Group { margins:[4,4,4,0], spacing:4, alignment:['fill','bottom'], orientation:'row' } \
+                 }"
     });
     SUI.SeparatorInit(this.window.pMain.sp);
     // Настройка главного окна:
@@ -69,24 +69,25 @@ BuilderApplication.prototype.Init = function() {
 
     app.pBar.hit(localize({ ru:"Загрузка ресурсов...", en:"Loading resources..."}));
     // Загрузка ресурсов
-    app.loadResources();
+    app.loadResources();    // app.LStr получает локализованные строки
     app.initJsNames();      // Инициализация наименований объектов диалога (могут переопределяться в опциях)
     
     // Формирование представлений для главного окна и контеёнера документов (docView)
-    app.pBar.hit(localize({ ru:"Создание панели заголовка...", en:"Creating caption panel..."}));
-    app.buildCaption(w.pCaption);                   // id:"Caption"
-    app.pBar.hit(localize({ ru:"Загрузка элементов управления...", en:"Loading controls..."}));
+    app.pBar.hit(localize(app.LStr.uiApp[36]));
+    app.buildCaption(w.pCaption);               // id:"Caption"
+    app.pBar.hit(localize(app.LStr.uiApp[37]));
     app.buildControlsBtns(w.pMain.LeftPnl, 2);  // id:"Controls"
-    app.pBar.hit(localize({ ru:"Создание основного вида...", en:"Creating main view..."}));
+    app.pBar.hit(localize(app.LStr.uiApp[38]));
     app.buildTreeView(w.pMain.RightPnl);        // id:"Tree"
     app.buildDocsView(w.pMain.MainPnl);         // id:"Documents" - Общий View-контейнер для всех документов
-    app.pBar.hit(localize({ ru:"Создание вкладок свойств: ", en:"Creating properties tabs: "}));
-    app.buildTabs(w.pBottom.pTabs);               // id:"Tab"
-    app.pBar.hit(localize({ ru:"Завершение настройки...", en:"Completion adjustment..."}));
-    app.buldStatusBar(w.pStatusBar);               // id:"SBar"        
-    app.treeView = app.getViewByID("Tree");   // создан в buildDialogTree
-    app.JsName = app.getViewByID("JsName"); // создан в buildDocsView 
-    // Инициализация списков (цветовых наборов и шрифтов)
+    app.pBar.hit(localize(app.LStr.uiApp[39]));
+    app.buildTabs(w.pBottom.pTabs);             // id:"Tab"
+    app.pBar.hit(localize(app.LStr.uiApp[40]));
+    app.buldStatusBar(w.pStatusBar);            // id:"SBar"        
+    app.treeView = app.getViewByID("Tree");     // создан в buildDialogTree
+    app.JsName = app.getViewByID("JsName");     // создан в buildDocsView 
+    
+    // Инициализация списков (цветовых наборов, шрифтов и картинок)
     app.initControls()
     
     // Регестрируем фабрику документов
@@ -500,7 +501,7 @@ BuilderApplication.prototype.buildTabs = function(cont) {
     var view = null;  // дежурный view для связывания полей ввода с model
     for (prop in uiCategories) if (uiCategories.hasOwnProperty(prop)) { // =============== Добавляем табы по кол-ву категорий в модели (соответствует uiCategories)
         // hit при инициализации
-        app.pBar.hit(localize({ ru:"Создание вкладок свойств: ", en:"Creating properties tabs: "}) + uiCategories[prop].label);        
+        app.pBar.hit(localize(Lstr[39]) + uiCategories[prop].label);        
         // добавляем вкладку группы:
         t = tb.add("tab { text:'"+uiCategories[prop].label+"', helpTip:'"+uiCategories[prop].description+"', margins:[5,5,5,5], spacing:0, alignChildren:['Left','top'] }");
         g = t.add("group", [0, 5, 550, hgt]); 

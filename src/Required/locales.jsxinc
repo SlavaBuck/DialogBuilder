@@ -231,18 +231,21 @@ LStr.uiApp[28] = { ru:"После включения изображения в �
                    en:"After turning the image into the script, the original file becomes necessary."};
 LStr.uiApp[29] = { ru:"Требуемый размер изображения. Если указано только одно значение - оно трактуется как значение для обоих сторон (квадрат). Значения для ширины и высоты указываются через запятую.",
                    en:"The desired image size. If only one value - it is treated as the value for both sides (square). Values ​​for the width and height specified using a comma."};               
-LStr.uiApp[30] = { ru:"Опции включения:",
-                   en:"Image integration options:"};
-LStr.uiApp[31] = { ru:"Преобразовать в UIстроку и включить в файл скрипта",
-                   en:"Convert to the UIstring and include in the script"};
+LStr.uiApp[30] = { ru:"Опции включения:", en:"Image integration options:"};
+LStr.uiApp[31] = { ru:"Преобразовать в UI-строку и включить в файл скрипта",
+                   en:"Convert to the UI-string and include in the script"};
 LStr.uiApp[32] = { ru:"Зафиксировать размер (только x, или: x, y):",
                    en:"Fix the image size (set only x, or:  x, y):"};
 LStr.uiApp[33] = { ru:"Дополнительные настроки изображения:",
                    en:"Additional Image settings:"};
-LStr.uiApp[34] = { ru:"Выбрать файл изображения...",
-                   en:"Select file..."};
-LStr.uiApp[35] = { ru:"В стадии разработки...", 
-                   en:"Under constraction..." };
+LStr.uiApp[34] = { ru:"Выбрать файл изображения...", en:"Select file..."};
+LStr.uiApp[35] = { ru:"В стадии разработки...", en:"Under constraction..." };
+LStr.uiApp[36] = { ru:"Создание панели заголовка...", en:"Creating caption panel..." };
+LStr.uiApp[37] = { ru:"Загрузка элементов управления...", en:"Loading controls..." };
+LStr.uiApp[38] = { ru:"Создание основного вида...", en:"Creating main view..." };
+LStr.uiApp[39] = { ru:"Создание вкладок свойств: ", en:"Creating properties tabs: " };
+LStr.uiApp[40] = { ru:"Завершение настройки...", en:"Completion adjustment..." };
+
 LStr.uiErr = [];
 LStr.uiErr[0] = { ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" };
 LStr.uiErr[1] = { ru:"Файл уже существует. Переписать?", en:"File already exists. Overwrite?" };
