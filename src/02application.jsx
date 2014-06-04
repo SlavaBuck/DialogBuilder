@@ -599,9 +599,10 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                         view.control.enabled = false;
                     }
                 } else { // свойство - значение без предустановленных значений
+                    log(p);
                     if (p == 'items' ) {
                         view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
-                        var btList = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false }");
+                        app.btList = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false }");
                     } else {
                         view = this.addView({ id:p, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
                     }
@@ -648,7 +649,7 @@ BuilderApplication.prototype.buildTabs = function(cont) {
         }
     });
     
-    btList.onClick = function() { app._notImplemented(); }
+    // btList.onClick = function() { app._notImplemented(); }
     // Формирование объекта View
     return app.views.add(MVC.View("Tab", tb));
 };
@@ -937,7 +938,8 @@ try {
 //~                 continue;
 //~             }
 
-            val = view_obj[p];
+            //val = view_obj[p];
+            val = app.uiProperties[p].value;
             if (typeof val == 'object') {
                 for (i=0; i<control[p].length; i++) {
                     view = app._editors.getFirstByKeyValue('id', p+i); 

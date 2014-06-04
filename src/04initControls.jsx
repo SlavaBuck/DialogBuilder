@@ -21,12 +21,162 @@ BuilderApplication.prototype.initControls = function() {
     var app = this;
     app._initImageListView();
     app._initColorListView();
-    app.fontColor.control.selection = app.fontColor.control.find(" Black");
     app._initFontListView(app.fontName);
     app._initCaptionFontControls();
+    app._initListButtons();
+    // final
+    app.fontColor.control.selection = app.fontColor.control.find(" Black");
     app.fontSize.control.text = _FONT.size;
 };
+// ===================
+// инициализация кнопок в панели свойств
+BuilderApplication.prototype._initListButtons = function() {
+    var app = this,
+        btList = app.btList;
 
+    btList.onClick = function() {
+        return;
+        var model = app.activeControl,
+            arr = model.control.properties.properties.items;
+        if (!isArray(arr)) arr = model.control.properties.properties.items = [];
+        if (app._EditArray(arr)) app._updateListView(model);
+    }
+};
+// Простое редактирование массивов
+BuilderApplication.prototype._EditArray = function(orig_arr) {
+    try{
+    var app = this,
+        arr = [];
+    each(orig_arr, function(str) { arr.push(str); });
+    var w = new Window("dialog {text:'Edit items', properties:{resizeable:true},  \
+		g0:Group {alignment:['fill', 'fill'],  \
+			lb0:ListBox {alignment:['fill', 'fill'], preferredSize:['200', '250']},  \
+				g1:Group {orientation:'column', alignment:['right', 'fill'], alignChildren:['center', 'top'],  \
+					btAdd:Button {text:'Add'},  \
+					btRemove:Button {text:'Remove'},  \
+					btRename:Button {text:'Rename'},  \
+					sp0:"+SUI.Separator+"  \
+					btUp:Button {text:'Up'},  \
+					btDown:Button {text:'Down'},  \
+						g2:Group {orientation:'column', alignment:['fill', 'bottom'],  \
+							sp1:"+SUI.Separator+",  \
+							bt5:Button {text:'Cancel'},  \
+							bt6:Button {text:'Ok'}}}}}");
+    SUI.WindowInit(w);
+    SUI.SeparatorInit(w.g0.g1.sp0, "line");
+    SUI.SeparatorInit(w.g0.g1.g2.sp1, "line");
+    var list = w.g0.lb0;
+    each(arr, function(str) { list.add("item", str); });
+    
+    var btAdd = w.g0.g1.btAdd,
+        btRemove = w.g0.g1.btRemove,
+        btRename = w.g0.g1.btRename,
+        btUp = w.g0.g1.btUp,
+        btDown = w.g0.g1.btDown;
+    
+    btAdd.onClick = function() {
+        var w = _createEditDlg();
+        if (w.show() == 1) {
+            var txt = w.g0.et0.text;
+            arr.push(txt); 
+            list.add("item", txt);
+            list.selection = list.items[list.items.length - 1];
+        }
+    };
+    
+    btRename.onClick = function() {
+        if (!list.selection) return;
+        var index = list.selection.index,
+            w = _createEditDlg(list.items[index].text);
+        if (w.show() == 1) {
+            var txt = w.g0.et0.text;
+            arr[index] = txt; 
+            list.items[index].text = txt; 
+        }
+    };
+
+    btRemove.onClick = function() {
+        if (!list.selection) return;
+        var index = list.selection.index;
+        arr.splice (index, 1);
+        list.remove(list.selection);
+        // восстанавливаем выделение
+        if (index > list.items.length - 1) {
+            if (list.items.length) list.selection = list.items[list.items.length - 1];
+        } else {
+            list.selection = list.items[index];
+        }
+    };
+    
+    btUp.onClick = function() {
+        if (!list.selection) return;
+        var index = list.selection.index;
+        if (index) {
+            var txt = list.items[index].text;
+            list.items[index].text = arr[index] = list.items[index-1].text;
+            list.items[index-1].text = arr[index-1] = txt;
+            list.selection = list.items[index-1];
+        }
+    }
+
+    btDown.onClick = function() {
+        if (!list.selection) return;
+        var index = list.selection.index;
+        if (index < list.items.length - 1) {
+            var txt = list.items[index].text;
+            list.items[index].text = arr[index] = list.items[index+1].text;
+            list.items[index+1].text = arr[index+1] = txt;
+            list.selection = list.items[index+1];
+        }
+    }
+    //// Выход
+    if (w.show() == 1) {
+        orig_arr.length = 0;
+        each(arr, function(str) { orig_arr.push(str); });
+        return true;
+    } else {
+        return false;
+    };
+    ////
+    
+    function _createEditDlg(str) {
+        var w = new Window("dialog {text:'Edit item', spacing:5, properties:{resizeable:true},  \
+            g0:Group {alignment:['fill', 'top'],  \
+                img0:Image {image:'#PConsole_R', alignment:['left', 'center']},  \
+                et0:EditText { text:'"+((str)||"")+"', alignment:['fill', 'center'], characters:40}},  \
+            sp0:"+SUI.Separator+"  \
+            g1:Group {alignment:['right', 'top'],  \
+                bt0:Button {text:'Cancel'},  \
+                bt1:Button {text:'Ok'}}}");
+        SUI.WindowInit(w);
+        SUI.SeparatorInit(w.sp0, "line");
+        w.onShow = function() { 
+            w.g0.minimumSize = w.g0.size; 
+            w.g0.et0.active = true;
+        };
+        return w;
+    }
+
+
+    } catch(e) { trace(e) }
+};
+
+// Обновление внешнего вида списка 
+BuilderApplication.prototype._updateListView = function(model) {
+    var app = this,
+        control = model.view.control,
+        model_prop = model.control.properties;
+    try {
+    control.removeAll();
+    each(model_prop.properties.items, function(str) { control.add("item", str); });
+    app.activeDocument.window.layout.layout(true);
+    app._getField('size0').control.text = model_prop.size[0] = control.size[0];
+    app._getField('size1').control.text = model_prop.size[1] = control.size[1];
+    app._getField('bounds2').control.text = model_prop.bounds[2] = control.bounds[2];
+    app._getField('bounds3').control.text = model_prop.bounds[3] = control.bounds[3];
+    app.updateTabs(model);
+    } catch(e) { trace(e) }
+};
 // ===================
 // инициализация елемента управления image
 BuilderApplication.prototype._initImageListView = function() {

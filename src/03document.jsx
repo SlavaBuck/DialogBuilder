@@ -133,24 +133,35 @@ BuilderDocument.prototype.addItem = function (item) {
                   props = this.properties,
                   control = this.view.control,
                   str = ((tr)||'') + model.jsname+":"+model.label + " {",
-                  ptr = "properties:{" + _toSource(props.properties, control.properties, model.properties.properties),
-                  sstr = _toSource(props, control, model.properties);
+                  ptr = "properties:{" + _toSource(props.properties, control.properties, model.properties.properties, "prop"),
+                  sstr = _toSource(props, control, model.properties, "main");
             if (sstr.length) str += sstr;
             if (ptr.length != 12) str += (sstr.length == 0 ? "": ", ") + ptr + "}";
             return str += "}";
-            function _toSource(prop_obj, control_obj, model_obj) {
+            function _toSource(prop_obj, control_obj, model_obj, model) {
+                if (prop_obj.hasOwnProperty("items")) { 
+                    log(model + ":\r prop_obj(keys) = " + keys(prop_obj) + 
+                                "\r model_obj(keys) = "  + keys(model_obj) + 
+                                "\r control_obj(keys) = " + keys(control_obj));                    
+                    
+                    log(model, "\r---\rprop_obj.items =", prop_obj.items, "\rmodel_obj.items =", model_obj.items); 
+                }
                 var str = '';
                 for (var p in prop_obj) if (prop_obj.hasOwnProperty(p) && p != 'properties' && p != 'graphics' && prop_obj[p] === true) {
-                    str += p + ":"
-                    val = control_obj[p];
-                    // специальная обработка для image
-                    if (p == 'image') { val = model_obj[p][0]; }
-                    switch (typeof val) {
-                        case 'boolean': 
-                        case 'number': str += val+", "; break;
-                        case 'string': str += "'"+val+"', "; break;
-                        default: str += model_obj[p].toSource().replace(/"/g, "'")+", ";
-                    }
+                    try {
+                        str += p + ":"
+                        val = control_obj[p];
+                        // специальная обработка для списков
+                        if (p == "items") { log("p = ITEMS!!!", model); }
+                        // специальная обработка для image
+                        if (p == 'image') { val = model_obj[p][0]; }
+                        switch (typeof val) {
+                            case 'boolean': 
+                            case 'number': str += val+", "; break;
+                            case 'string': str += "'"+val+"', "; break;
+                            default: str += val.toSource().replace(/"/g, "'")+", "; //str += model_obj[p].toSource().replace(/"/g, "'")+", ";
+                        }
+                    } catch(e) { log(model_obj.toSource()); trace(e, p); }
                 } // for
                 return str.slice (0, -2); // убираем последнюю запятую
             } // function _toSource()
