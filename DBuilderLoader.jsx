@@ -10,8 +10,8 @@
 * © Вячеслав aka SlavaBuck, 08.02.2013.  slava.boyko#hotmail.com
 */
 // Contrib
-// #include "contrib/DBuilder.jsx"
+#include "contrib/DBuilder.jsx"
 
 // src
-var startmode = 0;
-#include "src/00main.jsx"
+// var startmode = 0;
+// #include "src/00main.jsx"

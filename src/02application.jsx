@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  02application.jsx
  *  DESCRIPTION: BuilderApplication: Основной класс приложения 
- *  @@@BUILDINFO@@@ 02application.jsx 1.22 Tue Jun 03 2014 02:25:15 GMT+0300
+ *  @@@BUILDINFO@@@ 02application.jsx 1.40 Thu Jun 05 2014 01:40:30 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -20,8 +20,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     var wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
-    version:"1.22",
-    caption:"1.22 Dialog Builder (build 0603, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    version:"1.40",
+    caption:"1.40 Dialog Builder (build 0605, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -599,10 +599,15 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                         view.control.enabled = false;
                     }
                 } else { // свойство - значение без предустановленных значений
-                    log(p);
                     if (p == 'items' ) {
                         view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
-                        app.btList = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false }");
+                        app.btList = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false, bname:'btList' }");
+                    } else if (p == 'columnWidths') {
+                        view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
+                        app.btListCW = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false, bname:'btListCW' }");                        
+                    } else if (p == 'columnTitles') {
+                        view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
+                        app.btListCT = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false, bname:'btListCT' }");  
                     } else {
                         view = this.addView({ id:p, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
                     }
@@ -628,7 +633,8 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                 var check = e.target, 
                        val = !check.value, // нужно, так как обработчик onClick вызывается до смены значения
                        label = check.label, // имя свойства управляемое данным чекбоксом (определяется на этапе добавления самого чекбокса)
-                       control = model.view.control,
+                       //control = model.view.control,
+                       control = model.control.properties,
                        prop = model.properties,
                        model_obj = model.control.properties;
             // Вносим метку в описательной части модели 
