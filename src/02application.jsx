@@ -599,10 +599,15 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                         view.control.enabled = false;
                     }
                 } else { // свойство - значение без предустановленных значений
-                    log(p);
                     if (p == 'items' ) {
                         view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
-                        app.btList = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false }");
+                        app.btList = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false, bname:'btList' }");
+                    } else if (p == 'columnWidths') {
+                        view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
+                        app.btListCW = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false, bname:'btListCW' }");                        
+                    } else if (p == 'columnTitles') {
+                        view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
+                        app.btListCT = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false, bname:'btListCT' }");  
                     } else {
                         view = this.addView({ id:p, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
                     }
@@ -628,7 +633,8 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                 var check = e.target, 
                        val = !check.value, // нужно, так как обработчик onClick вызывается до смены значения
                        label = check.label, // имя свойства управляемое данным чекбоксом (определяется на этапе добавления самого чекбокса)
-                       control = model.view.control,
+                       //control = model.view.control,
+                       control = model.control.properties,
                        prop = model.properties,
                        model_obj = model.control.properties;
             // Вносим метку в описательной части модели 

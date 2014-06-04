@@ -139,27 +139,25 @@ BuilderDocument.prototype.addItem = function (item) {
             if (ptr.length != 12) str += (sstr.length == 0 ? "": ", ") + ptr + "}";
             return str += "}";
             function _toSource(prop_obj, control_obj, model_obj, model) {
-                if (prop_obj.hasOwnProperty("items")) { 
-                    log(model + ":\r prop_obj(keys) = " + keys(prop_obj) + 
-                                "\r model_obj(keys) = "  + keys(model_obj) + 
-                                "\r control_obj(keys) = " + keys(control_obj));                    
-                    
-                    log(model, "\r---\rprop_obj.items =", prop_obj.items, "\rmodel_obj.items =", model_obj.items); 
-                }
-                var str = '';
+                var str = '',
+                    val, val1;
                 for (var p in prop_obj) if (prop_obj.hasOwnProperty(p) && p != 'properties' && p != 'graphics' && prop_obj[p] === true) {
                     try {
                         str += p + ":"
-                        val = control_obj[p];
-                        // специальная обработка для списков
-                        if (p == "items") { log("p = ITEMS!!!", model); }
+                        //val = control_obj[p];
+                        val = model_obj[p];
                         // специальная обработка для image
                         if (p == 'image') { val = model_obj[p][0]; }
                         switch (typeof val) {
                             case 'boolean': 
                             case 'number': str += val+", "; break;
-                            case 'string': str += "'"+val+"', "; break;
-                            default: str += val.toSource().replace(/"/g, "'")+", "; //str += model_obj[p].toSource().replace(/"/g, "'")+", ";
+                            case 'string':
+                                if (app.uiProperties[p].type == "Number") str += (val.indexOf(".") != -1 ? parseFloat(val) : parseInt(val))+", "; else {
+                                    val = val.replace(/"/g, "\\\"").replace(/'/g, "\\\\'");
+                                    str += "'"+val+"', "; 
+                                }
+                                break;
+                            default: str += model_obj[p].toSource().replace(/'/g, "\\\\'").replace(/"/g, "'")+", "; // str += val.toSource().replace(/"/g, "'")+", "; //
                         }
                     } catch(e) { log(model_obj.toSource()); trace(e, p); }
                 } // for
@@ -241,16 +239,20 @@ BuilderDocument.prototype.addItem = function (item) {
         render:customUpdate,
         Init:function(){
             try {
-                var type = this.type,
-                       gfx = this.graphics,
-                       model_prop = model.control.properties.graphics; // пробрасываем локально
+                var self = this,
+                    type = this.type,
+                    gfx = this.graphics,
+                    model_prop = model.control.properties.graphics; // пробрасываем локально
                 // *** Блок обновления данных элемента данными модели *** //
                 for (var p in model_prop) if (model_prop.hasOwnProperty(p) && CPROPS.hasOwnProperty(p)) {
                     gfx[p] = (p.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(model_prop[p]), 1) : gfx.newBrush(_BSOLID, toRGBA(model_prop[p])) );
                 }
                 if (model_prop.hasOwnProperty('font') && model_prop.font) gfx.font = ScriptUI.newFont(model_prop.font);
 
-                if (type == 'listbox' || type == 'dropdownlist' ) { this.add("item", "Some Text 1"); this.add("item", "Some Text 2"); }
+                if (type == 'listbox' || type == 'dropdownlist' ) {
+                    model.control.properties.properties.items = ["Some Text 1", "Some Text 2"];
+                    each(model.control.properties.properties.items, function(str) { self.add("item", str) });
+                }
                 if (type == 'group' || type == 'image') { if (!this.preferredSize[0] && !this.preferredSize[1]) this.preferredSize = [8, 15] }
                 //if (type != 'tabbedpanel' && type != 'iconbutton' && this.hasOwnProperty('text')) this.text = model.control.jsname;
                 // Специальная обработка для Separator-ов
