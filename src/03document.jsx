@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  03document.jsx
 *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
-*  @@@BUILDINFO@@@ 03document.jsx 1.40 Thu Jun 05 2014 01:40:30 GMT+0300
+*  @@@BUILDINFO@@@ 03document.jsx 1.41 Fri Jun 06 2014 01:24:06 GMT+0300
 * 
 * NOTICE: 
 * 
@@ -142,26 +142,38 @@ BuilderDocument.prototype.addItem = function (item) {
                 var str = '',
                     val, val1;
                 for (var p in prop_obj) if (prop_obj.hasOwnProperty(p) && p != 'properties' && p != 'graphics' && prop_obj[p] === true) {
-                    try {
-                        str += p + ":"
-                        //val = control_obj[p];
-                        val = model_obj[p];
-                        // специальная обработка для image
-                        if (p == 'image') { val = model_obj[p][0]; }
+                    str += p + ":"
+                    //val = control_obj[p];
+                    val = model_obj[p];
+                    // специальная обработка для image
+                    if (p == 'image') { val = model_obj[p][0]; }
+                    // Решение проблемы с крилицей (Array.toSource() возвращает коды символов...)
+                    var type = app.uiProperties[p].type.toLowerCase();
+                    var sstr = (function _toSafeSource(val, type) {
+                        var s = "";
                         switch (typeof val) {
                             case 'boolean': 
-                            case 'number': str += val+", "; break;
+                            case 'number': s = val+", "; break;
                             case 'string':
-                                if (app.uiProperties[p].type == "Number") str += (val.indexOf(".") != -1 ? parseFloat(val) : parseInt(val))+", "; else {
-                                    val = val.replace(/"/g, "\\\"").replace(/'/g, "\\\\'");
-                                    str += "'"+val+"', "; 
+                                if (type == "Number") s = (val.indexOf(".") != -1 ? parseFloat(val) : parseInt(val))+", "; else {
+                                    s = "'"+val.replace(/"/g, "\\\"").replace(/'/g, "\\\\'")+"', "; 
                                 }
                                 break;
-                            default: str += model_obj[p].toSource().replace(/'/g, "\\\\'").replace(/"/g, "'")+", "; // str += val.toSource().replace(/"/g, "'")+", "; //
+                            case 'object':
+                                if (val instanceof Array) {
+                                    for (var i=0, max=val.length; i<max; i++ ) s += _toSafeSource(val[i], typeof val[i]);
+                                    break;
+                                }
+                                // break
+                            default: 
+                                s = val.toSource().replace(/'/g, "\\\\'").replace(/"/g, "'")+", ";
                         }
-                    } catch(e) { log(model_obj.toSource()); trace(e, p); }
+                        return s;
+                    }(val));
+                    sstr = sstr.slice(0, -2); // убираем последнюю запятую
+                    str += ((val instanceof Array) ? "["+sstr+"]" : sstr) + ", ";
                 } // for
-                return str.slice (0, -2); // убираем последнюю запятую
+                return str.slice (0, -2); // убираем последнюю запятую 
             } // function _toSource()
         }, // model._toSourceString()
          // Метод формирует и возвращает строку, содержащую JavaScript код для дополнительной инициализации элемента
