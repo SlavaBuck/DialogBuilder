@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  02application.jsx
  *  DESCRIPTION: BuilderApplication: Основной класс приложения 
- *  @@@BUILDINFO@@@ 02application.jsx 1.41 Thu Jun 05 2014 01:40:30 GMT+0300
+ *  @@@BUILDINFO@@@ 02application.jsx 1.42 Sat Jun 07 2014 00:37:32 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -20,8 +20,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     var wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
-    version:"1.41",
-    caption:"1.41 Dialog Builder (build 0606, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    version:"1.42",
+    caption:"1.42 Dialog Builder (build 0607, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -152,7 +152,7 @@ BuilderApplication.prototype.loadResources = function() {
         try { f.open("r"); eval(f.read()); f.close(); } catch(e) { app.terminate("loadResources: " + e.description, e, f); }
         app.resources = appresources;
         
-        // Загрузка основных методанных 
+        // Загрузка основных метаданных 
         //#include "controls.jsxinc" 
         f = new File(this.resFolder + "controls.jsxinc");
         if (!f.exists) app.terminate(localize(LStr.uiErr[0], "controls.jsxinc"));
@@ -1073,5 +1073,5 @@ BuilderApplication.prototype.terminate = function(msg, err, file) {
 
 // Заглушка...
 BuilderApplication.prototype.loadDocument = function() {
-    alert({ ru:"В стадии разработки ...", en:"Under constraction..." }, app.name + " " + app.version, true);
+    this._notImplemented();
 };
