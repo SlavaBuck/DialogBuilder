@@ -1073,5 +1073,5 @@ BuilderApplication.prototype.terminate = function(msg, err, file) {
 
 // Заглушка...
 BuilderApplication.prototype.loadDocument = function() {
-    alert({ ru:"В стадии разработки ...", en:"Under constraction..." }, app.name + " " + app.version, true);
+    this._notImplemented();
 };
