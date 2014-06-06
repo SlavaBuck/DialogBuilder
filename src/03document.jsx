@@ -132,9 +132,11 @@ BuilderDocument.prototype.addItem = function (item) {
             var model = this.control,
                   props = this.properties,
                   control = this.view.control,
-                  str = ((tr)||'') + model.jsname+":"+model.label + " {",
+                  label = (model.label == "Tab" ? "Panel" : model.label).replace(/Tabbed/, ""),
+                  str = ((tr)||'') + model.jsname+":"+ label+" {",
                   ptr = "properties:{" + _toSource(props.properties, control.properties, model.properties.properties, "prop"),
                   sstr = _toSource(props, control, model.properties, "main");
+            if ( model.label == "TabbedPanel" || model.label == "Tab" ) str += "type:'"+model.label.toLowerCase()+"'"+(sstr.length == 0 ? "": ", ");
             if (sstr.length) str += sstr;
             if (ptr.length != 12) str += (sstr.length == 0 ? "": ", ") + ptr + "}";
             return str += "}";
@@ -260,13 +262,26 @@ BuilderDocument.prototype.addItem = function (item) {
                     gfx[p] = (p.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(model_prop[p]), 1) : gfx.newBrush(_BSOLID, toRGBA(model_prop[p])) );
                 }
                 if (model_prop.hasOwnProperty('font') && model_prop.font) gfx.font = ScriptUI.newFont(model_prop.font);
-
+                //
                 if (type == 'listbox' || type == 'dropdownlist' ) {
                     model.control.properties.properties.items = ["Some Text 1", "Some Text 2"];
                     each(model.control.properties.properties.items, function(str) { self.add("item", str) });
                 }
                 if (type == 'group' || type == 'image') { if (!this.preferredSize[0] && !this.preferredSize[1]) this.preferredSize = [8, 15] }
                 //if (type != 'tabbedpanel' && type != 'iconbutton' && this.hasOwnProperty('text')) this.text = model.control.jsname;
+                if (type == "tab") {
+                    var tp = this.parent,
+                        model_tp = doc.findController(tp).model;
+                    //log(model_tp);
+                    if (!(model.properties.properties.size || model.properties.properties.preferredSize)) {
+                        var add_sz = (this.text ? 42 : Math.max(28 + gfx.measureString(this.text), 42)),
+                            ch = tp.children.length;
+                        if (ch > 1) tp.size[0] += add_sz; else {
+                            tp.size[0] = (ch == 1 ? Math.max(tp.size[0], add_sz+28) : Math.max(tp.size[0], add_sz + gfx.measureString(tp.children[1].text)) );
+                        }
+                        model_tp.control.properties.size[0] = model_tp.control.properties.bounds[2] = tp.size[0];
+                    }
+                }
                 // Специальная обработка для Separator-ов
                 if (this.isSeparator) SUI.SeparatorInit(this, 'line');
                 // Обязательно патчим свойство alignment
@@ -390,6 +405,8 @@ try {
                 switch (control.type) {
                     case 'button': x = (x<80 || textSize[0]< 52) ? 80 : textSize[0] + 28; break;
                     // iconbutton ... нужно посчитать..
+                    // tabbedpanel... нужно посчитать..
+                    case 'tab': //x -= Math.max(0, 28 - textSize[0]); break;
                     default:
                 }
                 app._getField('size0').control.text = ctrl.model.control.properties.size[0] = x;
