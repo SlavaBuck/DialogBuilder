@@ -1,13 +1,20 @@
 ﻿/**************************************************************************
 *  01globals.jsx
 *  DESCRIPTION: Цвета и ресурсы
-*  @@@BUILDINFO@@@ 01globals.jsx 1.20 Fri Feb 14 2014 01:26:18 GMT+0200
+*  @@@BUILDINFO@@@ 01globals.jsx 1.50 Tue Jun 10 2014 02:00:29 GMT+0300
 * 
 * NOTICE: 
 * 
 /**************************************************************************
 * © Вячеслав aka SlavaBuck, 13.02.2014.  slava.boyko#hotmail.com
 */
+
+// Список доступных языков (Требуется чтобы соответствовало строкам в locales.jsxinc)
+var UILANGUAGES = {
+    'Auto':"",
+    'English':"en",
+    'Russian':"ru"
+};
 
 var COLORSTYLES = {
     CS: {
@@ -59,16 +66,16 @@ var _FONT = {
 };
 
 // Шрифты по умолчанию
-var DEFFONTS = {
-    'dialog':0,
-    'Arial':0,
-    'Calibri':0,
-    'Georgia':0,
-    'Helvetica':0,
+var DEFFONTS = [
+    'dialog',
+    'Arial',
+    'Calibri',
+    'Georgia',
+    'Helvetica',
 //    'Lucida Grande':0,
-    'Tahoma':0,
-    'Verdana':0
-}
+    'Tahoma',
+    'Verdana'
+]
 
 // Сокращённые наименования объектов диалога в документах
 var JSNAMES = {

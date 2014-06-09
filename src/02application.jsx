@@ -72,7 +72,7 @@ BuilderApplication.prototype.Init = function() {
     app.loadResources();    // app.LStr получает локализованные строки
     app.initJsNames();      // Инициализация наименований объектов диалога (могут переопределяться в опциях)
     
-    // Формирование представлений для главного окна и контеёнера документов (docView)
+    // Формирование представлений для главного окна и контейнера документов (docView)
     app.pBar.hit(localize(app.LStr.uiApp[36]));
     app.buildCaption(w.pCaption);               // id:"Caption"
     app.pBar.hit(localize(app.LStr.uiApp[37]));
@@ -83,7 +83,9 @@ BuilderApplication.prototype.Init = function() {
     app.pBar.hit(localize(app.LStr.uiApp[39]));
     app.buildTabs(w.pBottom.pTabs);             // id:"Tab"
     app.pBar.hit(localize(app.LStr.uiApp[40]));
-    app.buldStatusBar(w.pStatusBar);            // id:"SBar"        
+    app.buildSettingsWindow();                  // Окно для управления настройками app.settingsWindow
+    app.pBar.hit(localize(app.LStr.uiApp[41]));
+    app.buldStatusBar(w.pStatusBar);            // id:"SBar"
     app.treeView = app.getViewByID("Tree");     // создан в buildDialogTree
     app.JsName = app.getViewByID("JsName");     // создан в buildDocsView 
     
@@ -268,7 +270,7 @@ BuilderApplication.prototype.buildCaption = function(cont) {
                 case "openIn":  app.openInDocument();   break;
                 case "save":    app.saveDocument();     break;
                 case "saveAs":  app.saveAsDocument();   break;
-                case "settings":app.editOptions();      break;
+                case "settings":app.showSettings();     break;
                 case "eval":    app.evalDialog();       break;
                 case "code":    app.showCode();         break;
                 case "about":   app.about();            break;

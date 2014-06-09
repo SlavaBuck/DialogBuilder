@@ -87,7 +87,11 @@ BuilderApplication.prototype.prepareOptions = function() {
     if (!options.doc) options.doc = {};
     _setColors(options.doccolors, options.doc);
     if (!options.doc.font) options.doc.font = options.font;
-
+    // пользовательские цвета
+    if (!options.usercolors) options.usercolors = [];
+    // пользовательские шрифты
+    if (!options.userfonts) options.userfonts = [];
+    
     // Вспомогательные функции
     function _setColors(schema, opt) { 
         // Применяем цветовые схемы (цвета backgroundColor, foregroundColor... для приложения и документа инициализируются в формате uint)
@@ -188,3 +192,200 @@ BuilderApplication.prototype.editOptions = function(doc) {
     }
     w.show();
 };
+
+// ===================
+// Отображает окно для редактирования файла настроек
+//
+BuilderApplication.prototype.showSettings = function() {
+    this.settingsWindow.show();
+};
+
+BuilderApplication.prototype.buildSettingsWindow = function() {
+    var app = this,
+        LStr = this.LStr,
+        uiSet = this.LStr.uiSet,
+        SettingsFields = this.LStr.uiSet[1];
+try {
+    app.settingsWindow = new Window("palette { text:'"+localize(uiSet[0])+"', spacing:5, margins:[15, 10, 15, 10],\
+		gMain:Group {  \
+				gLeft:Group {alignment:['left', 'fill'], margins:[0, 6, 0, 0],  \
+					lbSettings:ListBox {alignment:['fill', 'fill']}},  \
+				gRight:Group {orientation:'stack', alignment:['fill', 'fill'], alignChildren:['fill', 'fill'] }}  \
+		gStatus:Group {orientation:'column',  alignment:['fill', 'bottom'], spacing:5, \
+				sp:"+SUI.Separator+",  \
+				gBtns:Group { alignment:['right', 'center'], spacing:5, \
+					btDefaults:Button { text:'"+localize(LStr.uiApp[43])+"', preferredSize:[113, 23]}, \
+					sp:"+SUI.Separator+",  \
+					btCancel:Button { text:'Cancel' }, \
+					btApply:Button { text:'"+localize(LStr.uiApp[44])+"' }, \
+					btOk:Button { text:'Ok' }, \
+        }}}");
+    var w = app.settingsWindow;
+    // сокращения:
+    SUI.SeparatorInit(w.gStatus.sp, "line");
+    SUI.SeparatorInit(w.gStatus.gBtns.sp, "line");
+    
+    var gRight = w.gMain.gRight;
+    // список настроек:
+    var mlist = w.gMain.gLeft.lbSettings;
+    each(SettingsFields, function(str) { mlist.add("item", localize(str)) });
+    // вкладки настроек
+    var pages = [
+            build_pMain(gRight),
+            build_pAppearance(gRight),
+            build_pNames(gRight),
+            build_pColors(gRight),
+            build_pFonts(gRight)
+        ];
+    each(pages, function(page) { page.enabled = page.visible = false });
+    mlist.selection = 0; 
+    mlist.activePage = pages[0];
+    pages[0].enabled = pages[0].visible = true;
+    
+    mlist.onChange = function() {
+        var page = this.activePage;
+        page.enabled = page.visible = false;
+        page = this.activePage = pages[this.selection.index];
+        page.enabled = page.visible = true;
+    }
+    //w.show();
+    
+    // --------------------
+    // Настройка основных кнопок
+    var btns = w.gStatus.gBtns,
+        btDefaults = btns.btDefaults,
+        btCancel = btns.btCancel,
+        btApply = btns.btApply,
+        btOk = btns.btOk;
+    btOk.onClick = btApply.onClick = btCancel.onClick = btDefaults.onClick = function() { w.hide(); }
+    
+} catch(e) { trace(e) };    
+    ///////////
+
+    
+    //////////
+    // --------------------
+    // Строим панель pMain
+    function build_pMain(cont) {
+        var panel = cont.add("panel {text:'"+localize(SettingsFields[0])+":', alignment:['fill', 'fill'], alignChildren:['fill', 'top'], spacing:5,  \
+								g0:Group {  \
+									st0:StaticText {text:'"+localize(uiSet[2])+":', alignment:['left', 'center'], characters:22},  \
+									dd0:DropDownList {alignment:['fill', 'center'], preferredSize:[90, 23]}},  \
+								g1:Group {  \
+									st1:StaticText {text:'"+localize(uiSet[3])+":', alignment:['left', 'center'], characters:22},  \
+									dd1:DropDownList {alignment:['fill', 'center'], preferredSize:[90, 23], properties:{items:['dialog', 'palette', 'window']}}},  \
+								sp0:"+SUI.Separator+",  \
+								g2:Group {alignment:['left', 'top'],  \
+									ch0:Checkbox {alignment:['left', 'top']},  \
+                                        g3:Group {  \
+                                            st2:StaticText {text:'"+localize(uiSet[4])+"', preferredSize:['300', '55'], properties:{multiline:true}}}}  \
+								sp1:"+SUI.Separator+",  \
+            }");
+        SUI.SeparatorInit(panel.sp0, "line");
+        SUI.SeparatorInit(panel.sp1, "line");
+        var langList = panel.g0.dd0;
+        each(UILANGUAGES, function(str, key, obj) {
+            if (str) langList[str] = langList.add("item", key); else langList.add("item", key);
+        });
+        langList.selection = (!$.locale ? 0 : langList[$.locale]);
+        
+        return panel;
+
+    } // build_pMain();
+    
+    // --------------------
+    // Строим панель pAppearance // цвета и шрифты
+    function build_pAppearance(cont) {
+        var mainPanel = cont.add("panel {text:'"+localize(SettingsFields[1])+":', alignment:['fill', 'fill'], alignChildren:['fill', 'top']}");
+        //mainPanel.margins = [0,15,0,10];
+        mainPanel.pProg = build_pSettings(mainPanel, localize(uiSet[5]));
+        mainPanel.pDoc = build_pSettings(mainPanel, localize(uiSet[6]));
+        
+        return mainPanel;
+        // строится блок нстроек 
+        function build_pSettings(cont, caption) {
+            var grp = "group { st:StaticText {alignment:['left', 'center'], characters:22},  \
+                               dd:DropDownList {preferredSize:['120', 23]}}";
+            var hTips = ["foregroundColor", "backgroundColor", "disabledForegroundColor", "disabledBackgroundColor"];
+            var Lstr = LStr.uiSet[7]; // Массив строк
+            var panel = cont.add("panel { text:'"+caption+"'}");
+            panel.grp = panel.add("group {orientation:'column', alignment:['fill', 'fill'], spacing:2}");
+            panel.grp.std = panel.grp.add(grp);
+            panel.grp.std.st.text = localize(Lstr[0]);
+            var sp = panel.grp.add(SUI.Separator);
+            SUI.SeparatorInit(sp, "line");
+            var count = 0;
+            each(hTips, function(str) {
+                var gGrp = panel.grp["p"+str] = panel.grp.add(grp);
+                gGrp.st.text = localize(Lstr[++count])+":";
+                gGrp.helpTip = gGrp.st.helpTip = gGrp.dd.helpTip = str + localize(uiSet[9]);
+            });
+        } // build_pSettings()
+    } // build_pAppearance()
+
+    // --------------------
+    // Строим панель pNames
+    function build_pNames(cont) {
+        var panel = cont.add("panel {text:'"+localize(SettingsFields[2])+":', alignment:['fill', 'fill'], alignChildren:['fill', 'top']}");
+        var jsnames = panel.add("group {alignment:['fill', 'top'], orientation:'column' , alignChildren:['fill', 'top'], spacing:2, \
+                                        g0:Group { \
+                                            st:StaticText {text:'"+localize(uiSet[8])+":', alignment:['left', 'center'], characters:22},  \
+                                            dd:DropDownList {alignment:['fill', 'center'], preferredSize:[90, 23], properties:{items:['small', 'full', 'user']}},  \
+                                        }}");
+        var sp = jsnames.add(SUI.Separator);
+        SUI.SeparatorInit(sp, "line");
+        var grp = "group { st:StaticText {alignment:['left', 'center'], characters:19},  \
+                           dd:EditText {alignment:['fill', 'top']}}";
+        jsnames.gNames = jsnames.add("group {alignment:['fill', 'top'], orientation:'column' , alignChildren:['fill', 'top'], spacing:0, margins:[20,0,0,0]}");
+        //заполняем надписями
+        var counts = 0, blocks = [5, 15, 18], n = 0;
+        each(app.uiControls, function(obj){
+            var g = jsnames.gNames.add(grp);
+            g.st.text = obj.label+":";// + (new Array(19 - obj.label.length)).join(".");
+            counts++;
+            if (counts == blocks[n]) {
+                var sp = jsnames.gNames.add(SUI.Separator);
+                SUI.SeparatorInit(sp, "line");
+                n++;
+            };
+        });
+        return panel;
+    } // build_pNames()
+
+    // --------------------
+    // Строим панель pNames
+    function build_pColors(cont) {
+        var panel = cont.add("panel {text:'"+localize(SettingsFields[3])+":', alignment:['fill', 'fill'], alignChildren:['fill', 'top'],\
+            g0:Group {alignment:['fill', 'fill'],  \
+                lb0:ListBox {alignment:['fill', 'fill'], preferredSize:[180, 250]},  \
+                    g1:Group {spacing:5, orientation:'column', alignment:['right', 'fill'], alignChildren:['center', 'top'],  \
+                        btAdd:Button {text:'Add'},  \
+                        btRename:Button {text:'Edit...'},  \
+                        btRemove:Button {text:'Remove'} \
+            }}}");
+        var list = panel.g0.lb0,
+            btAdd = panel.g0.g1.btAdd,
+            btRename = panel.g0.g1.btRename,
+            btRemove = panel.g0.g1.btRemove;
+
+        return panel;
+    }
+    // --------------------
+    // Строим панель pFonts
+    function build_pFonts(cont) {
+        var panel = cont.add("panel {text:'"+localize(SettingsFields[4])+":', alignment:['fill', 'fill'], alignChildren:['fill', 'top'],\
+            g0:Group {alignment:['fill', 'fill'],  \
+                lb0:ListBox {alignment:['fill', 'fill'], preferredSize:[180, 250]},  \
+                    g1:Group {spacing:5, orientation:'column', alignment:['right', 'fill'], alignChildren:['center', 'top'],  \
+                        btAdd:Button {text:'Add'},  \
+                        btRename:Button {text:'Edit...'},  \
+                        btRemove:Button {text:'Remove'} \
+            }}}");
+        var list = panel.g0.lb0,
+            btAdd = panel.g0.g1.btAdd,
+            btRename = panel.g0.g1.btRename,
+            btRemove = panel.g0.g1.btRemove;
+        
+        return panel;
+    }
+}; // showSettings

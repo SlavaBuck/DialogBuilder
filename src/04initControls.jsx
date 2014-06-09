@@ -82,7 +82,7 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
 					btRename:Button {text:'Edit...'},  \
 					btRemove:Button {text:'Remove'},  \
 					sp0:"+SUI.Separator+"  \
-					btImport:Button {text:'Import...', helpTip:'"+localize(app.LStr.uiApp[41])+"'},  \
+					btImport:Button {text:'Import...', helpTip:'"+localize(app.LStr.uiApp[42])+"'},  \
 					sp1:"+SUI.Separator+"  \
 					btUp:Button {text:'Up'},  \
 					btDown:Button {text:'Down'},  \
@@ -491,27 +491,45 @@ BuilderApplication.prototype._initFontListView = function(view) {
      var app = this,
             control = view.control,
             item, family;
-     for (var p in DEFFONTS) if (DEFFONTS.hasOwnProperty(p)) {
-        try { item = ScriptUI.newFont(p); } catch(e) { continue; }
+     each(DEFFONTS, function(font) {
+        try { item = ScriptUI.newFont(font); } catch(e) { return; }
         family = (item.family == 'Segoe UI') ? "Segoe Ui" : item.family;
         control[family] = {};
         control[family].item = control.add("item", item.family + (item.substitute ? ('( '+item.substitute+' )') : ''));
         control[family].item.family = family;
         control[family].owner = 'system';
-     }
+     });
      control.items[0].text = 'default [ ' + control.items[0].text + ' ]';
+     each(app.options.userfonts, function(font) { app._addToFontList(control, font); })
      control.selection = control[control.items[0].family].item;
 };
+// ===================
+// добавление пользовательских шрифтов в список
+// control - елемент ListBox со списком шрифтов, font - имя шрифта
+BuilderApplication.prototype._addToFontList = function(control, font) {
+    var app = this,
+        item, family;
+    // проверка на корректность шрифта
+    try { item = ScriptUI.newFont(font); } catch(e) { return false; }
+    family = (item.family == 'Segoe UI') ? "Segoe Ui" : item.family;
+    // добавляем только отсутствующие шрифты
+    if (control.hasOwnProperty(family)) return false;
+    control[family] = {};
+    control[family].item = control.add("item", item.family + (item.substitute ? ('( '+item.substitute+' )') : ''));
+    control[family].item.family = family;
+    control[family].owner = 'user';
+    return true;
+}
 
 // ===================
 // инициализация списков цветов
 BuilderApplication.prototype._initColorListView = function() {
     var app = this, sz = null, p = null, item = null, view = null, control = null,
-           CLS = { 'CS backgroundColor':COLORSTYLES.CS.backgroundColor, 
-                        'CC backgroundColor':COLORSTYLES.CC.backgroundColor, 
-                        'CS disabledBackgroundColor':COLORSTYLES.CS.disabledBackgroundColor,
-                        'CC disabledBackgroundColor':COLORSTYLES.CC.disabledBackgroundColor,
-                        'disabledForegroundColor':COLORSTYLES.CS.disabledForegroundColor        };
+        CLS = { 'CS backgroundColor':COLORSTYLES.CS.backgroundColor,
+                'CC backgroundColor':COLORSTYLES.CC.backgroundColor,
+                'CS disabledBackgroundColor':COLORSTYLES.CS.disabledBackgroundColor,
+                'CC disabledBackgroundColor':COLORSTYLES.CC.disabledBackgroundColor,
+                'disabledForegroundColor':COLORSTYLES.CS.disabledForegroundColor        };
     for (var i=0; i<app._ceditors.length; i++) {
         view = app._ceditors[i];
         control = view.control;
@@ -542,6 +560,11 @@ BuilderApplication.prototype._initColorListView = function() {
         view.unbind = _unbindColorField;
         view.rebind = _rebindColorField;
     } // for (var i=0; i<app._ceditors.length; i++)
+
+    var usercolors = app.options.usercolors;
+    for (p in usercolors) if (usercolors.hasOwnProperty(p)) {
+        app._addToColorList(usercolors[p], p);
+    }
 
     function _unbindColorField() {
         delete this.control.onChange;
@@ -582,26 +605,27 @@ BuilderApplication.prototype._initColorListView = function() {
 // глобальное обновление всех выпадающих списков цветов новым элементом-значением
 // value - Int, name - {string} - имя, если неопределено - формируется авт.
 BuilderApplication.prototype._addToColorList = function(value, name) { 
-    try {
-        var name = (name)||null;
-        if (name === null) {
-            rgb = toRGB(value);
-            name = " r="+rgb[0]+",g="+rgb[1]+",b="+rgb[2]+" ("+parseColor(value)+")";
-        }
-        var list, item, sz, 
-               app = this;
-        for (var i=0, controls=app._ceditors; i<controls.length; i++) {
-            list = controls[i].control; 
-            sz = (controls[i].id == 'fontColor') ? [18, 12] : [24, 12];
-            item = list.items[list.items.length-1];
-            item.text = name;
-            item.value = value;
-            item.image = makePng(sz, toRGB(value));
-            list[value] = { item:item, owner:'user' };
-            item = list.add("item", ". . .");
-            item.value = -1;
-        }
-    } catch(e) { log('addcolor:', e.description) };
+    var list, item, sz, 
+        app = this,
+        name = (name)||null,
+        value = parseInt(parseColor(value));
+    if (app._ceditors[0].control.hasOwnProperty(value)) return;
+    
+    if (!name) {
+        var rgb = toRGB(value);
+        name = " r="+rgb[0]+",g="+rgb[1]+",b="+rgb[2]+" ("+parseColor(value)+")";
+    }
+    for (var i=0, controls=app._ceditors; i<controls.length; i++) {
+        list = controls[i].control; 
+        sz = (controls[i].id == 'fontColor') ? [18, 12] : [24, 12];
+        item = list.items[list.items.length-1];
+        item.text = name;
+        item.value = value;
+        item.image = makePng(sz, toRGB(value));
+        list[value] = { item:item, owner:'user' };
+        item = list.add("item", ". . .");
+        item.value = -1;
+    }
 };
 
 // ===================
