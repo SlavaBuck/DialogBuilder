@@ -244,8 +244,11 @@ LStr.uiApp[36] = { ru:"Создание панели заголовка...", en:
 LStr.uiApp[37] = { ru:"Загрузка элементов управления...", en:"Loading controls..." };
 LStr.uiApp[38] = { ru:"Создание основного вида...", en:"Creating main view..." };
 LStr.uiApp[39] = { ru:"Создание вкладок свойств: ", en:"Creating properties tabs: " };
-LStr.uiApp[40] = { ru:"Завершение настройки...", en:"Completing adjustment..." };
-LStr.uiApp[41] = { ru:"Импорт строк из текстового файла...", en:"Import strings from text file..." };
+LStr.uiApp[40] = { ru:"Подготовка окна настроек...", en:"Preparing window settings..." };
+LStr.uiApp[41] = { ru:"Завершение настройки...", en:"Completing adjustment..." };
+LStr.uiApp[42] = { ru:"Импорт строк из текстового файла...", en:"Import strings from text file..." };
+LStr.uiApp[43] = { ru:"По умолчанию", en:"Set defaults" };
+LStr.uiApp[44] = { ru:"Применить", en:"Apply" };
 
 LStr.uiErr = [];
 LStr.uiErr[0] = { ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" };
@@ -253,5 +256,31 @@ LStr.uiErr[1] = { ru:"Файл уже существует. Переписать
 LStr.uiErr[2] = { ru:"Файл уже открыт для редактирования!\r\rСохранить под другим именем?", en:"File is already open in application! Save under a different name?" };
 LStr.uiErr[3] = { ru:"Ошибка получения кода диалога", en:"Missing code of dialog"};
 LStr.uiErr[4] = { ru:"Ошибка в коде диалога", en:"Error in code of dialog"};
+
+LStr.uiSet = [];
+LStr.uiSet[0] = { ru:"Настройки", en:"Program settings" };
+LStr.uiSet[1] = [ 
+                    { ru:"Основные", en:"Main settings" },
+                    { ru:"Оформление", en:"Appearance" },
+                    { ru:"Имена переменных", en:"Preferred names" },
+                    { ru:"Пользовательские цвета", en:"User colors" },
+                    { ru:"Пользовательские шрифты", en:"User fonts"}
+               ];
+LStr.uiSet[2] = { ru:"Язык интерфейса", en:"Language" };
+LStr.uiSet[3] = { ru:"Тип окна по умолчанию", 
+                  en:"Type of dialog window" };
+LStr.uiSet[4] = { ru:"Автофокус. При добавлении элемента контейного типа, автоматически переустанавливать фокус на новый элемент.", 
+                  en:"Autofocus. When you add an element of container type, automatically reset the focus to the new element." };
+LStr.uiSet[5] = { ru:"Главное окно", en:"Main window" };
+LStr.uiSet[6] = { ru:"Окно документа", en:"Document window" };
+LStr.uiSet[7] = [ 
+                    { ru:"Стандартный набор", en:"Standart Set"},
+                    { ru:"Цвет текста", en:"Color of Text" },
+                    { ru:"Цвет фона", en:"Color of Background" },
+                    { ru:"Цвет текста (не активный)", en:"Color of Text (disabled)" },
+                    { ru:"Цвет фона (не активный)", en:"Color of Background (disabled)" }
+               ];
+LStr.uiSet[8] = { ru:"Предустановленный набор", en:"Predefined set" };
+LStr.uiSet[9] = { ru:" свойство", en:" property" };
 
 LStr;
