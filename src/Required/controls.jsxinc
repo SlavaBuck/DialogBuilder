@@ -138,7 +138,7 @@ var uiControls = {
                                              properties:{ "multiline":false, "scrolling":false }, // Creation properties
                                              graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
                        }                  },
-     "EditText": { label:"EditText", type:"Control", jsname:"eText", description:LStr.uiCtrl[5], icon:"edittext", defaults:{ "size":[24, 21] },
+    "EditText": { label:"EditText", type:"Control", jsname:"eText", description:LStr.uiCtrl[5], icon:"edittext", defaults:{ "size":[24, 21] },
                           properties:{"text":false, "label":false, "helpTip":false, // Text & Labels  "textselection":false, 
                                             "alignment":false, "indent":false, "justify":false, // Alignment porperies
                                             "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
@@ -162,6 +162,22 @@ var uiControls = {
                                             properties:{ "style":false },// Creation properties
                                             graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }                                            
                        }                  },
+    "RadioButton": { label:"RadioButton", type:"Control", jsname:"rBox", description:LStr.uiCtrl[11], icon:"radiobutton", defaults:{ "size":[15, 17] },
+                          properties:{"text":true, "label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, "justify":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
+                                            "value":false, "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{},
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                       }                  },
+    "Checkbox": { label:"Checkbox", type:"Control", jsname:"chBox", description:LStr.uiCtrl[10], icon:"checkbox", defaults:{ "size":[15, 17] },
+                          properties:{"text":true, "label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, "justify":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
+                                            "value":false, "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{},
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                       }                  },              
     "Slider": { label:"Slider", type:"Control", jsname:"slSlider", description:LStr.uiCtrl[8], icon:"slider", defaults:{ "size":[100, 17] },
                           properties:{"label":false, "helpTip":false, // Text & Labels
                                             "alignment":false, "indent":false, // Alignment porperies
@@ -170,35 +186,31 @@ var uiControls = {
                                             properties:{},
                                             graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
                        }                  },
-/*               
-    "Separator": { label:"Separator", type:"Control", jsname:"spSeparator", description:LStr.uiCtrl[9], icon:"separator", 
-                          properties:{ "label":false, "helpTip":false, // Text & Labels
+
+    "Scrollbar": { label:"Scrollbar", type:"Control", jsname:"scrBar", description:LStr.uiCtrl[16], icon:"scrollbar",  defaults:{ "size":[120, 16] },  
+                          properties:{"label":false, "helpTip":false, // Text & Labels
                                             "alignment":false, "indent":false, // Alignment porperies
                                             "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
-                                            "value":0, "minvalue":false, "maxvalue":false, "active":false, "stepdelta":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            "value":false, "minvalue":false, "maxvalue":false, "active":false, "stepdelta":false, "jumpdelta":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                                            properties:{},
+                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
                        }                  },
-*/
-    "Separator": { label:"Separator", type:"Control", jsname:"sp", description:LStr.uiCtrl[9], icon:"separator", defaults:{ "size":[1, 1], "dragable":false }, 
-                          properties:{"dragable":false,
-                                            properties:{},
-                                            graphics:{}
-                       }                  },                              
-     "Checkbox": { label:"Checkbox", type:"Control", jsname:"chBox", description:LStr.uiCtrl[10], icon:"checkbox", defaults:{ "size":[15, 17] },
-                          properties:{"text":true, "label":false, "helpTip":false, // Text & Labels
-                                            "alignment":false, "indent":false, "justify":false, // Alignment porperies
-                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
-                                            "value":false, "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+    "Progressbar": { label:"Progressbar", type:"Control", jsname:"pBar", description:LStr.uiCtrl[17], icon:"progressbar", defaults:{ "size":[100, 17] },  
+                          properties:{"label":false, "helpTip":false, // Text & Labels
+                                            "alignment":false, "indent":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
+                                            "value":false, "minvalue":false, "maxvalue":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
                                             properties:{},
                                             graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
-                       }                  },              
-     "RadioButton": { label:"RadioButton", type:"Control", jsname:"rBox", description:LStr.uiCtrl[11], icon:"radiobutton", defaults:{ "size":[15, 17] },
-                          properties:{"text":true, "label":false, "helpTip":false, // Text & Labels
-                                            "alignment":false, "indent":false, "justify":false, // Alignment porperies
-                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
-                                            "value":false, "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
+                       }                  },
+    "Image": { label:"Image", type:"Control", jsname:"imgImage", description:LStr.uiCtrl[15], icon:"image", defaults:{ "size":[1, 1] },  
+                          properties:{"title":false, "label":false, "helpTip":false, "image":false, // Text & Labels
+                                            "alignment":false, "indent":false, "titleLayout":false, // Alignment porperies
+                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, // Measurements
+                                            "active":false, "enabled":false, "visible":false, // Initial properties
                                             properties:{},
                                             graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
-                       }                  }, 
+                       }                  },
      "ListBox": { label:"ListBox", type:"Control", jsname:"lstBox", description:LStr.uiCtrl[12], icon:"listbox", defaults:{ "size":[101, 41] },
                           properties:{"label":false, "helpTip":false, // Text & Labels
                                             "alignment":false, "indent":false, // Alignment porperies
@@ -223,28 +235,9 @@ var uiControls = {
                                             properties:{ "items":false },// Creation properties   
                                             graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
                         }                  },
-    "Image": { label:"Image", type:"Control", jsname:"imgImage", description:LStr.uiCtrl[15], icon:"image", defaults:{ "size":[1, 1] },  
-                          properties:{"title":false, "label":false, "helpTip":false, "image":false, // Text & Labels
-                                            "alignment":false, "indent":false, "titleLayout":false, // Alignment porperies
-                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, // Measurements
-                                            "active":false, "enabled":false, "visible":false, // Initial properties
+    "Separator": { label:"Separator", type:"Control", jsname:"sp", description:LStr.uiCtrl[9], icon:"separator", defaults:{ "size":[1, 1], "dragable":false }, 
+                          properties:{"dragable":false,
                                             properties:{},
-                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
+                                            graphics:{}
                        }                  },
-    "Scrollbar": { label:"Scrollbar", type:"Control", jsname:"scrBar", description:LStr.uiCtrl[16], icon:"scrollbar",  defaults:{ "size":[120, 16] },  
-                          properties:{"label":false, "helpTip":false, // Text & Labels
-                                            "alignment":false, "indent":false, // Alignment porperies
-                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
-                                            "value":false, "minvalue":false, "maxvalue":false, "active":false, "stepdelta":false, "jumpdelta":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
-                                            properties:{},
-                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
-                       }                  },
-    "Progressbar": { label:"Progressbar", type:"Control", jsname:"pBar", description:LStr.uiCtrl[17], icon:"progressbar", defaults:{ "size":[100, 17] },  
-                          properties:{"label":false, "helpTip":false, // Text & Labels
-                                            "alignment":false, "indent":false, // Alignment porperies
-                                            "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false,  // Measurements
-                                            "value":false, "minvalue":false, "maxvalue":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
-                                            properties:{},
-                                            graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
-                       }                  }
 };
