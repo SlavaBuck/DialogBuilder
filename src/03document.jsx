@@ -363,7 +363,10 @@ try {
     doc.activeControl = model;
     // Добавляемся в список Tree
     app.treeView.addItem(doc.activeControl);
-
+    // если установлен autofocus и добавлен контейнер - переустанавливаем фокус на него:
+    if (app.options.autofocus) {
+        if (SUI.isContainer(model.view.control)) doc.activeContainer = model.view.control;
+    }
     return model;
     // ------------------------------------------------------------------------------------------------------------------------------------
     // Данные функции добавлены сюда для ускорения доступа к ним из представления модели 
