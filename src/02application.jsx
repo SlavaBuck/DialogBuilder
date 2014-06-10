@@ -868,6 +868,7 @@ BuilderApplication.prototype.addDocument = function() {
     var model = doc.addItem("dialog { preferredSize:[80, 20] }"), //, alignment:['','']
            pPnl = model.view.control,
            gfx = pPnl.graphics;
+    model.control.label = app.options.doc.dialogtype;
     pPnl.alignment = ['left','top']; //
     model.control.properties.text = "";
     doc.window.layout.layout(true);

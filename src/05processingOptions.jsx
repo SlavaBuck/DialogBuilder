@@ -287,11 +287,15 @@ try {
             }");
         SUI.SeparatorInit(panel.sp0, "line");
         SUI.SeparatorInit(panel.sp1, "line");
-        var langList = panel.g0.dd0;
+        var langList = panel.g0.dd0,
+            dlgTypeList = panel.g1.dd1,
+            chAutoFocus = panel.g2.ch0;
         each(UILANGUAGES, function(str, key, obj) {
             if (str) langList[str] = langList.add("item", key); else langList.add("item", key);
         });
         langList.selection = (!$.locale ? 0 : langList[$.locale]);
+        dlgTypeList.selection = dlgTypeList.find(app.options.doc.dialogtype);
+        chAutoFocus.value = app.options.autofocus;
         
         return panel;
 

@@ -90,10 +90,11 @@ BuilderDocument.prototype.saveAs = function() {
 BuilderDocument.prototype.addItem = function (item) {
     if(!item) return null;
     var doc = this,
-           app = doc.app,
-           uiCategories = app.uiCategories,
-           uiProperties = app.uiProperties,
-           uiControls = app.uiControls;
+        app = doc.app,
+        uiCategories = app.uiCategories,
+        uiProperties = app.uiProperties,
+        uiControls = app.uiControls,
+        dlgs = "dialog,palette,window";
    doc.modified = true;
    var CPROPS = COLORSTYLES.CS;
    // Добываем type добавляемого ScriptUI объекта в нижнем регистре!
@@ -103,8 +104,8 @@ BuilderDocument.prototype.addItem = function (item) {
             if (x2 == -1) type = item.toLowerCase(); else type = item.substr(0, x2).toLowerCase();
         } else type = item.substr(0, x1).toLowerCase();
     } else type = item.substr(0, x).toLowerCase();
-    var contrl = ((type == 'dialog' || type == 'palette') ? 'panel' : type)  + item.slice(type.length);
-    var item = (type == 'dialog' || type == 'palette') ? 'Window' : item.substr(0, type.length);
+    var contrl = (dlgs.indexOf(type) != -1 ? 'panel' : type) + item.slice(type.length);
+    var item = (dlgs.indexOf(type) != -1 ? 'Window' : item.substr(0, type.length));
 
     // Определяем контейнер для добавляемого контрола
     if (!doc.activeContainer) doc.activeContainer = doc.window;  // только при первом вызове
@@ -136,6 +137,7 @@ BuilderDocument.prototype.addItem = function (item) {
                   str = ((tr)||'') + model.jsname+":"+ label+" {",
                   ptr = "properties:{" + _toSource(props.properties, control.properties, model.properties.properties, "prop"),
                   sstr = _toSource(props, control, model.properties, "main");
+            log("label =", model.label);
             if ( model.label == "TabbedPanel" || model.label == "Tab" ) str += "type:'"+model.label.toLowerCase()+"'"+(sstr.length == 0 ? "": ", ");
             if (sstr.length) str += sstr;
             if (ptr.length != 12) str += (sstr.length == 0 ? "": ", ") + ptr + "}";
