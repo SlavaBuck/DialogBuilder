@@ -371,6 +371,7 @@ try {
             btAdd = panel.g0.g1.btAdd,
             btRename = panel.g0.g1.btRename,
             btRemove = panel.g0.g1.btRemove;
+        app.userColorList = list;
 
         return panel;
     }
@@ -389,6 +390,7 @@ try {
             btAdd = panel.g0.g1.btAdd,
             btRename = panel.g0.g1.btRename,
             btRemove = panel.g0.g1.btRemove;
+        app.userFontList = list;
         
         return panel;
     }

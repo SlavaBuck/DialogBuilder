@@ -495,7 +495,8 @@ BuilderApplication.prototype._initFontListView = function(view) {
         app._addToFontList(control, font, "system"); 
     });
     each(app.options.userfonts, function(font) { 
-        app._addToFontList(control, font, "user"); 
+        app._addToFontList(control, font, "user");
+        app._addToFontList(app.userFontList, font, "user");
     })
     // ручками переименуем дефолтный шрифт...
     control.items[0].text = 'default [ ' + control.items[0].text + ' ]';
@@ -586,6 +587,7 @@ BuilderApplication.prototype._initColorListView = function() {
 };
 
 BuilderApplication.prototype._addToColorList = function(value, control, name, toFontColor, owner) {
+    if (!control) return false;
     var list, item, sz, 
         app = this,
         value = parseInt(parseColor(value)),
@@ -597,7 +599,7 @@ BuilderApplication.prototype._addToColorList = function(value, control, name, to
         return true;
     }
     // берём любой список и прверяем - есть ли там такой цвет:
-    if (!control || control.hasOwnProperty(value)) return false;
+    if (control.hasOwnProperty(value)) return false;
 
     sz = (toFontColor ? [18, 12] : [24, 12]);       // размер цветного прямоугольника
     item = control.add("item", " "+name);
@@ -613,10 +615,14 @@ BuilderApplication.prototype._addToColorList = function(value, control, name, to
 // глобальное обновление всех выпадающих списков цветов новым элементом-значением
 // value - Int, name - {string} - имя, если неопределено - формируется авт., owner - откуда пришёл
 BuilderApplication.prototype._addToAllColorLists = function(value, name, owner) {
-    each(this._ceditors, function(view) {
-        //log(view.id, view.control, value, view.id == 'fontColor');
+    var app = this,
+        owner = (owner)||"user";
+    each(app._ceditors, function(view) {
         app._addToColorList(value, view.control, name, view.id == 'fontColor', owner); 
     });
+    if (owner == "user" && name != "separator") {
+        app._addToColorList(value, app.userColorList, name, false, owner);
+    }
 };
 
 // ===================
