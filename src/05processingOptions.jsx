@@ -342,10 +342,13 @@ try {
                            dd:EditText {alignment:['fill', 'top']}}";
         jsnames.gNames = jsnames.add("group {alignment:['fill', 'top'], orientation:'column' , alignChildren:['fill', 'top'], spacing:0, margins:[20,0,0,0]}");
         //заполняем надписями
+        app.gNamesFields = new Collection();
         var counts = 0, blocks = [5, 15, 18], n = 0;
         each(app.uiControls, function(obj){
             var g = jsnames.gNames.add(grp);
-            g.st.text = obj.label+":";// + (new Array(19 - obj.label.length)).join(".");
+            g.dd.label = (obj.label == "dialog" ? "Window" : obj.label);
+            g.st.text = g.dd.label+":";// + (new Array(19 - obj.label.length)).join(".");
+            app.gNamesFields.add(g.dd);
             counts++;
             if (counts == blocks[n]) {
                 var sp = jsnames.gNames.add(SUI.Separator);
@@ -353,6 +356,22 @@ try {
                 n++;
             };
         });
+        // инициализируем поле с типом сокращений
+        jsnames.g0.dd.onChange = function() {
+            _initgNamesFields(this.selection.text)
+        };
+        
+        function _initgNamesFields(txt) { // 'small' || 'full' || 'user'
+            var active = (txt == 'user'),
+                uiControls = app.uiControls;
+            each(app.gNamesFields, function(obj) {
+                obj.enabled = active;
+                obj.text = (active ? uiControls[obj.label].jsname : JSNAMES[txt][obj.label]);
+            });
+        }
+    
+        jsnames.g0.dd.selection = jsnames.g0.dd.find(app.options.jsname);
+        
         return panel;
     } // build_pNames()
 

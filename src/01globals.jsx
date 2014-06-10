@@ -81,7 +81,7 @@ var DEFFONTS = [
 var JSNAMES = {
     full: {
         myDialog:"myDialog",
-        Window:"win",
+        Window:"myDialog",
         Panel:"pPanel",
         Group:"gGroup",
         TabbedPanel:"tPanel",
