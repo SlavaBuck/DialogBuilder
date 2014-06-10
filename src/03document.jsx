@@ -239,7 +239,7 @@ BuilderDocument.prototype.addItem = function (item) {
            color_opt = app.options.doc;
     for (var p in model_prop) if (model_prop.hasOwnProperty(p) && CPROPS.hasOwnProperty(p)) {
         if (model_prop[p] === false) model_prop[p] = color_opt[p];
-        if (!list.hasOwnProperty(model_prop[p])) app._addToColorList(model_prop[p]); // добавляем цвет в набор, если его там небыло...
+        if (!list.hasOwnProperty(model_prop[p])) app._addToAllColorLists(model_prop[p]); // добавляем цвет во все наборы, если его там небыло...
     }
     if (model_prop.hasOwnProperty('font') &&  !model_prop.font) model_prop.font = color_opt.font;
     
