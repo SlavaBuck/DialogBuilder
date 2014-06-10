@@ -243,10 +243,14 @@ try {
     pages[0].enabled = pages[0].visible = true;
     
     mlist.onChange = function() {
-        var page = this.activePage;
-        page.enabled = page.visible = false;
-        page = this.activePage = pages[this.selection.index];
-        page.enabled = page.visible = true;
+        var page = this.activePage,
+            index = this.selection.index;
+        // без этой проверки клик по пустой области списка тушит текущее окно но не открывает новое
+        if (typeof index == 'number') {
+            page.enabled = page.visible = false;
+            page = this.activePage = pages[index];
+            page.enabled = page.visible = true;
+        }
     }
     //w.show();
     
