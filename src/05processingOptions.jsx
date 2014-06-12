@@ -200,11 +200,26 @@ BuilderApplication.prototype.showSettings = function() {
     this.settingsWindow.show();
 };
 
+// ===================
+// Создаёт окно и все вкладки для редактирования файла настроек
+//
 BuilderApplication.prototype.buildSettingsWindow = function() {
     var app = this,
         LStr = this.LStr,
         uiSet = this.LStr.uiSet,
         SettingsFields = this.LStr.uiSet[1];
+    app.currentSettings = app.addModel({
+        id:"currentSettings",
+        options:merge(app.options),
+        // Приводит все значения цветов к единому представлению - int
+        normalizeColors:function() {
+            var appopt = app.options,
+                opt = this.options;
+            opt.highlightColor = parseInt(parseColor(appopt.highlightColor));
+            each(COLORSTYLES.CS, function(val, str) { opt[str] = parseInt(parseColor(appopt[str])) });
+        }
+    });
+    
 try {
     app.settingsWindow = new Window("palette { text:'"+localize(uiSet[0])+"', spacing:5, margins:[15, 10, 15, 10],\
 		gMain:Group {  \
@@ -231,17 +246,18 @@ try {
     each(SettingsFields, function(str) { mlist.add("item", localize(str)) });
     // вкладки настроек
     var pages = [
-            build_pMain(gRight),
-            build_pAppearance(gRight),
-            build_pNames(gRight),
-            build_pColors(gRight),
-            build_pFonts(gRight)
+            w.pMain = build_pMain(gRight),
+            w.pAppearance = build_pAppearance(gRight),
+            w.pNames = build_pNames(gRight),
+            w.pColors = build_pColors(gRight),
+            w.pFonts = build_pFonts(gRight)
         ];
-    each(pages, function(page) { page.enabled = page.visible = false });
+    //log("pages =", pages);
+    //each(pages, function(page) { page.enabled = page.visible = false });
     mlist.selection = 0; 
     mlist.activePage = pages[0];
     pages[0].enabled = pages[0].visible = true;
-    
+    // переключение вкладок
     mlist.onChange = function() {
         var page = this.activePage,
             index = this.selection.index;
@@ -262,6 +278,27 @@ try {
         btApply = btns.btApply,
         btOk = btns.btOk;
     btOk.onClick = btApply.onClick = btCancel.onClick = btDefaults.onClick = function() { w.hide(); }
+    btDefaults.onClick = function() {
+        log(app.parseOptions(app.currentSettings.options));
+    }
+    
+    // --------------------
+    // Методы для обновления элементов в окнах настройки
+    app.settingsWindow.updateAllPanels = function() {
+        var options = merge(app.options);
+        options.highlightColor = parseInt(parseColor(options.highlightColor));
+        extend(app.currentSettings.options, options);
+        //_debug(app.getViewByID("_settings_appcolorsforegroundColor").control);
+//~         each(COLORSTYLES.CS, function(val, key) {
+//~             app.currentSettings.options[key] = parseInt(parseColor(options[key]));
+//~             app.currentSettings.options.doc[key] = parseInt(parseColor(options.doc[key]));
+//~         });
+    }
+    
+    w.onShow = function() {
+        this.updateAllPanels();
+    }
+    return app.settingsWindow;
     
 } catch(e) { trace(e) };    
     ///////////
@@ -287,16 +324,31 @@ try {
             }");
         SUI.SeparatorInit(panel.sp0, "line");
         SUI.SeparatorInit(panel.sp1, "line");
-        var langList = panel.g0.dd0,
-            dlgTypeList = panel.g1.dd1,
-            chAutoFocus = panel.g2.ch0;
-        each(UILANGUAGES, function(str, key, obj) {
-            if (str) langList[str] = langList.add("item", key); else langList.add("item", key);
+        var langList = MVC.View({ id:"_settings_langList", control:panel.g0.dd0 }),
+            dlgTypeList = MVC.View({ id:"_settings_dlgTypeList", control:panel.g1.dd1 }),
+            chAutoFocus = MVC.View({ id:"_settings_chAutoFocus", control:panel.g2.ch0 });
+        var list = langList.control,
+            index = 0;
+        each(UILANGUAGES, function(obj, i) {
+            var item = list.add("item", obj.text);
+            item.value = obj.value;
+            if (app.currentSettings.options.locale == obj.value) index = i;
         });
+        list.selection = list.items[index];
+        app.views.add(langList);
+        app.views.add(dlgTypeList);
+        app.views.add(chAutoFocus);
+        app.addController({ binding:"currentSettings.options.locale:_settings_langList.selection.value" });
+        app.addController({ binding:"currentSettings.options.doc.dialogtype:_settings_dlgTypeList.selection.text" });
+        var ctrl = app.addController({ binding:"currentSettings.options.autofocus:_settings_chAutoFocus.value" });
+        // onClick() для CheckBox выполняет роль onChange()
+        chAutoFocus.control.onClick = function() { ctrl._updateModel() }
+
+        /*
         langList.selection = (!$.locale ? 0 : langList[$.locale]);
         dlgTypeList.selection = dlgTypeList.find(app.options.doc.dialogtype);
         chAutoFocus.value = app.options.autofocus;
-        
+        */
         return panel;
 
     } // build_pMain();
@@ -306,12 +358,14 @@ try {
     function build_pAppearance(cont) {
         var mainPanel = cont.add("panel {text:'"+localize(SettingsFields[1])+":', alignment:['fill', 'fill'], alignChildren:['fill', 'top']}");
         //mainPanel.margins = [0,15,0,10];
-        mainPanel.pProg = build_pSettings(mainPanel, localize(uiSet[5]));
-        mainPanel.pDoc = build_pSettings(mainPanel, localize(uiSet[6]));
+        app.settingColorFields = new Collection();
         
+        mainPanel.pProg = build_pSettings(mainPanel, localize(uiSet[5]), app.options, "appcolors");
+        mainPanel.pDoc = build_pSettings(mainPanel, localize(uiSet[6]), app.options.doc, "doccolors");
+
         return mainPanel;
         // строится блок нстроек 
-        function build_pSettings(cont, caption) {
+        function build_pSettings(cont, caption, options, owner_str) {
             var grp = "group { st:StaticText {alignment:['left', 'center'], characters:22},  \
                                dd:DropDownList {preferredSize:['120', 23]}}";
             var hTips = ["foregroundColor", "backgroundColor", "disabledForegroundColor", "disabledBackgroundColor"];
@@ -320,14 +374,45 @@ try {
             panel.grp = panel.add("group {orientation:'column', alignment:['fill', 'fill'], spacing:2}");
             panel.grp.std = panel.grp.add(grp);
             panel.grp.std.st.text = localize(Lstr[0]);
+            panel.grp.std.dd.label = owner_str;
+            // Добавляем наименования предустановленных текстовых наборов (CS, CC)
+            each(COLORSTYLES, function(str, key) { panel.grp.std.dd.add("item", key) });
+            //
+            app.views.add({ 
+                id:"_settings_"+owner_str, 
+                control:panel.grp.std.dd,
+                render:function() {
+                    var label = this.label,
+                        opt = (label == "appcolors" ? app.currentSettings.options : app.currentSettings.options.doc);
+                    each(COLORSTYLES[this.selection.text], function(val, key) {
+                        log(val, key, opt[key]);
+                        log("_settings_"+label+key);
+                        //opt[key] = val;
+                        try {
+                        control = app.getViewByID("_settings_"+label+key).control;
+                        //control.selection = control[val];
+                        } catch(e) { trace(e) }
+                    });
+                }
+            });
+            app.addController({ binding:"currentSettings.options."+owner_str+":_settings_"+owner_str+".selection.text" })
             var sp = panel.grp.add(SUI.Separator);
             SUI.SeparatorInit(sp, "line");
-            var count = 0;
+            var count = 0,
+                bind_model = (owner_str == "appcolors" ? "currentSettings.options.": "currentSettings.options.doc."),
+                id = "_settings_"+owner_str;
             each(hTips, function(str) {
                 var gGrp = panel.grp["p"+str] = panel.grp.add(grp);
                 gGrp.st.text = localize(Lstr[++count])+":";
                 gGrp.helpTip = gGrp.st.helpTip = gGrp.dd.helpTip = str + localize(uiSet[9]);
+                log(id+str);
+                app.views.add({ id:id+str, control:gGrp.dd });
+                app.addController({ binding:bind_model+str+":"+id+str+".selection.value", bind:false });
+                //gGrp.dd.options = options;
+                //gGrp.dd.key = str;
+                app.settingColorFields.add(gGrp.dd);
             });
+            return panel;
         } // build_pSettings()
     } // build_pAppearance()
 
@@ -335,24 +420,35 @@ try {
     // Строим панель pNames
     function build_pNames(cont) {
         var panel = cont.add("panel {text:'"+localize(SettingsFields[2])+":', alignment:['fill', 'fill'], alignChildren:['fill', 'top']}");
-        var jsnames = panel.add("group {alignment:['fill', 'top'], orientation:'column' , alignChildren:['fill', 'top'], spacing:2, \
+        var jsnames = panel.jsnames = panel.add("group {alignment:['fill', 'top'], orientation:'column' , alignChildren:['fill', 'top'], spacing:2, \
                                         g0:Group { \
                                             st:StaticText {text:'"+localize(uiSet[8])+":', alignment:['left', 'center'], characters:22},  \
                                             dd:DropDownList {alignment:['fill', 'center'], preferredSize:[90, 23], properties:{items:['small', 'full', 'user']}},  \
                                         }}");
+        app.views.add({ 
+            id:"_settings_jsname", 
+            control:jsnames.g0.dd,
+            render:function() {
+                _initgNamesFields(this.selection.text);
+            }
+        });
+        app.addController({ binding:"currentSettings.options.jsname:_settings_jsname.selection.text" });
+        
         var sp = jsnames.add(SUI.Separator);
         SUI.SeparatorInit(sp, "line");
         var grp = "group { st:StaticText {alignment:['left', 'center'], characters:19},  \
-                           dd:EditText {alignment:['fill', 'top']}}";
+                           et:EditText {alignment:['fill', 'top']}}";
         jsnames.gNames = jsnames.add("group {alignment:['fill', 'top'], orientation:'column' , alignChildren:['fill', 'top'], spacing:0, margins:[20,0,0,0]}");
         //заполняем надписями
         app.gNamesFields = new Collection();
         var counts = 0, blocks = [5, 15, 18], n = 0;
         each(app.uiControls, function(obj){
             var g = jsnames.gNames.add(grp);
-            g.dd.label = (obj.label == "dialog" ? "Window" : obj.label);
-            g.st.text = g.dd.label+":";// + (new Array(19 - obj.label.length)).join(".");
-            app.gNamesFields.add(g.dd);
+            g.et.label = (obj.label == "dialog" ? "Window" : obj.label);
+            g.st.text = g.et.label+":";// + (new Array(19 - obj.label.length)).join(".");
+            g.et.onChanging = _onChangingJsNameField;
+            g.et.onChange = _onChangeJsNameField;
+            app.gNamesFields.add(g.et);
             counts++;
             if (counts == blocks[n]) {
                 var sp = jsnames.gNames.add(SUI.Separator);
@@ -360,21 +456,43 @@ try {
                 n++;
             };
         });
-        // инициализируем поле с типом сокращений
-        jsnames.g0.dd.onChange = function() {
-            _initgNamesFields(this.selection.text)
+        
+        function _onChangingJsNameField() {
+            var gfx = this.graphics,
+                SOLID_COLOR = gfx.PenType.SOLID_COLOR,
+                jsnames = app.currentSettings.options.jsnames,
+                label = this.label;
+            
+            if (!this.text) { 
+                this.text = JSNAMES["full"][label];
+                delete jsnames[label];
+            } else {
+                jsnames[label] = this.text;
+            }
+            gfx.foregroundColor = gfx.newPen(SOLID_COLOR, (jsnames[label] ? cBlack : cGray), 1);
         };
         
+        function _onChangeJsNameField() {
+            var gfx = this.graphics,
+                SOLID_COLOR = gfx.PenType.SOLID_COLOR,
+                jsnames = app.currentSettings.options.jsnames,
+                label = this.label;
+            gfx.foregroundColor = gfx.newPen(SOLID_COLOR, (jsnames[label] ? cBlack : cGray), 1);
+        }
+        // инициализируем поля с сокращениями (если сокращение не задано - используется значение из JSNAMES["full"]);
         function _initgNamesFields(txt) { // 'small' || 'full' || 'user'
             var active = (txt == 'user'),
-                uiControls = app.uiControls;
+                uiControls = app.uiControls,
+                jsnames = app.currentSettings.options.jsnames;
             each(app.gNamesFields, function(obj) {
                 obj.enabled = active;
-                obj.text = (active ? uiControls[obj.label].jsname : JSNAMES[txt][obj.label]);
+                obj.text = (active ? (jsnames[obj.label])||JSNAMES["full"][obj.label] : JSNAMES[txt][obj.label]);
+                obj.notify("onChange");
             });
-        }
+        };
+        _initgNamesFields(jsnames.g0.dd.selection.text);
     
-        jsnames.g0.dd.selection = jsnames.g0.dd.find(app.options.jsname);
+        //jsnames.g0.dd.selection = jsnames.g0.dd.find(app.options.jsname);
         
         return panel;
     } // build_pNames()

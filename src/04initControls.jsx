@@ -532,25 +532,26 @@ BuilderApplication.prototype._initColorListView = function() {
                 'CC disabledBackgroundColor':COLORSTYLES.CC.disabledBackgroundColor,
                 'disabledForegroundColor':COLORSTYLES.CS.disabledForegroundColor        
               };
+    // инициализация всех списков цветами из стандартного набора CS/CC
     each(CLS, function(str, key, obj) {
         app._addToAllColorLists(obj[key], key, "system");
     });
     app._addToAllColorLists(0, "separator");
-    
+    // инициализация всех списков цветами из общего стандартного набора COLORS
     each(COLORS, function(str, key, obj) {
         app._addToAllColorLists(obj[key], key, "system");
     });
     app._addToAllColorLists(0, "separator");
-    
-    each(app._ceditors, function(view) {
-        view.unbind = _unbindColorField;
-        view.rebind = _rebindColorField;
-    }) // for (var i=0; i<app._ceditors.length; i++)
-
+    // инициализация всех списков цветами из пользовательского набора options.usercolors
     each(app.options.usercolors, function(str, key, obj) {
         app._addToAllColorLists(obj[key], key, "user");
     });
 
+    each(app._ceditors, function(view) {
+        view.unbind = _unbindColorField;
+        view.rebind = _rebindColorField;
+    }) // for (var i=0; i<app._ceditors.length; i++)
+    
     function _unbindColorField() {
         delete this.control.onChange;
         if (this.id != 'fontColor') this.control.selection = null;
@@ -617,9 +618,17 @@ BuilderApplication.prototype._addToColorList = function(value, control, name, to
 BuilderApplication.prototype._addToAllColorLists = function(value, name, owner) {
     var app = this,
         owner = (owner)||"user";
+    // Инициализация элементов управления в Tabs и Caption
     each(app._ceditors, function(view) {
         app._addToColorList(value, view.control, name, view.id == 'fontColor', owner); 
     });
+    // Инициализация элементов управления в Settings
+    // app.settingColorFields:{Collection of DropDownList} - создаётся в buildSettingsWindow()->build_pAppearance();
+    each(app.settingColorFields, function(control) {
+        app._addToColorList(value, control, name, false, owner);
+    });
+    // Дополнительная инициализация списка пользовательских цветов в настройках
+    // app.userColorList:{ListBox} - создаётся в buildSettingsWindow()->build_pColors();
     if (owner == "user" && name != "separator") {
         app._addToColorList(value, app.userColorList, name, false, owner);
     }

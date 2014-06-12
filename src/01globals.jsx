@@ -10,11 +10,11 @@
 */
 
 // Список доступных языков (Требуется чтобы соответствовало строкам в locales.jsxinc)
-var UILANGUAGES = {
-    'Auto':"",
-    'English':"en",
-    'Russian':"ru"
-};
+var UILANGUAGES = [
+    {text:'Auto', value:""},
+    {text:'English', value:"en" },
+    {text:'Russian', value:"ru" }
+];
 
 var COLORSTYLES = {
     CS: {
