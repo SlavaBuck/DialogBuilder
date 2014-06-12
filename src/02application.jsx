@@ -62,7 +62,7 @@ BuilderApplication.prototype.Init = function() {
           views = app.views,
           title = app.version +" " + app.name + ": " + localize({ru:"Загрузка...", en:"Loading..."});
     app.pBar = SUI.ProgressBar(title);
-    app.pBar.reset(title, 16);
+    app.pBar.reset(title, 17);
     app.pBar.hit(localize({ ru:"Загрузка настроек...", en:"Loading settings..."}));
     // Загрузка настроек и метаданных
     app.processingOptions();
@@ -88,10 +88,11 @@ BuilderApplication.prototype.Init = function() {
     app.buldStatusBar(w.pStatusBar);            // id:"SBar"
     app.treeView = app.getViewByID("Tree");     // создан в buildDialogTree
     app.JsName = app.getViewByID("JsName");     // создан в buildDocsView 
-    
     // Инициализация списков (цветовых наборов, шрифтов и картинок)
     app.initControls()
-    
+    // Завершение настройки
+    app.pBar.hit(localize(app.LStr.uiApp[45]));
+    app.settingsWindow.updateAllPanels();
     // Регестрируем фабрику документов
     app.registerDocumentFactory(); // app.getViewByID("Documents")
     var docsView = app.documentsView.control; // инициализируется в app.documentsView()

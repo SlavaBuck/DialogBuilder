@@ -245,10 +245,11 @@ LStr.uiApp[37] = { ru:"Загрузка элементов управления.
 LStr.uiApp[38] = { ru:"Создание основного вида...", en:"Creating main view..." };
 LStr.uiApp[39] = { ru:"Создание вкладок свойств: ", en:"Creating properties tabs: " };
 LStr.uiApp[40] = { ru:"Подготовка окна настроек...", en:"Preparing window settings..." };
-LStr.uiApp[41] = { ru:"Завершение настройки...", en:"Completing adjustment..." };
+LStr.uiApp[41] = { ru:"Настрока глобальных списков...", en:"Adjustment of global lists..." };
 LStr.uiApp[42] = { ru:"Импорт строк из текстового файла...", en:"Import strings from text file..." };
 LStr.uiApp[43] = { ru:"По умолчанию", en:"Set defaults" };
 LStr.uiApp[44] = { ru:"Применить", en:"Apply" };
+LStr.uiApp[45] = { ru:"Завершение настройки...", en:"Completing adjustment..." };
 
 LStr.uiErr = [];
 LStr.uiErr[0] = { ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" };
