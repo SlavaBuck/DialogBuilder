@@ -252,8 +252,6 @@ try {
             w.pColors = build_pColors(gRight),
             w.pFonts = build_pFonts(gRight)
         ];
-    //log("pages =", pages);
-    //each(pages, function(page) { page.enabled = page.visible = false });
     mlist.selection = 0; 
     mlist.activePage = pages[0];
     pages[0].enabled = pages[0].visible = true;
@@ -288,11 +286,6 @@ try {
         var options = merge(app.options);
         options.highlightColor = parseInt(parseColor(options.highlightColor));
         extend(app.currentSettings.options, options);
-        //_debug(app.getViewByID("_settings_appcolorsforegroundColor").control);
-//~         each(COLORSTYLES.CS, function(val, key) {
-//~             app.currentSettings.options[key] = parseInt(parseColor(options[key]));
-//~             app.currentSettings.options.doc[key] = parseInt(parseColor(options.doc[key]));
-//~         });
     }
     
     w.onShow = function() {
@@ -341,14 +334,9 @@ try {
         app.addController({ binding:"currentSettings.options.locale:_settings_langList.selection.value" });
         app.addController({ binding:"currentSettings.options.doc.dialogtype:_settings_dlgTypeList.selection.text" });
         var ctrl = app.addController({ binding:"currentSettings.options.autofocus:_settings_chAutoFocus.value" });
-        // onClick() для CheckBox выполняет роль onChange()
+
         chAutoFocus.control.onClick = function() { ctrl._updateModel() }
 
-        /*
-        langList.selection = (!$.locale ? 0 : langList[$.locale]);
-        dlgTypeList.selection = dlgTypeList.find(app.options.doc.dialogtype);
-        chAutoFocus.value = app.options.autofocus;
-        */
         return panel;
 
     } // build_pMain();
@@ -375,6 +363,7 @@ try {
             panel.grp.std = panel.grp.add(grp);
             panel.grp.std.st.text = localize(Lstr[0]);
             panel.grp.std.dd.label = owner_str;
+            panel.grp.std.dd.options = options;
             // Добавляем наименования предустановленных текстовых наборов (CS, CC)
             each(COLORSTYLES, function(str, key) { panel.grp.std.dd.add("item", key) });
             //
@@ -382,20 +371,19 @@ try {
                 id:"_settings_"+owner_str, 
                 control:panel.grp.std.dd,
                 render:function() {
+                    if (!(this.selection && this.selection.text)) return;
                     var label = this.label,
                         opt = (label == "appcolors" ? app.currentSettings.options : app.currentSettings.options.doc);
                     each(COLORSTYLES[this.selection.text], function(val, key) {
-                        log(val, key, opt[key]);
-                        log("_settings_"+label+key);
-                        //opt[key] = val;
                         try {
-                        control = app.getViewByID("_settings_"+label+key).control;
-                        //control.selection = control[val];
+                        var view = app.getViewByID("_settings_"+label+key);
+                        view.control.selection = view.control[opt[key]].item;
+                        opt[key] = val;
                         } catch(e) { trace(e) }
                     });
                 }
             });
-            app.addController({ binding:"currentSettings.options."+owner_str+":_settings_"+owner_str+".selection.text" })
+            app.addController({ binding:"currentSettings.options."+owner_str+":_settings_"+owner_str+".selection.text", bind:false })
             var sp = panel.grp.add(SUI.Separator);
             SUI.SeparatorInit(sp, "line");
             var count = 0,
@@ -405,11 +393,8 @@ try {
                 var gGrp = panel.grp["p"+str] = panel.grp.add(grp);
                 gGrp.st.text = localize(Lstr[++count])+":";
                 gGrp.helpTip = gGrp.st.helpTip = gGrp.dd.helpTip = str + localize(uiSet[9]);
-                log(id+str);
                 app.views.add({ id:id+str, control:gGrp.dd });
                 app.addController({ binding:bind_model+str+":"+id+str+".selection.value", bind:false });
-                //gGrp.dd.options = options;
-                //gGrp.dd.key = str;
                 app.settingColorFields.add(gGrp.dd);
             });
             return panel;
@@ -491,8 +476,6 @@ try {
             });
         };
         _initgNamesFields(jsnames.g0.dd.selection.text);
-    
-        //jsnames.g0.dd.selection = jsnames.g0.dd.find(app.options.jsname);
         
         return panel;
     } // build_pNames()
