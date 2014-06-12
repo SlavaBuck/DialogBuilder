@@ -543,9 +543,9 @@ BuilderApplication.prototype._initColorListView = function() {
     });
     app._addToAllColorLists(0, "separator");
     // пополнение options.usercolors цветами из настроек (если требуется)
-    //app._addToAllColorLists(parseInt(parseColor(app.options.highlightColor)));
     var color = parseInt(parseColor(app.options.highlightColor)),
         control = app.getViewByID("fontColor").control;
+        
     if (!control.hasOwnProperty(color)) app.options.usercolors["system highlightColor"] = color;
     each(COLORSTYLES.CS, function(val, key) {
         color = parseInt(parseColor(app.options[key]));  // если что-то новое в app.options

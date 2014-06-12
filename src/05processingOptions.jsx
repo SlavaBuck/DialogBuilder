@@ -36,14 +36,15 @@ BuilderApplication.prototype.applyOptions = function() {
     $.locale = app.options.locale;        
     // Применяем графическую тему
     var gfx = app.window.graphics,
-           opt = app.options;
-    try {           
-        gfx.foregroundColor = gfx.newPen(_PSOLID, toRGBA(opt.foregroundColor), 1);
-        gfx.backgroundColor = gfx.newBrush(_BSOLID, toRGBA(opt.backgroundColor));    
-        gfx.disabledForegroundColor = gfx.newPen(_PSOLID, toRGBA(opt.disabledForegroundColor), 1);
-        gfx.disabledBackgroundColor = gfx.newBrush(_BSOLID, toRGBA(opt.disabledBackgroundColor));
-        if (opt.font) gfx.font = ScriptUI.newFont(opt.font);
-    } catch(e) { log("applyOptions:", e.description); }
+        opt = app.options;
+
+    gfx.foregroundColor = gfx.newPen(_PSOLID, toRGBA(opt.foregroundColor), 1);
+    gfx.backgroundColor = gfx.newBrush(_BSOLID, toRGBA(opt.backgroundColor));    
+    gfx.disabledForegroundColor = gfx.newPen(_PSOLID, toRGBA(opt.disabledForegroundColor), 1);
+    gfx.disabledBackgroundColor = gfx.newBrush(_BSOLID, toRGBA(opt.disabledBackgroundColor));
+
+    if (opt.font) gfx.font = ScriptUI.newFont(opt.font);
+    opt.highlightColor = toRGBA(parseInt(parseColor(opt.highlightColor)), 0.5)
  };
 
 // ===================
@@ -129,14 +130,15 @@ BuilderApplication.prototype.parseOptions = function(obj) {
 // ===================
 // Сохраняет объект app.options в формате, возвращаемом функцией parseOptions();
 //
-BuilderApplication.prototype.saveOptions = function() {
+BuilderApplication.prototype.saveOptions = function(options) {
     var app = this,
-           f = new File(this.resFolder + "options.jsxinc");
+        f = new File(this.resFolder + "options.jsxinc"),
+        options = (options)||app.options;
     try {
         f.open("w"); 
-        f.write(app.parseOptions(app.options));
+        f.write(app.parseOptions(options));
         f.close();
-    } catch(e) { log("saveOptions:", e.description) }
+    } catch(e) { trace(e, "saveOptions"); }
 };
 
 // ===================
@@ -224,16 +226,17 @@ try {
     app.settingsWindow = new Window("palette { text:'"+localize(uiSet[0])+"', spacing:5, margins:[15, 10, 15, 10],\
 		gMain:Group {  \
 				gLeft:Group {alignment:['left', 'fill'], margins:[0, 6, 0, 0],  \
-					lbSettings:ListBox {alignment:['fill', 'fill']}},  \
+					lbSettings:ListBox {alignment:['fill', 'fill'], minimumSize:[180, '']}},  \
 				gRight:Group {orientation:'stack', alignment:['fill', 'fill'], alignChildren:['fill', 'fill'] }}  \
 		gStatus:Group {orientation:'column',  alignment:['fill', 'bottom'], spacing:5, \
 				sp:"+SUI.Separator+",  \
-				gBtns:Group { alignment:['right', 'center'], spacing:5, \
-					btDefaults:Button { text:'"+localize(LStr.uiApp[43])+"', preferredSize:[113, 23]}, \
+				gBtns:Group { alignment:['fill', 'center'], spacing:5, \
+					btSave:Button { text:'save', alignment:['left', 'center']}, \
+					btDefaults:Button { text:'"+localize(LStr.uiApp[43])+"', preferredSize:[113, 23], alignment:['left', 'center']}, \
 					sp:"+SUI.Separator+",  \
-					btCancel:Button { text:'Cancel' }, \
-					btApply:Button { text:'"+localize(LStr.uiApp[44])+"' }, \
-					btOk:Button { text:'Ok' }, \
+					btCancel:Button { text:'Cancel', alignment:['right', 'center'] }, \
+					btApply:Button { text:'"+localize(LStr.uiApp[44])+"', alignment:['right', 'center'] }, \
+					btOk:Button { text:'Ok', alignment:['right', 'center'] }, \
         }}}");
     var w = app.settingsWindow;
     // сокращения:
@@ -274,27 +277,46 @@ try {
         btDefaults = btns.btDefaults,
         btCancel = btns.btCancel,
         btApply = btns.btApply,
-        btOk = btns.btOk;
-    btOk.onClick = btApply.onClick = btCancel.onClick = btDefaults.onClick = function() { w.hide(); }
+        btOk = btns.btOk,
+        btSave = btns.btSave;
+    btCancel.onClick = btDefaults.onClick = function() { w.hide(); }
+    
+    btApply.onClick = applyCurrentSettings;
+    
+    btOk.onClick = function() {
+        applyCurrentSettings();
+        w.hide();
+    };
+
     btDefaults.onClick = function() {
         log(app.parseOptions(app.currentSettings.options));
-    }
+    };
     
+    btSave.onClick = function() {
+        app.saveOptions(app.currentSettings.options);
+    }
     // --------------------
     // Методы для обновления элементов в окнах настройки
-    app.settingsWindow.updateAllPanels = function() {
+    w.onShow = function() {
+        updateAllPanels();
+    };
+    return app.settingsWindow;
+    ///////////
+    // --------------------
+    // функции обновления настроек
+    function updateAllPanels() {
         var options = merge(app.options);
         options.highlightColor = parseInt(parseColor(options.highlightColor));
+        app.currentSettings.normalizeColors();
         extend(app.currentSettings.options, options);
-    }
+    };
     
-    w.onShow = function() {
-        this.updateAllPanels();
-    }
-    return app.settingsWindow;
-    
+    function applyCurrentSettings() {
+        extend(app.options, app.currentSettings.options);
+        app.applyOptions();
+    };
 } catch(e) { trace(e) };    
-    ///////////
+
 
     
     //////////
@@ -331,12 +353,12 @@ try {
         app.views.add(langList);
         app.views.add(dlgTypeList);
         app.views.add(chAutoFocus);
-        app.addController({ binding:"currentSettings.options.locale:_settings_langList.selection.value" });
-        app.addController({ binding:"currentSettings.options.doc.dialogtype:_settings_dlgTypeList.selection.text" });
-        var ctrl = app.addController({ binding:"currentSettings.options.autofocus:_settings_chAutoFocus.value" });
+        app.addController({ binding:"currentSettings.options.locale:_settings_langList.selection.value", bind:false });
+        app.addController({ binding:"currentSettings.options.doc.dialogtype:_settings_dlgTypeList.selection.text", bind:false });
+        var ctrl = app.addController({ binding:"currentSettings.options.autofocus:_settings_chAutoFocus.value", bind:false });
 
         chAutoFocus.control.onClick = function() { ctrl._updateModel() }
-
+        panel.label = "pMain";
         return panel;
 
     } // build_pMain();
@@ -350,7 +372,7 @@ try {
         
         mainPanel.pProg = build_pSettings(mainPanel, localize(uiSet[5]), app.options, "appcolors");
         mainPanel.pDoc = build_pSettings(mainPanel, localize(uiSet[6]), app.options.doc, "doccolors");
-
+        mainPanel.label = "pAppearance";
         return mainPanel;
         // строится блок нстроек 
         function build_pSettings(cont, caption, options, owner_str) {
@@ -477,6 +499,7 @@ try {
         };
         _initgNamesFields(jsnames.g0.dd.selection.text);
         
+        panel.label = "pNames";
         return panel;
     } // build_pNames()
 
@@ -497,6 +520,7 @@ try {
             btRemove = panel.g0.g1.btRemove;
         app.userColorList = list;
 
+        panel.label = "pColors";
         return panel;
     }
     // --------------------
@@ -516,6 +540,7 @@ try {
             btRemove = panel.g0.g1.btRemove;
         app.userFontList = list;
         
+        panel.label = "pFonts";
         return panel;
     }
 }; // showSettings

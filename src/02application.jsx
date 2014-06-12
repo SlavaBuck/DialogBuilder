@@ -92,7 +92,7 @@ BuilderApplication.prototype.Init = function() {
     app.initControls()
     // Завершение настройки
     app.pBar.hit(localize(app.LStr.uiApp[45]));
-    app.settingsWindow.updateAllPanels();
+    
     // Регестрируем фабрику документов
     app.registerDocumentFactory(); // app.getViewByID("Documents")
     var docsView = app.documentsView.control; // инициализируется в app.documentsView()
