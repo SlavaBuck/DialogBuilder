@@ -542,6 +542,17 @@ BuilderApplication.prototype._initColorListView = function() {
         app._addToAllColorLists(obj[key], key, "system");
     });
     app._addToAllColorLists(0, "separator");
+    // пополнение options.usercolors цветами из настроек (если требуется)
+    //app._addToAllColorLists(parseInt(parseColor(app.options.highlightColor)));
+    var color = parseInt(parseColor(app.options.highlightColor)),
+        control = app.getViewByID("fontColor").control;
+    if (!control.hasOwnProperty(color)) app.options.usercolors["system highlightColor"] = color;
+    each(COLORSTYLES.CS, function(val, key) {
+        color = parseInt(parseColor(app.options[key]));  // если что-то новое в app.options
+        if (!control.hasOwnProperty(color)) app.options.usercolors["user "+key+" (app)"] = color;
+        color = parseInt(parseColor(app.options.doc[key]));  // если что-то новое в app.options.doc
+        if (!control.hasOwnProperty(color)) app.options.usercolors["user "+key+" (doc)"] = color;
+    })
     // инициализация всех списков цветами из пользовательского набора options.usercolors
     each(app.options.usercolors, function(str, key, obj) {
         app._addToAllColorLists(obj[key], key, "user");
