@@ -639,6 +639,8 @@ BuilderApplication.prototype._addToAllColorLists = function(value, name, owner) 
     each(app.settingColorFields, function(control) {
         app._addToColorList(value, control, name, false, owner);
     });
+    // Пополнение списка для настройки подсветки в Settings.pMain
+    app._addToColorList(value, app.getViewByID("_settings_highlightColor").control, name, false, owner);
     // Дополнительная инициализация списка пользовательских цветов в настройках
     // app.userColorList:{ListBox} - создаётся в buildSettingsWindow()->build_pColors();
     if (owner == "user" && name != "separator") {

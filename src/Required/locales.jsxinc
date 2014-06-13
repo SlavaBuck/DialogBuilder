@@ -283,5 +283,5 @@ LStr.uiSet[7] = [
                ];
 LStr.uiSet[8] = { ru:"Предустановленный набор", en:"Predefined set" };
 LStr.uiSet[9] = { ru:" свойство", en:" property" };
-
+LStr.uiSet[10] = { ru:"Цвет подсветки", en:"Highlight color" };
 LStr;

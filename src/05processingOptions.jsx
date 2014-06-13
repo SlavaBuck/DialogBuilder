@@ -310,20 +310,22 @@ try {
     // --------------------
     // функции обновления настроек
     function updateAllPanels() {
-        try {
         var options = merge(app.options),
             applist = app.getViewByID("_settings_appcolors"),
-            doclist = app.getViewByID("_settings_doccolors");
-
+            doclist = app.getViewByID("_settings_doccolors"),
+            control = app.getViewByID("_settings_highlightColor").control;
         delete applist.render;
         delete doclist.render;
         options.highlightColor = parseInt(parseColor(options.highlightColor));
         extend(app.currentSettings.options, options);
-        //app.currentSettings.normalizeColors();
+        app.currentSettings.normalizeColors();
         _updateColorsField();
-        applist.render = doclist.render = _customRender;
         
+        applist.render = doclist.render = _customRender;
+        // Не работает автобновление?!!!!
+        control.selection = control._colors[options.highlightColor].item;
         ///////
+        // механизм обновление CS/CC списков
         function _customRender() {
             if (!(this.selection && this.selection.text)) return;
             var opt = (this.label == "appcolors" ? app.currentSettings.options : app.currentSettings.options.doc);
@@ -332,12 +334,8 @@ try {
         };
     
         function _updateColorsField() {
-            each(app.settingColorFields, function(control) {
-                control._syncValue();
-            });
+            each(app.settingColorFields, function(control) { control._syncValue(); });
         };
-
-        } catch(e) { trace(e) };
     };
     
     function applyCurrentSettings() {
@@ -356,22 +354,27 @@ try {
         var panel = cont.add("panel {text:'"+localize(SettingsFields[0])+":', alignment:['fill', 'fill'], alignChildren:['fill', 'top'], spacing:5,  \
 								g0:Group {  \
 									st0:StaticText {text:'"+localize(uiSet[2])+":', alignment:['left', 'center'], characters:22},  \
-									dd0:DropDownList {alignment:['fill', 'center'], preferredSize:[90, 23]}},  \
+									dd0:DropDownList {alignment:['fill', 'center'] }},  \
 								g1:Group {  \
 									st1:StaticText {text:'"+localize(uiSet[3])+":', alignment:['left', 'center'], characters:22},  \
-									dd1:DropDownList {alignment:['fill', 'center'], preferredSize:[90, 23], properties:{items:['dialog', 'palette', 'window']}}},  \
+									dd1:DropDownList {alignment:['fill', 'center'], properties:{items:['dialog', 'palette', 'window']}}},  \
 								sp0:"+SUI.Separator+",  \
 								g2:Group {alignment:['left', 'top'],  \
 									ch0:Checkbox {alignment:['left', 'top']},  \
                                         g3:Group {  \
                                             st2:StaticText {text:'"+localize(uiSet[4])+"', preferredSize:['300', '55'], properties:{multiline:true}}}}  \
 								sp1:"+SUI.Separator+",  \
+								g3:Group { st:StaticText {text:'"+localize(uiSet[10])+":', alignment:['left', 'center'], characters:22},  \
+									dd:DropDownList {alignment:['fill', 'center']}}, \
+								sp2:"+SUI.Separator+",  \
             }");
         SUI.SeparatorInit(panel.sp0, "line");
         SUI.SeparatorInit(panel.sp1, "line");
+        SUI.SeparatorInit(panel.sp2, "line");
         var langList = MVC.View({ id:"_settings_langList", control:panel.g0.dd0 }),
             dlgTypeList = MVC.View({ id:"_settings_dlgTypeList", control:panel.g1.dd1 }),
-            chAutoFocus = MVC.View({ id:"_settings_chAutoFocus", control:panel.g2.ch0 });
+            chAutoFocus = MVC.View({ id:"_settings_chAutoFocus", control:panel.g2.ch0 }),
+            ddhighlightColor = MVC.View({ id:"_settings_highlightColor", control:panel.g3.dd });
         var list = langList.control,
             index = 0;
         each(UILANGUAGES, function(obj, i) {
@@ -383,6 +386,8 @@ try {
         app.views.add(langList);
         app.views.add(dlgTypeList);
         app.views.add(chAutoFocus);
+        app.views.add(ddhighlightColor);
+        app.addController({ binding:"currentSettings.options.highlightColor:_settings_highlightColor.selection.value", bind:false });
         app.addController({ binding:"currentSettings.options.locale:_settings_langList.selection.value", bind:false });
         app.addController({ binding:"currentSettings.options.dialogtype:_settings_dlgTypeList.selection.text", bind:false });
         var ctrl = app.addController({ binding:"currentSettings.options.autofocus:_settings_chAutoFocus.value", bind:false });
