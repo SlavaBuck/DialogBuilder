@@ -219,6 +219,7 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
                 opt = this.options;
             opt.highlightColor = parseInt(parseColor(appopt.highlightColor));
             each(COLORSTYLES.CS, function(val, str) { opt[str] = parseInt(parseColor(appopt[str])) });
+            each(COLORSTYLES.CS, function(val, str) { opt.doc[str] = parseInt(parseColor(appopt.doc[str])) });
         }
     });
     app.currentSettings.normalizeColors();
