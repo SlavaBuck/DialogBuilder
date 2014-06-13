@@ -274,7 +274,7 @@ try {
             page.enabled = page.visible = false;
             page = this.activePage = pages[index];
             page.enabled = page.visible = true;
-        } else { log(classof(index), index) }
+        }
     }
     //w.show();
     
@@ -314,6 +314,7 @@ try {
         var options = merge(app.options),
             applist = app.getViewByID("_settings_appcolors"),
             doclist = app.getViewByID("_settings_doccolors");
+
         delete applist.render;
         delete doclist.render;
         options.highlightColor = parseInt(parseColor(options.highlightColor));
@@ -325,50 +326,17 @@ try {
         ///////
         function _customRender() {
             if (!(this.selection && this.selection.text)) return;
-            var label = this.label,
-                style = this.selection.text,
-                opt = (label == "appcolors" ? app.currentSettings.options : app.currentSettings.options.doc);
-            each(COLORSTYLES[style], function(val, key) {
-                log(style, label);
-                var view = app.getViewByID("_settings_"+label+key);
-                opt[key] = val;
-                // Почему-то не работает синхронизация ddLists - выяснить! 
-                view.control.selection = view.control._colors[opt[key]].item;
-            });
-        }
+            var opt = (this.label == "appcolors" ? app.currentSettings.options : app.currentSettings.options.doc);
+            each(COLORSTYLES[this.selection.text], function(val, key) { opt[key] = val; });
+            _updateColorsField();
+        };
+    
         function _updateColorsField() {
-            _update4colorsFields("appcolors", app.currentSettings.options);
-            _update4colorsFields("doccolors", app.currentSettings.options.doc);
-            //
-            function _update4colorsFields(label, opt) {
-                each(COLORSTYLES.CS, function(val, key) {
-                    var view = app.getViewByID("_settings_"+label+key);
-                    // opt[key] = val;
-                    // Почему-то не работает синхронизация ddLists - выяснить! 
-                    view.control.selection = view.control._colors[opt[key]].item;
-                });
-            }
-        }
-        // Прповерка цветов и выключение набора CS/CC
-        /*
-        var control = app.getViewByID("_settings_appcolors").control;
-        if (!_check_4colors(app.currentSettings.options, (control.selection ? control.selection.text : ""))) {
-            control.selection = null;
-        }
-        control = app.getViewByID("_settings_doccolors").control;
-        if (!_check_4colors(app.currentSettings.options.doc, (control.selection ? control.selection.text : ""))) {
-            control.selection = null;
-        }
-        //
-        function _check_4colors (opt, style) {
-            if (!style) return false;
-            var check = 0;
-            each(COLORSTYLES[style], function(val, key) {
-                if (opt[key] == val) check++; 
-            })
-            return check == 4;
-        }
-        */
+            each(app.settingColorFields, function(control) {
+                control._syncValue();
+            });
+        };
+
         } catch(e) { trace(e) };
     };
     
@@ -432,8 +400,8 @@ try {
         //mainPanel.margins = [0,15,0,10];
         app.settingColorFields = new Collection();
         
-        mainPanel.pProg = build_pSettings(mainPanel, localize(uiSet[5]), app.options, "appcolors");
-        mainPanel.pDoc = build_pSettings(mainPanel, localize(uiSet[6]), app.options.doc, "doccolors");
+        mainPanel.pProg = build_pSettings(mainPanel, localize(uiSet[5]), app.currentSettings.options, "appcolors");
+        mainPanel.pDoc = build_pSettings(mainPanel, localize(uiSet[6]), app.currentSettings.options.doc, "doccolors");
         mainPanel.label = "pAppearance";
         return mainPanel;
         // строится блок нстроек 
@@ -451,25 +419,30 @@ try {
             // Добавляем наименования предустановленных текстовых наборов (CS, CC)
             each(COLORSTYLES, function(str, key) { panel.grp.std.dd.add("item", key) });
             //
-            app.views.add({ 
-                id:"_settings_"+owner_str, 
-                control:panel.grp.std.dd
-            });
+            app.views.add({ id:"_settings_"+owner_str, control:panel.grp.std.dd });
             app.addController({ binding:"currentSettings.options."+owner_str+":_settings_"+owner_str+".selection.text", bind:false })
+            
             var sp = panel.grp.add(SUI.Separator);
             SUI.SeparatorInit(sp, "line");
-            var count = 0,
-                bind_model = (owner_str == "appcolors" ? "currentSettings.options.": "currentSettings.options.doc."),
-                id = "_settings_"+owner_str;
+            var count = 0;
             each(hTips, function(str) {
                 var gGrp = panel.grp["p"+str] = panel.grp.add(grp);
                 gGrp.st.text = localize(Lstr[++count])+":";
                 gGrp.helpTip = gGrp.st.helpTip = gGrp.dd.helpTip = str + localize(uiSet[9]);
-                app.views.add({ id:id+str, control:gGrp.dd });
-                log(bind_model+str+":"+id+str+".selection.value");
-                app.addController({ binding:bind_model+str+":"+id+str+".selection.value", bind:false });
+                gGrp.dd.label = owner_str;
+                gGrp.dd._key = str;
+                gGrp.dd._syncValue = _syncValue;
+                gGrp.dd.onChange = function() { this._syncValue(this.selection.value) }
                 app.settingColorFields.add(gGrp.dd);
             });
+            function _syncValue(value) {
+                var opt = (this.label == "appcolors" ? app.currentSettings.options : app.currentSettings.options.doc);
+                if (typeof value !== 'undefined') opt[this._key] = value; else value = opt[this._key];
+                if (this._value != value) {
+                    this.selection = this._colors[value].item;
+                    this._value != value;
+                }
+            }
             return panel;
         } // build_pSettings()
     } // build_pAppearance()
