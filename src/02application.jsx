@@ -865,7 +865,7 @@ BuilderApplication.prototype.addDocument = function() {
     var app = this,
            doc = app.activeDocument;
     // Добавляем и настраиваем родительский контейнер для всех элементов диалога
-    var model = doc.addItem("dialog { preferredSize:[80, 20] }"), //, alignment:['','']
+    var model = doc.addItem("dialog { preferredSize:[126, 30], minimumSize:[126, 30] }"), //, alignment:['','']
            pPnl = model.view.control,
            gfx = pPnl.graphics;
     model.control.label = app.options.dialogtype;
