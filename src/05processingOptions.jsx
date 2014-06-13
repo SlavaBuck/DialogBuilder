@@ -310,12 +310,66 @@ try {
     // --------------------
     // функции обновления настроек
     function updateAllPanels() {
-        var options = merge(app.options);
+        try {
+        var options = merge(app.options),
+            applist = app.getViewByID("_settings_appcolors"),
+            doclist = app.getViewByID("_settings_doccolors");
+        delete applist.render;
+        delete doclist.render;
         options.highlightColor = parseInt(parseColor(options.highlightColor));
         extend(app.currentSettings.options, options);
-        app.currentSettings.normalizeColors();
-        //app.currentSettings.options.foregroundColor = 0x123456;
-        //app.currentSettings.options.backgroundColor = 0x123456;
+        //app.currentSettings.normalizeColors();
+        _updateColorsField();
+        applist.render = doclist.render = _customRender;
+        
+        ///////
+        function _customRender() {
+            if (!(this.selection && this.selection.text)) return;
+            var label = this.label,
+                style = this.selection.text,
+                opt = (label == "appcolors" ? app.currentSettings.options : app.currentSettings.options.doc);
+            each(COLORSTYLES[style], function(val, key) {
+                log(style, label);
+                var view = app.getViewByID("_settings_"+label+key);
+                opt[key] = val;
+                // Почему-то не работает синхронизация ddLists - выяснить! 
+                view.control.selection = view.control._colors[opt[key]].item;
+            });
+        }
+        function _updateColorsField() {
+            _update4colorsFields("appcolors", app.currentSettings.options);
+            _update4colorsFields("doccolors", app.currentSettings.options.doc);
+            //
+            function _update4colorsFields(label, opt) {
+                each(COLORSTYLES.CS, function(val, key) {
+                    var view = app.getViewByID("_settings_"+label+key);
+                    // opt[key] = val;
+                    // Почему-то не работает синхронизация ddLists - выяснить! 
+                    view.control.selection = view.control._colors[opt[key]].item;
+                });
+            }
+        }
+        // Прповерка цветов и выключение набора CS/CC
+        /*
+        var control = app.getViewByID("_settings_appcolors").control;
+        if (!_check_4colors(app.currentSettings.options, (control.selection ? control.selection.text : ""))) {
+            control.selection = null;
+        }
+        control = app.getViewByID("_settings_doccolors").control;
+        if (!_check_4colors(app.currentSettings.options.doc, (control.selection ? control.selection.text : ""))) {
+            control.selection = null;
+        }
+        //
+        function _check_4colors (opt, style) {
+            if (!style) return false;
+            var check = 0;
+            each(COLORSTYLES[style], function(val, key) {
+                if (opt[key] == val) check++; 
+            })
+            return check == 4;
+        }
+        */
+        } catch(e) { trace(e) };
     };
     
     function applyCurrentSettings() {
@@ -399,20 +453,7 @@ try {
             //
             app.views.add({ 
                 id:"_settings_"+owner_str, 
-                control:panel.grp.std.dd,
-                render:function() {
-                    if (!(this.selection && this.selection.text)) return;
-                    var label = this.label,
-                        opt = (label == "appcolors" ? app.currentSettings.options : app.currentSettings.options.doc);
-                    each(COLORSTYLES[this.selection.text], function(val, key) {
-                        try {
-                        var view = app.getViewByID("_settings_"+label+key);
-                        opt[key] = val;
-                        // Почему-то не работает синхронизация ddLists - выяснить! 
-                        //view.control.selection = view.control[opt[key]].item;
-                        } catch(e) { trace(e) }
-                    });
-                }
+                control:panel.grp.std.dd
             });
             app.addController({ binding:"currentSettings.options."+owner_str+":_settings_"+owner_str+".selection.text", bind:false })
             var sp = panel.grp.add(SUI.Separator);
@@ -425,6 +466,7 @@ try {
                 gGrp.st.text = localize(Lstr[++count])+":";
                 gGrp.helpTip = gGrp.st.helpTip = gGrp.dd.helpTip = str + localize(uiSet[9]);
                 app.views.add({ id:id+str, control:gGrp.dd });
+                log(bind_model+str+":"+id+str+".selection.value");
                 app.addController({ binding:bind_model+str+":"+id+str+".selection.value", bind:false });
                 app.settingColorFields.add(gGrp.dd);
             });
