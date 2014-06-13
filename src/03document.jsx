@@ -137,7 +137,7 @@ BuilderDocument.prototype.addItem = function (item) {
                   str = ((tr)||'') + model.jsname+":"+ label+" {",
                   ptr = "properties:{" + _toSource(props.properties, control.properties, model.properties.properties, "prop"),
                   sstr = _toSource(props, control, model.properties, "main");
-            log("label =", model.label);
+            //log("label =", model.label);
             if ( model.label == "TabbedPanel" || model.label == "Tab" ) str += "type:'"+model.label.toLowerCase()+"'"+(sstr.length == 0 ? "": ", ");
             if (sstr.length) str += sstr;
             if (ptr.length != 12) str += (sstr.length == 0 ? "": ", ") + ptr + "}";
@@ -301,7 +301,7 @@ BuilderDocument.prototype.addItem = function (item) {
         },
         control: { 
             _marked_:true, // сигнализирует о том, что элемент выбран и выделен
-            text: (uiControls[item].properties.hasOwnProperty('text') && type != 'tabbedpanel') ? model.control.jsname : "",
+            text: (uiControls[item].properties.hasOwnProperty('text') && type != 'tabbedpanel' && dlgs.indexOf(type) == -1) ? model.control.jsname : "",
             //onDraw:customDraw
             onDraw:(model.control.type == 'Container' || "listbox,separator".indexOf(type) != -1 ) ? undefined : customDraw
         }

@@ -221,7 +221,7 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
             each(COLORSTYLES.CS, function(val, str) { opt[str] = parseInt(parseColor(appopt[str])) });
         }
     });
-    
+    app.currentSettings.normalizeColors();
 try {
     app.settingsWindow = new Window("palette { text:'"+localize(uiSet[0])+"', spacing:5, margins:[15, 10, 15, 10],\
 		gMain:Group {  \
@@ -313,6 +313,7 @@ try {
     
     function applyCurrentSettings() {
         extend(app.options, app.currentSettings.options);
+        app.initJsNames();
         app.applyOptions();
     };
 } catch(e) { trace(e) };    

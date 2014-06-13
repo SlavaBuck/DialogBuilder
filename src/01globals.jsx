@@ -83,7 +83,6 @@ var DEFFONTS = [
 // Сокращённые наименования объектов диалога в документах
 var JSNAMES = {
     full: {
-        myDialog:"myDialog",
         Window:"myDialog",
         Panel:"pPanel",
         Group:"gGroup",
@@ -105,7 +104,6 @@ var JSNAMES = {
         Progressbar:"pBar"
     },
     small: {
-        myDialog:"w",
         Window:"w",
         Panel:"p",
         Group:"g",
