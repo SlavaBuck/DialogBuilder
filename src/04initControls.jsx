@@ -620,8 +620,7 @@ BuilderApplication.prototype._addToColorList = function(value, control, name, to
     // формируем ассоциативный массив для быстрого(мгновенного) поиска цвета по его int-значению
     if (!control._colors) control._colors = [];
     control._colors[value] = { item:item, owner:owner };
-    //control[value].item = item;
-    //control[value].owner = owner; //  'system' || 'user' - для добавленных через трое точие
+    
     return true;
 }
 // ===================
