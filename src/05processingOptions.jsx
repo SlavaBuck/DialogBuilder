@@ -231,7 +231,6 @@ try {
 		gStatus:Group {orientation:'column',  alignment:['fill', 'bottom'], spacing:5, \
 				sp:"+SUI.Separator+",  \
 				gBtns:Group { alignment:['fill', 'center'], spacing:5, \
-					btSave:Button { text:'save', alignment:['left', 'center']}, \
 					btDefaults:Button { text:'"+localize(LStr.uiApp[43])+"', preferredSize:[113, 23], alignment:['left', 'center']}, \
 					sp:"+SUI.Separator+",  \
 					btCancel:Button { text:'Cancel', alignment:['right', 'center'] }, \
@@ -255,6 +254,7 @@ try {
             w.pColors = build_pColors(gRight),
             w.pFonts = build_pFonts(gRight)
         ];
+    each(pages, function(page) { page.enabled = page.visible = false; })
     mlist.selection = 0; 
     mlist.activePage = pages[0];
     pages[0].enabled = pages[0].visible = true;
@@ -267,7 +267,7 @@ try {
             page.enabled = page.visible = false;
             page = this.activePage = pages[index];
             page.enabled = page.visible = true;
-        }
+        } else { log(classof(index), index) }
     }
     //w.show();
     
@@ -285,6 +285,7 @@ try {
     
     btOk.onClick = function() {
         applyCurrentSettings();
+        app.saveOptions(app.currentSettings.options);
         w.hide();
     };
 
@@ -292,9 +293,6 @@ try {
         log(app.parseOptions(app.currentSettings.options));
     };
     
-    btSave.onClick = function() {
-        app.saveOptions(app.currentSettings.options);
-    }
     // --------------------
     // Методы для обновления элементов в окнах настройки
     w.onShow = function() {
