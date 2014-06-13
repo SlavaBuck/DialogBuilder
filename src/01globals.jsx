@@ -32,15 +32,12 @@ var COLORSTYLES = {
 };
 
 var DEFOPTIONS = {
-    locale:'',                      // '' - язык интерфейса по умолчанию '' - локаль системы (Примеры: "ru" || "en" ...)
-    appcolors:'CS',            // doccolors = appcolors
+    locale:'',               // '' - язык интерфейса по умолчанию '' - локаль системы (Примеры: "ru" || "en" ...)
+    appcolors:'CS',          // doccolors = appcolors
     doccolors:'',
-    jsname:'',                   // способ сокращённого наименования эл.управления Возможные значения '' - определяются в файле controls.jsxinc, 'user' - задаются настройками из
-                                     // файла options.jsxinc, 'full' или 'small' - предустановленные способы наименования см. JSNAMES
-    jsnames: {
-        myDialog:'myDialog'
-    },
-    highlightColor:0xF0B8F0, // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5],
+    jsname:'full',           // способ наименования эл.управления Возможные значения 'user' - задаются настройками из jsnames:{}
+                             // 'full' или 'small' - предустановленные способы наименования см. JSNAMES
+    highlightColor:0xF0B8F0, // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5]
     doc:{
         dialogtype:'dialog'  // тип окна по умолчанию для создаваемого документа (dialog || palette || window)
     }

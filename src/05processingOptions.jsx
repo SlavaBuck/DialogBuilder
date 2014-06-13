@@ -84,7 +84,7 @@ BuilderApplication.prototype.prepareOptions = function() {
     if (!options.locale) options.locale = DEFOPTIONS.locale;     // Языковые настройки (по умолчанию = '' - системная локаль)
     if (!options.font) options.font = (DEFOPTIONS.font ? DEFOPTIONS.font : app.window.graphics.font.toString());   // Шрифт интерфейса
     if (!options.jsname) options.jsname = DEFOPTIONS.jsname;
-    
+    if (!options.jsnames) options.jsnames = {};
     if (!options.doc) options.doc = {};
     _setColors(options.doccolors, options.doc);
     if (!options.doc.font) options.doc.font = options.font;
