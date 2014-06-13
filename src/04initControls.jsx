@@ -549,9 +549,9 @@ BuilderApplication.prototype._initColorListView = function() {
     if (!control.hasOwnProperty(color)) app.options.usercolors["system highlightColor"] = color;
     each(COLORSTYLES.CS, function(val, key) {
         color = parseInt(parseColor(app.options[key]));  // если что-то новое в app.options
-        if (!control.hasOwnProperty(color)) app.options.usercolors["user "+key+" (app)"] = color;
+        if (!(color in control._colors)) app.options.usercolors["user "+key+" (app)"] = color;
         color = parseInt(parseColor(app.options.doc[key]));  // если что-то новое в app.options.doc
-        if (!control.hasOwnProperty(color)) app.options.usercolors["user "+key+" (doc)"] = color;
+        if (!(color in control._colors)) app.options.usercolors["user "+key+" (doc)"] = color;
     })
     // инициализация всех списков цветами из пользовательского набора options.usercolors
     each(app.options.usercolors, function(str, key, obj) {
@@ -578,7 +578,7 @@ BuilderApplication.prototype._initColorListView = function() {
         control.enabled = true;
         delete control.onChange;
         //if (control.hasOwnProperty(val)) control.selection = control[val].item;
-        control.selection = control[val].item;
+        control.selection = control._colors[val].item;
         control.onChange = _changeColorField;
     };
     
@@ -593,7 +593,7 @@ BuilderApplication.prototype._initColorListView = function() {
         if (key == 'foregroundColor') {
             var control = app.fontColor.control
             if (this === control) control = app._ceditors.getFirstByKeyValue("id", 'foregroundColor').control;
-            control.selection = control[val].item;
+            control.selection = control._colors[val].item;
         }        
     }; // _changeColorField
 };
@@ -611,16 +611,17 @@ BuilderApplication.prototype._addToColorList = function(value, control, name, to
         return true;
     }
     // берём любой список и прверяем - есть ли там такой цвет:
-    if (control.hasOwnProperty(value)) return false;
+    if (control._colors && (value in control._colors)) return false;
 
     sz = (toFontColor ? [18, 12] : [24, 12]);       // размер цветного прямоугольника
     item = control.add("item", " "+name);
     item.value = value;
     item.image = makePng(sz, rgb);
     // формируем ассоциативный массив для быстрого(мгновенного) поиска цвета по его int-значению
-    control[value] = {};
-    control[value].item = item;
-    control[value].owner = owner; //  'system' || 'user' - для добавленных через трое точие
+    if (!control._colors) control._colors = [];
+    control._colors[value] = { item:item, owner:owner };
+    //control[value].item = item;
+    //control[value].owner = owner; //  'system' || 'user' - для добавленных через трое точие
     return true;
 }
 // ===================

@@ -314,6 +314,8 @@ try {
         options.highlightColor = parseInt(parseColor(options.highlightColor));
         extend(app.currentSettings.options, options);
         app.currentSettings.normalizeColors();
+        //app.currentSettings.options.foregroundColor = 0x123456;
+        //app.currentSettings.options.backgroundColor = 0x123456;
     };
     
     function applyCurrentSettings() {
@@ -407,7 +409,7 @@ try {
                         var view = app.getViewByID("_settings_"+label+key);
                         opt[key] = val;
                         // Почему-то не работает синхронизация ddLists - выяснить! 
-                        view.control.selection = view.control[opt[key]].item;
+                        //view.control.selection = view.control[opt[key]].item;
                         } catch(e) { trace(e) }
                     });
                 }
