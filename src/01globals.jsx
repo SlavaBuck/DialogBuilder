@@ -38,9 +38,7 @@ var DEFOPTIONS = {
     jsname:'full',           // способ наименования эл.управления Возможные значения 'user' - задаются настройками из jsnames:{}
                              // 'full' или 'small' - предустановленные способы наименования см. JSNAMES
     highlightColor:0xF0B8F0, // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5]
-    doc:{
-        dialogtype:'dialog'  // тип окна по умолчанию для создаваемого документа (dialog || palette || window)
-    }
+    dialogtype:'dialog'      // тип окна по умолчанию для создаваемого документа (dialog || palette || window)
 };
 var w = new Window('window');
 

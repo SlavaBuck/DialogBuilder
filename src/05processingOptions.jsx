@@ -354,7 +354,7 @@ try {
         app.views.add(dlgTypeList);
         app.views.add(chAutoFocus);
         app.addController({ binding:"currentSettings.options.locale:_settings_langList.selection.value", bind:false });
-        app.addController({ binding:"currentSettings.options.doc.dialogtype:_settings_dlgTypeList.selection.text", bind:false });
+        app.addController({ binding:"currentSettings.options.dialogtype:_settings_dlgTypeList.selection.text", bind:false });
         var ctrl = app.addController({ binding:"currentSettings.options.autofocus:_settings_chAutoFocus.value", bind:false });
 
         chAutoFocus.control.onClick = function() { ctrl._updateModel() }
