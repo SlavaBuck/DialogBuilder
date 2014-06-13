@@ -32,13 +32,14 @@ var COLORSTYLES = {
 };
 
 var DEFOPTIONS = {
-    locale:'',               // '' - язык интерфейса по умолчанию '' - локаль системы (Примеры: "ru" || "en" ...)
-    appcolors:'CS',          // doccolors = appcolors
+    locale:'',                  // - язык интерфейса по умолчанию '' - локаль системы (Примеры: "ru" || "en" ...)
+    autofocus:false,      // авто-переключение фокуса на добавляемый контейнер
+    dialogtype:'dialog',   // тип окна по умолчанию для создаваемого документа (dialog || palette || window)
+    appcolors:'CS',        // doccolors = appcolors
     doccolors:'',
-    jsname:'full',           // способ наименования эл.управления Возможные значения 'user' - задаются настройками из jsnames:{}
-                             // 'full' или 'small' - предустановленные способы наименования см. JSNAMES
-    highlightColor:0xF0B8F0, // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5]
-    dialogtype:'dialog'      // тип окна по умолчанию для создаваемого документа (dialog || palette || window)
+    jsname:'full',          // способ наименования эл.управления Возможные значения 'user' - задаются настройками из jsnames:{}
+                                 // 'full' или 'small' - предустановленные способы наименования см. JSNAMES
+    highlightColor:0xF0B8F0,    // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5]
 };
 var w = new Window('window');
 
@@ -70,7 +71,6 @@ var DEFFONTS = [
     'Calibri',
     'Georgia',
     'Helvetica',
-//    'Lucida Grande':0,
     'Tahoma',
     'Verdana'
 ]

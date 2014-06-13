@@ -73,23 +73,29 @@ BuilderApplication.prototype.loadOptions = function() { //
 BuilderApplication.prototype.prepareOptions = function() {
     var app = this,
            options = app.options;
-    
+    // ----------------------------------------
+    // группа общих настроек приложения:
+    if (!options.locale) options.locale = DEFOPTIONS.locale;     // Языковые настройки (по умолчанию = '' - системная локаль)    
     if (!options.appcolors || (options.appcolors != 'CS' && options.appcolors !='CC')) options.appcolors = DEFOPTIONS.appcolors;
     if (!options.doccolors || (options.doccolors != 'CS' && options.doccolors !='CC')) options.doccolors = options.appcolors;
     _setColors(options.appcolors, options);
+    _setColors(options.doccolors, options.doc);
     // highlightColor инициализируется в формате RGBA
     if (!options.highlightColor) options.highlightColor = DEFOPTIONS.highlightColor; else {
         options.highlightColor = toRGBA(parseInt(parseColor(options.highlightColor)), 0.5);
     }
-    if (!options.locale) options.locale = DEFOPTIONS.locale;     // Языковые настройки (по умолчанию = '' - системная локаль)
     if (!options.font) options.font = (DEFOPTIONS.font ? DEFOPTIONS.font : app.window.graphics.font.toString());   // Шрифт интерфейса
+    // тип коротких имён 'small' || 'full' || 'user'
     if (!options.jsname) options.jsname = DEFOPTIONS.jsname;
+    // коллекция коротких имён 'user' (может быть не полной)
     if (!options.jsnames) options.jsnames = {};
+    // ----------------------------------------
+    // группа настроек документа:
     if (!options.doc) options.doc = {};
-    _setColors(options.doccolors, options.doc);
+    // шрифт документа по умолчанию
     if (!options.doc.font) options.doc.font = options.font;
     // пользовательские цвета
-    if (!options.usercolors) options.usercolors = [];
+    if (!options.usercolors) options.usercolors = {};
     // пользовательские шрифты
     if (!options.userfonts) options.userfonts = [];
     
@@ -306,8 +312,8 @@ try {
     function updateAllPanels() {
         var options = merge(app.options);
         options.highlightColor = parseInt(parseColor(options.highlightColor));
-        app.currentSettings.normalizeColors();
         extend(app.currentSettings.options, options);
+        app.currentSettings.normalizeColors();
     };
     
     function applyCurrentSettings() {
@@ -399,8 +405,9 @@ try {
                     each(COLORSTYLES[this.selection.text], function(val, key) {
                         try {
                         var view = app.getViewByID("_settings_"+label+key);
-                        view.control.selection = view.control[opt[key]].item;
                         opt[key] = val;
+                        // Почему-то не работает синхронизация ddLists - выяснить! 
+                        view.control.selection = view.control[opt[key]].item;
                         } catch(e) { trace(e) }
                     });
                 }
