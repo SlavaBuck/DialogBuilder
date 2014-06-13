@@ -438,10 +438,7 @@ try {
             function _syncValue(value) {
                 var opt = (this.label == "appcolors" ? app.currentSettings.options : app.currentSettings.options.doc);
                 if (typeof value !== 'undefined') opt[this._key] = value; else value = opt[this._key];
-                if (this._value != value) {
-                    this.selection = this._colors[value].item;
-                    this._value != value;
-                }
+                this.selection = this._colors[value].item;
             }
             return panel;
         } // build_pSettings()
