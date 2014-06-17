@@ -62,7 +62,7 @@ BuilderApplication.prototype.Init = function() {
           views = app.views,
           title = app.version +" " + app.name + ": " + localize({ru:"Загрузка...", en:"Loading..."});
     app.pBar = SUI.ProgressBar(title);
-    app.pBar.reset(title, 17);
+    app.pBar.reset(title, 22);
     app.pBar.hit(localize({ ru:"Загрузка настроек...", en:"Loading settings..."}));
     // Загрузка настроек и метаданных
     app.processingOptions();

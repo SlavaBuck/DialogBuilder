@@ -25,8 +25,10 @@
 // Инициализация списков (цветовых наборов и шрифтов)
 BuilderApplication.prototype.initControls = function() {
     var app = this;
+    app.pBar.hit(localize(app.LStr.uiApp[41])+ "Images");
     app._initImageListView();
     app._initColorListView();
+    app.pBar.hit(localize(app.LStr.uiApp[41])+ "Fonts");
     app._initFontListView(app.fontName);
     app._initCaptionFontControls();
     app._initListButtons();
@@ -530,16 +532,20 @@ BuilderApplication.prototype._initColorListView = function() {
                 'CC disabledBackgroundColor':COLORSTYLES.CC.disabledBackgroundColor,
                 'disabledForegroundColor':COLORSTYLES.CS.disabledForegroundColor        
               };
+    app.pBar.hit(localize(app.LStr.uiApp[41])+ "System colors");
     // инициализация всех списков цветами из стандартного набора CS/CC
-    each(CLS, function(str, key, obj) {
-        app._addToAllColorLists(obj[key], key, "system");
+    each(CLS, function(val, key) {
+        app._addToAllColorLists(val, key, "system");
     });
     app._addToAllColorLists(0, "separator");
+    app.pBar.hit(localize(app.LStr.uiApp[41])+ "System colors");
     // инициализация всех списков цветами из общего стандартного набора COLORS
-    each(COLORS, function(str, key, obj) {
-        app._addToAllColorLists(obj[key], key, "system");
+    each(COLORS, function(val, key) {
+        app._addToAllColorLists(val, key, "system");
     });
     app._addToAllColorLists(0, "separator");
+    
+    app.pBar.hit(localize(app.LStr.uiApp[41])+ "User colors");
     // пополнение options.usercolors цветами из настроек (если требуется)
     var color = parseInt(parseColor(app.options.highlightColor)),
         control = app.getViewByID("fontColor").control;
