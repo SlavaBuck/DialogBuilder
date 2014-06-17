@@ -286,9 +286,23 @@ try {
         btApply = btns.btApply,
         btOk = btns.btOk,
         btSave = btns.btSave;
-    btCancel.onClick = btDefaults.onClick = function() { w.hide(); }
     
-    btApply.onClick = applyCurrentSettings;
+    btCancel.onClick = function() {
+        var usercolors = app.options.usercolors,
+            list = app.userColorList;
+        w.hide();
+        // восстанавливаем app.userColorList 
+        list.removeAll();
+        list._colors.length = 0;
+        each(usercolors, function(val, key) {
+            app._addToColorList(val, list, key, false, "user");
+        });
+    };
+    
+        
+    btApply.onClick = function() {
+        applyCurrentSettings();
+    }
     
     btOk.onClick = function() {
         applyCurrentSettings();
@@ -313,7 +327,8 @@ try {
         var options = merge(app.options),
             applist = app.getViewByID("_settings_appcolors"),
             doclist = app.getViewByID("_settings_doccolors"),
-            control = app.getViewByID("_settings_highlightColor").control;
+            view_hColor = app.getViewByID("_settings_highlightColor"),
+            control = view_hColor.control;
         delete applist.render;
         delete doclist.render;
         options.highlightColor = parseInt(parseColor(options.highlightColor));
@@ -323,6 +338,7 @@ try {
         
         applist.render = doclist.render = _customRender;
         // Не работает автобновление?!!!!
+        view_hColor.rebind(app.currentSettings, "selection.value", "options.highlightColor");
         control.selection = control._colors[options.highlightColor].item;
         ///////
         // механизм обновление CS/CC списков
@@ -339,9 +355,20 @@ try {
     };
     
     function applyCurrentSettings() {
+        var usercolors = app.currentSettings.options.usercolors,
+            view_hColor = app.getViewByID("_settings_highlightColor"),
+            control = view_hColor.control;
+        // Синхронизация usercolors
+        each(usercolors, function(val) { app._removeFromAllColorLists(val); });
+        app.options.usercolors = {};
         extend(app.options, app.currentSettings.options);
+        each(usercolors, function(val, key) { app._addToAllColorLists(val, key, "user"); });
         app.initJsNames();
         app.applyOptions();
+        // Не работает автобновление?!!!!
+        view_hColor.rebind(app.currentSettings, "selection.value", "options.highlightColor");
+        control.selection = control._colors[app.currentSettings.options.highlightColor].item;
+        ///////
     };
 } catch(e) { trace(e) };    
 
@@ -412,7 +439,7 @@ try {
         // строится блок нстроек 
         function build_pSettings(cont, caption, options, owner_str) {
             var grp = "group { st:StaticText {alignment:['left', 'center'], characters:22},  \
-                               dd:DropDownList {preferredSize:['120', 23]}}";
+                               dd:DropDownList {preferredSize:['180', 23]}}";
             var hTips = ["foregroundColor", "backgroundColor", "disabledForegroundColor", "disabledBackgroundColor"];
             var Lstr = LStr.uiSet[7]; // Массив строк
             var panel = cont.add("panel { text:'"+caption+"'}");
@@ -545,7 +572,51 @@ try {
             btRename = panel.g0.g1.btRename,
             btRemove = panel.g0.g1.btRemove;
         app.userColorList = list;
-
+        
+        btRemove.onClick = function() {
+            if (!list.selection) return;
+            var value = list.selection.value,
+                name = list.selection.text.slice(1);
+            list.removeValue(value);
+            delete app.currentSettings.options.usercolors[name];
+        };
+    
+        btRename.onClick = function() {
+            if (!list.selection) return;
+            var value = list.selection.value,
+                name = list.selection.text.slice(1),
+                w = app.createEditDlg(name);
+            if (w.show() == 1 && w.g0.et0.text) {
+                list.removeValue(value);
+                delete app.currentSettings.options.usercolors[name];
+                name = w.g0.et0.text;
+                app._addToColorList(value, list, name, false, "user");
+                app.currentSettings.options.usercolors[name] = value;
+                list.selection = list.items[list.items.length-1];
+            }
+        };
+        
+        btAdd.onClick = function _addColor() {
+            var control = app.getViewByID("fontColor").control,
+                value = $.colorPicker();
+            if (value == -1) return false;
+            if (value in control._colors) {
+                var item = control._colors[value].item,
+                    msg = localize(app.LStr.uiSet[11], item.text, parseColor(item.value)),
+                    title = app.version + " " + app.name + " - " + localize(app.LStr.uiSet[12]);
+                if (confirm (msg, false, title)) { return _addColor(); } else { return false };
+            }
+            var rgb = toRGB(value),
+                name = "r="+rgb[0]+",g="+rgb[1]+",b="+rgb[2]+" ("+parseColor(value)+")",
+                w = app.createEditDlg(name);
+            if (w.show() == 1 && w.g0.et0.text) {
+                name = w.g0.et0.text;
+            }
+            app._addToColorList(value, list, name, false, "user");
+            app.currentSettings.options.usercolors[name] = value;
+            list.selection = list.items[list.items.length-1];
+        };
+    
         panel.label = "pColors";
         return panel;
     }

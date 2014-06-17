@@ -106,7 +106,7 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
         btDown = w.g0.g1.btDown;
     
     btAdd.onClick = function() {
-        var w = _createEditDlg();
+        var w = app.createEditDlg();
         if (w.show() == 1) {
             var txt = w.g0.et0.text;
             arr.push(txt); 
@@ -117,15 +117,13 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
     
     btRename.onClick = function() {
         if (!list.selection) return;
-        try {
         var index = list.selection.index,
-            w = _createEditDlg(list.items[index].text);
+            w = app.createEditDlg(list.items[index].text);
         if (w.show() == 1) {
             var txt = w.g0.et0.text;
             arr[index] = txt; 
             list.items[index].text = txt; 
         }
-        } catch(e) { trace(e) }
     };
 
     btRemove.onClick = function() {
@@ -183,30 +181,30 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
     };
     ////
     
-    function _createEditDlg(str) {
-        var str = (str)||"",
-            w = new Window("dialog {text:'Edit item', spacing:5, properties:{resizeable:true},  \
-            g0:Group {alignment:['fill', 'top'],  \
-                img0:Image {alignment:['left', 'center']},  \
-                et0:EditText {alignment:['fill', 'center'], characters:40}},  \
-            sp0:"+SUI.Separator+"  \
-            g1:Group {alignment:['right', 'top'],  \
-                bt0:Button {text:'Cancel'},  \
-                bt1:Button {text:'Ok'}}}");
-        w.g0.img0.image = app.resources.images._PConsole_R;
-        w.g0.et0.text = str;
-        SUI.WindowInit(w);
-        SUI.SeparatorInit(w.sp0, "line");
-        w.onShow = function() { 
-            w.g0.minimumSize = w.g0.size; 
-            w.g0.et0.active = true;
-        };
-        return w;
-    }
-
-
     } catch(e) { trace(e) }
 };
+
+// Создания простого окна редактирования строчного элемента (str) 
+BuilderApplication.prototype.createEditDlg = function(str) {
+    var str = (str)||"",
+        w = new Window("dialog {text:'Edit item', spacing:5, properties:{resizeable:true},  \
+        g0:Group {alignment:['fill', 'top'],  \
+            img0:Image {alignment:['left', 'center']},  \
+            et0:EditText {alignment:['fill', 'center'], characters:40}},  \
+        sp0:"+SUI.Separator+"  \
+        g1:Group {alignment:['right', 'top'],  \
+            bt0:Button {text:'Cancel'},  \
+            bt1:Button {text:'Ok'}}}");
+    w.g0.img0.image = app.resources.images._PConsole_R;
+    w.g0.et0.text = str;
+    SUI.WindowInit(w);
+    SUI.SeparatorInit(w.sp0, "line");
+    w.onShow = function() { 
+        w.g0.minimumSize = w.g0.size; 
+        w.g0.et0.active = true;
+    };
+    return w;
+}
 
 // Обновление внешнего вида списка 
 BuilderApplication.prototype._updateListView = function(model, what) {
@@ -617,10 +615,18 @@ BuilderApplication.prototype._addToColorList = function(value, control, name, to
     item = control.add("item", " "+name);
     item.value = value;
     item.image = makePng(sz, rgb);
+    item.owner = owner;
     // формируем ассоциативный массив для быстрого(мгновенного) поиска цвета по его int-значению
     if (!control._colors) control._colors = [];
-    control._colors[value] = { item:item, owner:owner };
-    
+    control._colors[value] = { item:item, owner:item.owner };
+    // Удаляет из списка значение (используется в настройках)
+    control.removeValue = function(val) {
+        if (val in this._colors) {
+            this.remove(this._colors[val].item);
+            //this._colors.splice(indexOf(this._colors, val), 1);
+            delete this._colors[val];
+        };
+    }
     return true;
 }
 // ===================
@@ -639,14 +645,28 @@ BuilderApplication.prototype._addToAllColorLists = function(value, name, owner) 
         app._addToColorList(value, control, name, false, owner);
     });
     // Пополнение списка для настройки подсветки в Settings.pMain
-    app._addToColorList(value, app.getViewByID("_settings_highlightColor").control, name, false, owner);
+    var control = app.getViewByID("_settings_highlightColor").control;
+    app._addToColorList(value, control, name, false, owner);
     // Дополнительная инициализация списка пользовательских цветов в настройках
     // app.userColorList:{ListBox} - создаётся в buildSettingsWindow()->build_pColors();
     if (owner == "user" && name != "separator") {
         app._addToColorList(value, app.userColorList, name, false, owner);
     }
 };
-
+// Удаление значения цвета из всех списков (используется в настройках)
+BuilderApplication.prototype._removeFromAllColorLists = function(value) {
+    if (isNaN(value)) return;
+    // Удаление из Tabs и Caption
+    each(app._ceditors, function(view) { view.control.removeValue(value) });
+    // Удаление из элементов управления в Settings
+    each(app.settingColorFields, function(control) { control.removeValue(value) });
+    // Удаление из настройки pMain - highlightColor
+    var view = app.getViewByID("_settings_highlightColor");
+    view.unbind();
+    view.control.removeValue(value);
+    // Удаление из специальной вкладки Settings.pColors
+    // app.userColorList.removeValue(value);
+};
 // ===================
 // инициализация списков стандартных (ESTK) картинок
 BuilderApplication.prototype._initImageFields = function(ddList) {
