@@ -287,4 +287,9 @@ LStr.uiSet[10] = { ru:"Цвет подсветки", en:"Highlight color" };
 LStr.uiSet[11] = { ru:"Выбранный цвет уже существует в наборе (%1:%2 )! Повторить выбор цвета?", 
                    en:"Selected color already exists (%1:%2 )! Select other color?" };
 LStr.uiSet[12] = { ru:"Добавление пользовательского цвета", en:"Adding user color" };
+
+LStr.uiSet[13] = { ru:"Доступные шрифты", en:"System fonts" };
+LStr.uiSet[14] = { ru:"Выбранные шрифты", en:"Selected fonts" };
+LStr.uiSet[5] = { ru:"Главное окно", en:"Main window" };
+LStr.uiSet[5] = { ru:"Главное окно", en:"Main window" };
 LStr;

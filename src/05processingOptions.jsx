@@ -334,13 +334,19 @@ try {
         options.highlightColor = parseInt(parseColor(options.highlightColor));
         extend(app.currentSettings.options, options);
         app.currentSettings.normalizeColors();
-        _updateColorsField();
         
+        // Обновление элементов управления цветами:
+        _updateColorsField();
         applist.render = doclist.render = _customRender;
         // Не работает автобновление?!!!!
         view_hColor.rebind(app.currentSettings, "selection.value", "options.highlightColor");
         control.selection = control._colors[options.highlightColor].item;
+        
+        // Обновление списка шрифтов
+        app.userFontList.removeAll();
+        each(app.currentSettings.options.userfonts, function(font) { app.userFontList.add("item", font); });
         ///////
+        // Вспомогательные методы:
         // механизм обновление CS/CC списков
         function _customRender() {
             if (!(this.selection && this.selection.text)) return;
@@ -355,7 +361,8 @@ try {
     };
     
     function applyCurrentSettings() {
-        var usercolors = app.currentSettings.options.usercolors,
+        var userfonts = app.currentSettings.options.userfonts,
+            usercolors = app.currentSettings.options.usercolors,
             view_hColor = app.getViewByID("_settings_highlightColor"),
             control = view_hColor.control;
         // Синхронизация usercolors
@@ -369,6 +376,7 @@ try {
         view_hColor.rebind(app.currentSettings, "selection.value", "options.highlightColor");
         control.selection = control._colors[app.currentSettings.options.highlightColor].item;
         ///////
+        // Синхронизация userfonts
     };
 } catch(e) { trace(e) };    
 
@@ -483,7 +491,7 @@ try {
         var jsnames = panel.jsnames = panel.add("group {alignment:['fill', 'top'], orientation:'column' , alignChildren:['fill', 'top'], spacing:2, \
                                         g0:Group { \
                                             st:StaticText {text:'"+localize(uiSet[8])+":', alignment:['left', 'center'], characters:22},  \
-                                            dd:DropDownList {alignment:['fill', 'center'], preferredSize:[90, 23], properties:{items:['small', 'full', 'user']}},  \
+                                            dd:DropDownList {alignment:['fill', 'center'], preferredSize:[90, 20], properties:{items:['small', 'full', 'user']}},  \
                                         }}");
         app.views.add({ 
             id:"_settings_jsname", 
@@ -623,21 +631,41 @@ try {
     // --------------------
     // Строим панель pFonts
     function build_pFonts(cont) {
-        var panel = cont.add("panel {text:'"+localize(SettingsFields[4])+":', alignment:['fill', 'fill'], alignChildren:['fill', 'top'],\
-            g0:Group {alignment:['fill', 'fill'],  \
-                lb0:ListBox {alignment:['fill', 'fill'], preferredSize:[180, 250]},  \
-                    g1:Group {spacing:5, orientation:'column', alignment:['right', 'fill'], alignChildren:['center', 'top'],  \
-                        btAdd:Button {text:'Add'},  \
-                        btRename:Button {text:'Edit...'},  \
-                        btRemove:Button {text:'Remove'} \
-            }}}");
-        var list = panel.g0.lb0,
-            btAdd = panel.g0.g1.btAdd,
-            btRename = panel.g0.g1.btRename,
-            btRemove = panel.g0.g1.btRemove;
+        var w = cont.add("panel {text:'"+localize(SettingsFields[4])+":', orientation:'row', alignment:['fill', 'fill'], alignChildren:['fill', 'top'],\
+                g0:Group {orientation:'column', alignment:['left', 'fill'],  \
+                        g3:Group {orientation:'column', alignment:['fill', 'top'], spacing:'2',  \
+                            stLeftList:StaticText {text:'"+localize(uiSet[13])+":', alignment:['left', 'center']},  \
+                            sp0:"+SUI.Separator+"},  \
+                    lbAllFonts:ListBox {preferredSize:[150, 250], alignment:['left', 'fill']}},  \
+                g1:Group {orientation:'column', alignment:['fill', 'top'],  \
+                        g4:Group {orientation:'column', alignment:['fill', 'top'], spacing:'2',  \
+                            stMiddle:StaticText {text:' ', alignment:['center', 'center']},  \
+                            sp1:"+SUI.Separator+"},  \
+                        gBtns:Group {orientation:'column', spacing:'5',  \
+                            btAdd:Button {text:'Add', preferredSize:[60, 23]},  \
+                            btRemove:Button {text:'Remove', preferredSize:[60, 23]}},  \
+                        gBtnsEx:Group {orientation:'column', spacing:'5',  \
+                            sp3:"+SUI.Separator+",  \
+                            btAddToUser:Button {text:'>>', preferredSize:[60, 23]},  \
+                            btRemoveFromUser:Button {text:'<<', preferredSize:[60, 23]}}},  \
+                g2:Group {orientation:'column', alignment:['left', 'fill'],  \
+                        g5:Group {orientation:'column', alignment:['fill', 'top'], spacing:'2',  \
+                            stRightList:StaticText {text:'"+localize(uiSet[14])+":', alignment:['left', 'center']},  \
+                            sp2:"+SUI.Separator+"},  \
+                    lbuserFonts:ListBox {preferredSize:[150, 250], alignment:['left', 'fill']}}}");
+        SUI.SeparatorInit(w.g0.g3.sp0, "line");
+        SUI.SeparatorInit(w.g1.g4.sp1, "line");
+        SUI.SeparatorInit(w.g2.g5.sp2, "line");
+        SUI.SeparatorInit(w.g1.gBtnsEx.sp3, "line");
+        
+        w.g0.enabled = w.g1.gBtnsEx.enabled = false;
+        var list = w.g2.lbuserFonts,
+            btAdd = w.g1.gBtns.btAdd,
+            btRemove = w.g1.gBtns.btRemove;
         app.userFontList = list;
         
-        panel.label = "pFonts";
-        return panel;
+        each(app.current)
+        
+        return w;
     }
 }; // showSettings
