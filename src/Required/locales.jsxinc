@@ -257,6 +257,8 @@ LStr.uiErr[1] = { ru:"Файл уже существует. Переписать
 LStr.uiErr[2] = { ru:"Файл уже открыт для редактирования!\r\rСохранить под другим именем?", en:"File is already open in application! Save under a different name?" };
 LStr.uiErr[3] = { ru:"Ошибка получения кода диалога", en:"Missing code of dialog"};
 LStr.uiErr[4] = { ru:"Ошибка в коде диалога", en:"Error in code of dialog"};
+LStr.uiErr[5] = { ru:"Ошибка создания шрифта %1", en:"Can not create font %1"};
+LStr.uiErr[6] = { ru:"Шрифт %1 уже есть в списке.", en:"Font %1 already in list."};
 
 LStr.uiSet = [];
 LStr.uiSet[0] = { ru:"Настройки", en:"Program settings" };
@@ -294,4 +296,5 @@ LStr.uiSet[15] = { ru:"Введите PostScript имя шрифта", en:"Enter
 LStr.uiSet[16] = { ru:"Шрифт по умолчанию", en:"Font by default" };
 LStr.uiSet[17] = { ru:"Шрифт, используемый при создании нового элемента", en:"Font for new instance of this element" };
 LStr.uiSet[18] = { ru:"Размер", en:"Size" };
+LStr.uiSet[19] = { ru:"Ввести другое имя шрифта?", en:"Enter ather name of font?" }
 LStr;

@@ -507,8 +507,25 @@ BuilderApplication.prototype._initFontListView = function() {
     control.items[0].text = 'default [ ' + control.items[0].text + ' ]';
     // .. и переустановим на него control
     control.selection = 0;
+    
+    // Удаление элемента из списка шрифтов по имени шрифта
+    control.removeValue = app.appFont.control.removeValue = 
+                          app.docFont.control.removeValue = 
+                          app.userFontList.removeValue    = function(font /* string */) {
+        if (!(font && font in this._fonts)) return;
+        this.remove(this._fonts[font].item);
+        delete this._fonts[font];
+    };
 };
 
+// ===================
+// удаление шрифтов со всех списков со шрифтами (кроме app.userFontList)
+BuilderApplication.prototype._removeFromAllFontLists = function(font /* string */) {
+    var app = this;
+    app.fontName.control.removeValue(font);
+    app.appFont.control.removeValue(font);
+    app.docFont.control.removeValue(font);
+};
 // ===================
 // добавление шрифтов во все списки со шрифтами
 BuilderApplication.prototype._addToAllFontLists = function(font, owner) {

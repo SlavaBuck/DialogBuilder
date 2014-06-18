@@ -346,17 +346,18 @@ try {
         
         // Обновление списка шрифтов
         app.userFontList.removeAll();
-        each(app.currentSettings.options.userfonts, function(font) { app.userFontList.add("item", font); });
+        delete app.userFontList._fonts;
+        each(app.currentSettings.options.userfonts, function(font) { app._addToFontList(app.userFontList, font); });
         
         // Обновление полей шрифтов в pAppearance
-        try {
+
         app.appFont.control._options = app.appFontSize.control._options = app.currentSettings.options;
         app.docFont.control._options = app.docFontSize.control._options = app.currentSettings.options.doc;
         app.appFont.control.selection = app.appFont.control._fonts[app.currentSettings.options.font.split(":")[0]].item;
         app.docFont.control.selection = app.docFont.control._fonts[app.currentSettings.options.doc.font.split(":")[0]].item;
         app.appFontSize.control.text = app.currentSettings.options.font.split(":")[1];
         app.docFontSize.control.text = app.currentSettings.options.doc.font.split(":")[1];
-        } catch(e) { trace(e) }
+
         ///////
         // Вспомогательные методы:
         // механизм обновление CS/CC списков
@@ -379,9 +380,17 @@ try {
             control = view_hColor.control;
         // Синхронизация usercolors
         each(usercolors, function(val) { app._removeFromAllColorLists(val); });
+        // Синхронизация userfonts
+        each(userfonts, function(val) { app._removeFromAllFontLists(val); });
+        userfonts.length = 0;
+        each(app.userFontList.items, function(item) { userfonts.push(item.family); });
+        app.options.userfonts = [];
         app.options.usercolors = {};
         extend(app.options, app.currentSettings.options);
+        // Обновление списков Fonts и Colors
         each(usercolors, function(val, key) { app._addToAllColorLists(val, key, "user"); });
+        each(userfonts, function(val) { app._addToAllFontLists(val, "user"); });
+        // Обновление коротких имён 
         app.initJsNames();
         app.applyOptions();
         // Не работает автобновление?!!!!
@@ -389,7 +398,8 @@ try {
         control.selection = control._colors[app.currentSettings.options.highlightColor].item;
         ///////
         // Синхронизация userfonts
-    };
+        
+    };  
 } catch(e) { trace(e) };    
 
 
@@ -716,12 +726,36 @@ try {
             btRemove = w.g1.gBtns.btRemove;
         app.userFontList = list;
         
-        btAdd.onClick = function() {
-            var w = app.createEditDlg("", localize(uiSet[15]));
+        // добавляем шрифт в список app.userFontList
+        btAdd.onClick = function _addFont() {
+            var w = app.createEditDlg("", localize(uiSet[15])),
+                err = "", font, text;
             if (w.show() == 1 && w.g0.et0.text) {
-                //if ()
+                text = w.g0.et0.text;
+                if (!(text in list._fonts)) {
+                    try { font = ScriptUI.newFont(text); } catch(e) { 
+                        err = localize(app.LStr.uiErr[5], text); 
+                    }
+                } else { err = localize(app.LStr.uiErr[6], text); }
+                if (!err) {
+                    app._addToFontList(list, text, "user");
+                    //app.currentSettings.options.userfonts.push(text);
+                    list.selection = list.items[list.items.length -1];
+                } else if (confirm(err+" " + localize(uiSet[19]), false, app.name+" v"+app.version)) {
+                    return _addFont();
+                }
             }
-        }
+        };
+        // удаляем шрифт из списка app.userFontList
+        btRemove.onClick = function() {
+            if (!list.selection) return;
+            try {
+            var userfonts = app.currentSettings.options.userfonts,
+                font = list.selection.text;
+            list.removeValue(font);
+            //userfonts.splice(indexOf(userfonts, font), 1);
+            } catch(e) { trace(e) }
+        };
         
         return w;
     }
