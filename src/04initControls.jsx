@@ -496,7 +496,7 @@ BuilderApplication.prototype._initFontListView = function() {
     each(DEFFONTS, function(font) {
         app._addToAllFontLists(font, "system"); 
     });
-    app._addToFontList(control, "separator", "system");
+    app._addToAllFontLists("separator");
     
     each(app.options.userfonts, function(font) { 
         app._addToAllFontLists(font, "user");
@@ -514,7 +514,9 @@ BuilderApplication.prototype._initFontListView = function() {
 BuilderApplication.prototype._addToAllFontLists = function(font, owner) {
     var app = this,
         owner = (owner)||"user";
-    app._addToFontList(app.fontName.control, font, "system");
+    app._addToFontList(app.fontName.control, font, owner);
+    app._addToFontList(app.appFont.control, font, owner);
+    app._addToFontList(app.docFont.control, font, owner);
 };
 // ===================
 // добавление пользовательских шрифтов в конкретный список (с проверкой наличия)

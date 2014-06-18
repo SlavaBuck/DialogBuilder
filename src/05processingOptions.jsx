@@ -99,7 +99,7 @@ BuilderApplication.prototype.prepareOptions = function() {
     // пользовательские шрифты
     if (!options.userfonts) options.userfonts = [];
     // включаются только отсутствующие в DEFFONTS[]
-    options.userfonts = Collection.prototype.filter.call(options.userfonts, function(val){ return indexOf(DEFFONTS, val) == -1 });
+    options.userfonts = Collection.prototype.filter.call(options.userfonts, function(val){ return indexOf(DEFFONTS, val) == -1 }).toArray();
     
     // Вспомогательные функции
     function _setColors(schema, opt) { 
@@ -347,6 +347,16 @@ try {
         // Обновление списка шрифтов
         app.userFontList.removeAll();
         each(app.currentSettings.options.userfonts, function(font) { app.userFontList.add("item", font); });
+        
+        // Обновление полей шрифтов в pAppearance
+        try {
+        app.appFont.control._options = app.appFontSize.control._options = app.currentSettings.options;
+        app.docFont.control._options = app.docFontSize.control._options = app.currentSettings.options.doc;
+        app.appFont.control.selection = app.appFont.control._fonts[app.currentSettings.options.font.split(":")[0]].item;
+        app.docFont.control.selection = app.docFont.control._fonts[app.currentSettings.options.doc.font.split(":")[0]].item;
+        app.appFontSize.control.text = app.currentSettings.options.font.split(":")[1];
+        app.docFontSize.control.text = app.currentSettings.options.doc.font.split(":")[1];
+        } catch(e) { trace(e) }
         ///////
         // Вспомогательные методы:
         // механизм обновление CS/CC списков
@@ -444,12 +454,41 @@ try {
         
         mainPanel.pProg = build_pSettings(mainPanel, localize(uiSet[5]), app.currentSettings.options, "appcolors");
         mainPanel.pDoc = build_pSettings(mainPanel, localize(uiSet[6]), app.currentSettings.options.doc, "doccolors");
+        // Добавляется DropDownList для управления font (для app)
+        app.appFont = new MVC.View({id:"_settings_appFont", control:mainPanel.pProg.userFont.dd });
+        app.docFont = new MVC.View({id:"_settings_docFont", control:mainPanel.pDoc.userFont.dd });
+        app.appFontSize = new MVC.View({id:"_settings_appFontSize", control:mainPanel.pProg.userFont.et });
+        app.docFontSize = new MVC.View({id:"_settings_docFontSize", control:mainPanel.pDoc.userFont.et });
+        app.appFont.control.onChange = app.docFont.control.onChange = function() {
+            if (!this.selection) return;
+            this._options.font = this.selection.family + ":" + this._options.font.split(":")[1];
+        };
+        app.appFontSize.control.onChanging = app.docFontSize.control.onChanging = function() {
+            var gfx = this.graphics,
+                color = (isNaN(this.text) ? cRed : cBlack);
+            gfx.foregroundColor = gfx.newPen (gfx.PenType.SOLID_COLOR, color, 1);
+        };
+        app.appFontSize.control.onChange = app.docFontSize.control.onChange = function() {
+            if (isNaN(this.text)) return;
+            this._options.font = this._options.font.split(":")[0] + ":" + this.text;
+        };
+        /*
+        app.views.add(app.appFont = new MVC.View({id:"_settings_appFont", control:mainPanel.pProg.userFont.dd }));
+        app.views.add(app.docFont = new MVC.View({id:"_settings_docFont", control:mainPanel.pDoc.userFont.dd }));
+        app.views.add(app.appFontSize = new MVC.View({id:"_settings_appFontSize", control:mainPanel.pProg.userFont.et }));
+        app.views.add(app.docFontSize = new MVC.View({id:"_settings_docFontSize", control:mainPanel.pDoc.userFont.et }));
+        var ctrl1 = app.addController({ binding:"currentSettings.options.font:_settings_appFont.selection.family", bind:false });
+        var ctrl2 = app.addController({ binding:"currentSettings.options.doc.font:_settings_docFont.selection.family", bind:false });
+        ctrl1 = app.addController({ binding:"currentSettings.options.font:_settings_appFontSize.text", bind:false });
+        ctrl2 = app.addController({ binding:"currentSettings.options.doc.font:_settings_docFontSize.text", bind:false });
+        */
         mainPanel.label = "pAppearance";
         return mainPanel;
         // строится блок нстроек 
         function build_pSettings(cont, caption, options, owner_str) {
-            var grp = "group { st:StaticText {alignment:['left', 'center'], characters:22},  \
-                               dd:DropDownList {preferredSize:['180', 23]}}";
+            var grp = "group { alignment:['fill', 'fill'],  \
+                               st:StaticText {alignment:['left', 'center'], characters:22},  \
+                               dd:DropDownList {preferredSize:[180, 23]}}";
             var hTips = ["foregroundColor", "backgroundColor", "disabledForegroundColor", "disabledBackgroundColor"];
             var Lstr = LStr.uiSet[7]; // Массив строк
             var panel = cont.add("panel { text:'"+caption+"'}");
@@ -466,9 +505,10 @@ try {
             
             var sp = panel.grp.add(SUI.Separator);
             SUI.SeparatorInit(sp, "line");
+            // Добавляются 4xDropDownList для каждого типа свойства (foregroundColor, backgroundColor, ...)
             var count = 0;
             each(hTips, function(str) {
-                var gGrp = panel.grp["p"+str] = panel.grp.add(grp);
+                var gGrp = panel.grp.add(grp); //panel.grp["p"+str] = 
                 gGrp.st.text = localize(Lstr[++count])+":";
                 gGrp.helpTip = gGrp.st.helpTip = gGrp.dd.helpTip = str + localize(uiSet[9]);
                 gGrp.dd.label = owner_str;
@@ -477,6 +517,16 @@ try {
                 gGrp.dd.onChange = function() { this._syncValue(this.selection.value) }
                 app.settingColorFields.add(gGrp.dd);
             });
+            // Добавляется DropDownList для управления свойством font
+            sp = panel.grp.add(SUI.Separator);
+            SUI.SeparatorInit(sp, "line");
+            panel.userFont = panel.grp.add(grp);
+            panel.userFont.st.text = localize(uiSet[16])+":";
+            panel.userFont.st.helpTip = panel.userFont.dd.helpTip = localize(uiSet[17]);
+            panel.userFont.dd.preferredSize = [90, 23];
+            panel.userFont.st1 = panel.userFont.add("statictext { text:'"+localize(uiSet[18])+":' }");
+            panel.userFont.et = panel.userFont.add("edittext { alignment:['fill', 'center']}");
+            
             function _syncValue(value) {
                 var opt = (this.label == "appcolors" ? app.currentSettings.options : app.currentSettings.options.doc);
                 if (typeof value !== 'undefined') opt[this._key] = value; else value = opt[this._key];
