@@ -98,6 +98,8 @@ BuilderApplication.prototype.prepareOptions = function() {
     if (!options.usercolors) options.usercolors = {};
     // пользовательские шрифты
     if (!options.userfonts) options.userfonts = [];
+    // включаются только отсутствующие в DEFFONTS[]
+    options.userfonts = Collection.prototype.filter.call(options.userfonts, function(val){ return indexOf(DEFFONTS, val) == -1 });
     
     // Вспомогательные функции
     function _setColors(schema, opt) { 
@@ -664,7 +666,12 @@ try {
             btRemove = w.g1.gBtns.btRemove;
         app.userFontList = list;
         
-        each(app.current)
+        btAdd.onClick = function() {
+            var w = app.createEditDlg("", localize(uiSet[15]));
+            if (w.show() == 1 && w.g0.et0.text) {
+                //if ()
+            }
+        }
         
         return w;
     }

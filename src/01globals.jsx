@@ -73,7 +73,7 @@ var DEFFONTS = [
     'Helvetica',
     'Tahoma',
     'Verdana'
-]
+];
 
 // Сокращённые наименования объектов диалога в документах
 var JSNAMES = {

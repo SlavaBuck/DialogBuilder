@@ -290,6 +290,6 @@ LStr.uiSet[12] = { ru:"Добавление пользовательского �
 
 LStr.uiSet[13] = { ru:"Доступные шрифты", en:"System fonts" };
 LStr.uiSet[14] = { ru:"Выбранные шрифты", en:"Selected fonts" };
-LStr.uiSet[5] = { ru:"Главное окно", en:"Main window" };
-LStr.uiSet[5] = { ru:"Главное окно", en:"Main window" };
+LStr.uiSet[15] = { ru:"Введите PostScript имя шрифта", en:"Enter PostScript-name of font" };
+
 LStr;

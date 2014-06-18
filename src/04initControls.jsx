@@ -29,7 +29,7 @@ BuilderApplication.prototype.initControls = function() {
     app._initImageListView();
     app._initColorListView();
     app.pBar.hit(localize(app.LStr.uiApp[41])+ "Fonts");
-    app._initFontListView(app.fontName);
+    app._initFontListView();
     app._initCaptionFontControls();
     app._initListButtons();
     // final
@@ -186,10 +186,12 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
     } catch(e) { trace(e) }
 };
 
-// Создания простого окна редактирования строчного элемента (str) 
-BuilderApplication.prototype.createEditDlg = function(str) {
+// Создания простого окна редактирования строчного элемента
+// str - начальное значение поля редактирования, title - заголовок окна
+BuilderApplication.prototype.createEditDlg = function(str, title) {
     var str = (str)||"",
-        w = new Window("dialog {text:'Edit item', spacing:5, properties:{resizeable:true},  \
+        title = (title)||"Edit item",
+        w = new Window("dialog {text:'"+title+"', spacing:5, properties:{resizeable:true},  \
         g0:Group {alignment:['fill', 'top'],  \
             img0:Image {alignment:['left', 'center']},  \
             et0:EditText {alignment:['fill', 'center'], characters:40}},  \
@@ -417,7 +419,7 @@ BuilderApplication.prototype._initCaptionFontControls = function() {
         control.enabled = app.btClearFont.enabled = true;
         // this._updateView(model.view.control.graphics.font.family);
         var fName = model.view.control.graphics.font.family;
-        control.selection = (control.hasOwnProperty(fName)) ? control[fName].item : null;
+        control.selection = (control._fonts.hasOwnProperty(fName)) ? control._fonts[fName].item : null;
         control.onChange = function() {
             if (!this.model) return;
             var control =  this.model.view.control,
@@ -487,38 +489,54 @@ BuilderApplication.prototype._initCaptionFontControls = function() {
 
 // ===================
 // инициализация списков шрифтов 
-BuilderApplication.prototype._initFontListView = function(view) {
+BuilderApplication.prototype._initFontListView = function() {
     var app = this,
-        control = view.control,
+        control = app.fontName.control,
         item, family;
     each(DEFFONTS, function(font) {
-        app._addToFontList(control, font, "system"); 
+        app._addToAllFontLists(font, "system"); 
     });
+    app._addToFontList(control, "separator", "system");
+    
     each(app.options.userfonts, function(font) { 
-        app._addToFontList(control, font, "user");
+        app._addToAllFontLists(font, "user");
+        // Инициализация списка на странице настроек pFonts
         app._addToFontList(app.userFontList, font, "user");
     })
     // ручками переименуем дефолтный шрифт...
     control.items[0].text = 'default [ ' + control.items[0].text + ' ]';
     // .. и переустановим на него control
-    control.selection = control[control.items[0].family].item;
+    control.selection = 0;
+};
+
+// ===================
+// добавление шрифтов во все списки со шрифтами
+BuilderApplication.prototype._addToAllFontLists = function(font, owner) {
+    var app = this,
+        owner = (owner)||"user";
+    app._addToFontList(app.fontName.control, font, "system");
 };
 // ===================
-// добавление пользовательских шрифтов в список
+// добавление пользовательских шрифтов в конкретный список (с проверкой наличия)
 // control - елемент ListBox со списком шрифтов, font - имя шрифта
 BuilderApplication.prototype._addToFontList = function(control, font, owner) {
     var app = this,
         owner = (owner)||'system',
         item, family;
+    if (font == "separator") {
+        control.add("separator");
+        return false;
+    }
     // проверка на корректность шрифта
     try { item = ScriptUI.newFont(font); } catch(e) { return false; }
     family = (item.family == 'Segoe UI') ? "Segoe Ui" : item.family;
     // добавляем только отсутствующие шрифты
-    if (control.hasOwnProperty(family)) return false;
-    control[family] = {};
-    control[family].item = control.add("item", item.family + (item.substitute ? ('( '+item.substitute+' )') : ''));
-    control[family].item.family = family;
-    control[family].owner = owner;
+    if (!control._fonts) control._fonts = {};
+    if (control._fonts.hasOwnProperty(family)) return false;
+    item = control._fonts[family] = control.add("item", item.family + (item.substitute ? ('( '+item.substitute+' )') : ''));
+    item.item = item;
+    item.family = family;
+    item.owner = owner;
     return true;
 }
 
