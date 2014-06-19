@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  options.sample.jsxinc
 *  DESCRIPTION: Пример файла настроек для приложения Dialog Builder с подробным описанием полей
-*  @@@BUILDINFO@@@ options.sample.jsxinc 1.18 Wed Apr 02 2014 03:40:21 GMT+0300
+*  @@@BUILDINFO@@@ options.sample.jsxinc 1.50 Thu Jun 19 2014 20:50:28 GMT+0300
 * 
 *           Вы можете переименовать этот файл в options.jsxinc и использовать его как файл настроек для приложения Dialog Builder (начиная с версии 1.14 и выше)
 *

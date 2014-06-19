@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  02application.jsx
  *  DESCRIPTION: BuilderApplication: Основной класс приложения 
- *  @@@BUILDINFO@@@ 02application.jsx 1.42 Sat Jun 07 2014 00:37:32 GMT+0300
+ *  @@@BUILDINFO@@@ 02application.jsx 1.50 Thu Jun 19 2014 20:50:56 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -20,8 +20,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     var wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
-    version:"1.42",
-    caption:"1.42 Dialog Builder (build 0607, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    version:"1.50",
+    caption:"1.50 Dialog Builder (build 0619, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -865,7 +865,7 @@ BuilderApplication.prototype.addDocument = function() {
     var app = this,
            doc = app.activeDocument;
     // Добавляем и настраиваем родительский контейнер для всех элементов диалога
-    var model = doc.addItem("dialog { preferredSize:[80, 23] }"), //, alignment:['','']
+    var model = doc.addItem("dialog { preferredSize:[80, 20] }"), //, alignment:['','']
            pPnl = model.view.control,
            gfx = pPnl.graphics;
     model.control.label = app.options.dialogtype;

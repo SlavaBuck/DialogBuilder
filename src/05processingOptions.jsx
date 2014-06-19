@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  05processingOptions.jsx
 *  DESCRIPTION: 
-*  @@@BUILDINFO@@@ 05processingOptions.jsx 1.20 Sun May 25 2014 19:22:51 GMT+0300
+*  @@@BUILDINFO@@@ 05processingOptions.jsx 1.50 Thu Jun 19 2014 20:52:42 GMT+0300
 * 
 * NOTICE: Работа с настройками приложения: чтение, сохранение, создание, приминение.
 *       processingSettings() - 
@@ -359,10 +359,13 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
         each(userfonts, function(val) { app._removeFromAllFontLists(val); });
         userfonts.length = app.options.userfonts.length = 0;
         each(app.userFontList.items, function(item) { userfonts.push(item.family); });
-        
+
         // Глобальная синхронизация настроек: app.options <== app.currentSettings
         extend(app.options, app.currentSettings.options);
-        
+        // Востановление цвета подсветки, если оно было случайно удалено:
+        if (!(app.options.highlightColor && usercolors.highlightColor)) {
+            usercolors.highlightColor = parseInt(parseColor(DEFOPTIONS.highlightColor));
+        };
         // Обновление всех системных списков fonts и colors в соответствии с новыми usercolors{.} & userfonts[.]
         each(usercolors, function(val, key) { app._addToAllColorLists(val, key, "user"); });
         each(userfonts, function(val) { app._addToAllFontLists(val, "user"); });
