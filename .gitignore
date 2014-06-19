@@ -8,3 +8,4 @@ Thumbs.db
 ~$*.*
 #DBuilder options.jsxinc (local)
 /src/Required/options.jsxinc
+DBuilderLoader.jsx
