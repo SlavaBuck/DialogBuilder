@@ -313,7 +313,27 @@ try {
     };
 
     btDefaults.onClick = function() {
-        log(app.parseOptions(app.currentSettings.options));
+        if (!mlist.selection) return;
+        var options = app.currentSettings.options;
+        switch (mlist.selection.index) {
+            case 0:
+                options.locale = DEFOPTIONS.locale;
+                options.autofocus = DEFOPTIONS.autofocus;
+                options.dialogtype = DEFOPTIONS.dialogtype;
+                options.highlightColor = parseInt(parseColor(DEFOPTIONS.highlightColor));
+                break;
+            case 1:
+                options.appcolors = DEFOPTIONS.appcolors;
+                options.doccolors = DEFOPTIONS.appcolors;
+                options.font = _FONT.family + ":" + _FONT.size;
+                options.doc.font = options.font;
+                break;
+            case 2:
+                options.jsname = DEFOPTIONS.jsname;
+                break;
+            default:
+        } // switch
+        
     };
     
     // --------------------
