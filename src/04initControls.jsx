@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  04initControls.jsx
 *  DESCRIPTION: 
-*  @@@BUILDINFO@@@ 04initControls.jsx 1.40 Thu Jun 05 2014 01:40:30 GMT+0300
+*  @@@BUILDINFO@@@ 04initControls.jsx 1.50 Thu Jun 19 2014 20:52:22 GMT+0300
 * 
 * NOTICE: 
 *   initControls() - инициализация всех списков (цветовых наборов и шрифтов) для елементов управления в заголовке и в панели свойств
@@ -25,9 +25,11 @@
 // Инициализация списков (цветовых наборов и шрифтов)
 BuilderApplication.prototype.initControls = function() {
     var app = this;
+    app.pBar.hit(localize(app.LStr.uiApp[41])+ "Images");
     app._initImageListView();
     app._initColorListView();
-    app._initFontListView(app.fontName);
+    app.pBar.hit(localize(app.LStr.uiApp[41])+ "Fonts");
+    app._initFontListView();
     app._initCaptionFontControls();
     app._initListButtons();
     // final
@@ -82,7 +84,7 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
 					btRename:Button {text:'Edit...'},  \
 					btRemove:Button {text:'Remove'},  \
 					sp0:"+SUI.Separator+"  \
-					btImport:Button {text:'Import...', helpTip:'"+localize(app.LStr.uiApp[41])+"'},  \
+					btImport:Button {text:'Import...', helpTip:'"+localize(app.LStr.uiApp[42])+"'},  \
 					sp1:"+SUI.Separator+"  \
 					btUp:Button {text:'Up'},  \
 					btDown:Button {text:'Down'},  \
@@ -106,7 +108,7 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
         btDown = w.g0.g1.btDown;
     
     btAdd.onClick = function() {
-        var w = _createEditDlg();
+        var w = app.createEditDlg();
         if (w.show() == 1) {
             var txt = w.g0.et0.text;
             arr.push(txt); 
@@ -117,15 +119,13 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
     
     btRename.onClick = function() {
         if (!list.selection) return;
-        try {
         var index = list.selection.index,
-            w = _createEditDlg(list.items[index].text);
+            w = app.createEditDlg(list.items[index].text);
         if (w.show() == 1) {
             var txt = w.g0.et0.text;
             arr[index] = txt; 
             list.items[index].text = txt; 
         }
-        } catch(e) { trace(e) }
     };
 
     btRemove.onClick = function() {
@@ -183,30 +183,32 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
     };
     ////
     
-    function _createEditDlg(str) {
-        var str = (str)||"",
-            w = new Window("dialog {text:'Edit item', spacing:5, properties:{resizeable:true},  \
-            g0:Group {alignment:['fill', 'top'],  \
-                img0:Image {alignment:['left', 'center']},  \
-                et0:EditText {alignment:['fill', 'center'], characters:40}},  \
-            sp0:"+SUI.Separator+"  \
-            g1:Group {alignment:['right', 'top'],  \
-                bt0:Button {text:'Cancel'},  \
-                bt1:Button {text:'Ok'}}}");
-        w.g0.img0.image = app.resources.images._PConsole_R;
-        w.g0.et0.text = str;
-        SUI.WindowInit(w);
-        SUI.SeparatorInit(w.sp0, "line");
-        w.onShow = function() { 
-            w.g0.minimumSize = w.g0.size; 
-            w.g0.et0.active = true;
-        };
-        return w;
-    }
-
-
     } catch(e) { trace(e) }
 };
+
+// Создания простого окна редактирования строчного элемента
+// str - начальное значение поля редактирования, title - заголовок окна
+BuilderApplication.prototype.createEditDlg = function(str, title) {
+    var str = (str)||"",
+        title = (title)||"Edit item",
+        w = new Window("dialog {text:'"+title+"', spacing:5, properties:{resizeable:true},  \
+        g0:Group {alignment:['fill', 'top'],  \
+            img0:Image {alignment:['left', 'center']},  \
+            et0:EditText {alignment:['fill', 'center'], characters:40}},  \
+        sp0:"+SUI.Separator+"  \
+        g1:Group {alignment:['right', 'top'],  \
+            bt0:Button {text:'Cancel'},  \
+            bt1:Button {text:'Ok'}}}");
+    w.g0.img0.image = app.resources.images._PConsole_R;
+    w.g0.et0.text = str;
+    SUI.WindowInit(w);
+    SUI.SeparatorInit(w.sp0, "line");
+    w.onShow = function() { 
+        w.g0.minimumSize = w.g0.size; 
+        w.g0.et0.active = true;
+    };
+    return w;
+}
 
 // Обновление внешнего вида списка 
 BuilderApplication.prototype._updateListView = function(model, what) {
@@ -417,7 +419,7 @@ BuilderApplication.prototype._initCaptionFontControls = function() {
         control.enabled = app.btClearFont.enabled = true;
         // this._updateView(model.view.control.graphics.font.family);
         var fName = model.view.control.graphics.font.family;
-        control.selection = (control.hasOwnProperty(fName)) ? control[fName].item : null;
+        control.selection = (control._fonts.hasOwnProperty(fName)) ? control._fonts[fName].item : null;
         control.onChange = function() {
             if (!this.model) return;
             var control =  this.model.view.control,
@@ -487,62 +489,121 @@ BuilderApplication.prototype._initCaptionFontControls = function() {
 
 // ===================
 // инициализация списков шрифтов 
-BuilderApplication.prototype._initFontListView = function(view) {
-     var app = this,
-            control = view.control,
-            item, family;
-     for (var p in DEFFONTS) if (DEFFONTS.hasOwnProperty(p)) {
-        try { item = ScriptUI.newFont(p); } catch(e) { continue; }
-        family = (item.family == 'Segoe UI') ? "Segoe Ui" : item.family;
-        control[family] = {};
-        control[family].item = control.add("item", item.family + (item.substitute ? ('( '+item.substitute+' )') : ''));
-        control[family].item.family = family;
-        control[family].owner = 'system';
-     }
-     control.items[0].text = 'default [ ' + control.items[0].text + ' ]';
-     control.selection = control[control.items[0].family].item;
+BuilderApplication.prototype._initFontListView = function() {
+    var app = this,
+        control = app.fontName.control,
+        item, family;
+    each(DEFFONTS, function(font) {
+        app._addToAllFontLists(font, "system"); 
+    });
+    app._addToAllFontLists("separator");
+    
+    each(app.options.userfonts, function(font) { 
+        app._addToAllFontLists(font, "user");
+        // Инициализация списка на странице настроек pFonts
+        app._addToFontList(app.userFontList, font, "user");
+    })
+    // ручками переименуем дефолтный шрифт...
+    control.items[0].text = 'default [ ' + control.items[0].text + ' ]';
+    // .. и переустановим на него control
+    control.selection = 0;
+    
+    // Удаление элемента из списка шрифтов по имени шрифта
+    control.removeValue = app.appFont.control.removeValue = 
+                          app.docFont.control.removeValue = 
+                          app.userFontList.removeValue    = function(font /* string */) {
+        if (!(font && font in this._fonts)) return;
+        this.remove(this._fonts[font].item);
+        delete this._fonts[font];
+    };
 };
+
+// ===================
+// удаление шрифтов со всех списков со шрифтами (кроме app.userFontList)
+BuilderApplication.prototype._removeFromAllFontLists = function(font /* string */) {
+    var app = this;
+    app.fontName.control.removeValue(font);
+    app.appFont.control.removeValue(font);
+    app.docFont.control.removeValue(font);
+};
+// ===================
+// добавление шрифтов во все списки со шрифтами
+BuilderApplication.prototype._addToAllFontLists = function(font, owner) {
+    var app = this,
+        owner = (owner)||"user";
+    app._addToFontList(app.fontName.control, font, owner);
+    app._addToFontList(app.appFont.control, font, owner);
+    app._addToFontList(app.docFont.control, font, owner);
+};
+// ===================
+// добавление пользовательских шрифтов в конкретный список (с проверкой наличия)
+// control - елемент ListBox со списком шрифтов, font - имя шрифта
+BuilderApplication.prototype._addToFontList = function(control, font, owner) {
+    var app = this,
+        owner = (owner)||'system',
+        item, family;
+    if (font == "separator") {
+        control.add("separator");
+        return false;
+    }
+    // проверка на корректность шрифта
+    try { item = ScriptUI.newFont(font); } catch(e) { return false; }
+    family = (item.family == 'Segoe UI') ? "Segoe Ui" : item.family;
+    // добавляем только отсутствующие шрифты
+    if (!control._fonts) control._fonts = {};
+    if (control._fonts.hasOwnProperty(family)) return false;
+    item = control._fonts[family] = control.add("item", item.family + (item.substitute ? ('( '+item.substitute+' )') : ''));
+    item.item = item;
+    item.family = family;
+    item.owner = owner;
+    return true;
+}
 
 // ===================
 // инициализация списков цветов
 BuilderApplication.prototype._initColorListView = function() {
     var app = this, sz = null, p = null, item = null, view = null, control = null,
-           CLS = { 'CS backgroundColor':COLORSTYLES.CS.backgroundColor, 
-                        'CC backgroundColor':COLORSTYLES.CC.backgroundColor, 
-                        'CS disabledBackgroundColor':COLORSTYLES.CS.disabledBackgroundColor,
-                        'CC disabledBackgroundColor':COLORSTYLES.CC.disabledBackgroundColor,
-                        'disabledForegroundColor':COLORSTYLES.CS.disabledForegroundColor        };
-    for (var i=0; i<app._ceditors.length; i++) {
-        view = app._ceditors[i];
-        control = view.control;
-        //log("_initColorListView:", view.id, view.control.__key);
-        sz = ( view.id == 'fontColor' ? [18, 12] : [24, 12] );       // размер цветного прямоугольника
-        // Заполняем цветами по умолчанию
-        for (p in CLS) if (CLS.hasOwnProperty(p)) {
-            item = control.add("item", " "+p);
-            item.value = CLS[p];
-            item.image = makePng(sz, toRGB(item.value));
-            control[CLS[p]] = {};   // формируем ассоциативный массив для быстрого(мгновенного) поиска цвета по его int-значению
-            control[CLS[p]].item = item;
-            control[CLS[p]].owner = 'system'; //  'system' || 'user' - для добавленных через трое точие
-        };
-        control.add("separator");
-        for (p in COLORS) if (COLORS.hasOwnProperty(p)) {
-            item = control.add("item", " "+p);
-            item.value = COLORS[p];
-            item.image = makePng(sz, toRGB(item.value));
-            control[COLORS[p]] = {};   // формируем ассоциативный массив для быстрого(мгновенного) поиска цвета по его int-значению
-            control[COLORS[p]].item = item;
-            control[COLORS[p]].owner = 'system'; //  'system' || 'user' - для добавленных через трое точие
-        };
-        control.add("separator");
-        item = control.add("item", ". . .");
-        item.value = -1;
+        CLS = { 'CS backgroundColor':COLORSTYLES.CS.backgroundColor,
+                'CC backgroundColor':COLORSTYLES.CC.backgroundColor,
+                'CS disabledBackgroundColor':COLORSTYLES.CS.disabledBackgroundColor,
+                'CC disabledBackgroundColor':COLORSTYLES.CC.disabledBackgroundColor,
+                'disabledForegroundColor':COLORSTYLES.CS.disabledForegroundColor        
+              };
+    app.pBar.hit(localize(app.LStr.uiApp[41])+ "System colors");
+    // инициализация всех списков цветами из стандартного набора CS/CC
+    each(CLS, function(val, key) {
+        app._addToAllColorLists(val, key, "system");
+    });
+    app._addToAllColorLists(0, "separator");
+    app.pBar.hit(localize(app.LStr.uiApp[41])+ "System colors");
+    // инициализация всех списков цветами из общего стандартного набора COLORS
+    each(COLORS, function(val, key) {
+        app._addToAllColorLists(val, key, "system");
+    });
+    app._addToAllColorLists(0, "separator");
+    
+    app.pBar.hit(localize(app.LStr.uiApp[41])+ "User colors");
+    // пополнение options.usercolors цветами из настроек (если требуется)
+    var color = parseInt(parseColor(app.options.highlightColor)),
+        control = app.getViewByID("fontColor").control;
         
+    if (!control.hasOwnProperty(color)) app.options.usercolors["system highlightColor"] = color;
+    each(COLORSTYLES.CS, function(val, key) {
+        color = parseInt(parseColor(app.options[key]));  // если что-то новое в app.options
+        if (!(color in control._colors)) app.options.usercolors["user "+key+" (app)"] = color;
+        color = parseInt(parseColor(app.options.doc[key]));  // если что-то новое в app.options.doc
+        if (!(color in control._colors)) app.options.usercolors["user "+key+" (doc)"] = color;
+    })
+    // инициализация всех списков цветами из пользовательского набора options.usercolors
+    each(app.options.usercolors, function(str, key, obj) {
+        app._addToAllColorLists(obj[key], key, "user");
+    });
+
+    each(app._ceditors, function(view) {
         view.unbind = _unbindColorField;
         view.rebind = _rebindColorField;
-    } // for (var i=0; i<app._ceditors.length; i++)
-
+    }) // for (var i=0; i<app._ceditors.length; i++)
+    
     function _unbindColorField() {
         delete this.control.onChange;
         if (this.id != 'fontColor') this.control.selection = null;
@@ -558,7 +619,7 @@ BuilderApplication.prototype._initColorListView = function() {
         control.enabled = true;
         delete control.onChange;
         //if (control.hasOwnProperty(val)) control.selection = control[val].item;
-        control.selection = control[val].item;
+        control.selection = control._colors[val].item;
         control.onChange = _changeColorField;
     };
     
@@ -573,37 +634,82 @@ BuilderApplication.prototype._initColorListView = function() {
         if (key == 'foregroundColor') {
             var control = app.fontColor.control
             if (this === control) control = app._ceditors.getFirstByKeyValue("id", 'foregroundColor').control;
-            control.selection = control[val].item;
+            control.selection = control._colors[val].item;
         }        
     }; // _changeColorField
 };
 
+BuilderApplication.prototype._addToColorList = function(value, control, name, toFontColor, owner) {
+    if (!control) return false;
+    var list, item, sz, 
+        app = this,
+        value = parseInt(parseColor(value)),
+        rgb = toRGB(value),
+        name = (name)||(" r="+rgb[0]+",g="+rgb[1]+",b="+rgb[2]+" ("+parseColor(value)+")"),
+        owner = (owner)||"user";
+    if (name == "separator") {
+        control.add("separator");
+        return true;
+    }
+    // берём любой список и прверяем - есть ли там такой цвет:
+    if (control._colors && (value in control._colors)) return false;
+
+    sz = (toFontColor ? [18, 12] : [24, 12]);       // размер цветного прямоугольника
+    item = control.add("item", " "+name);
+    item.value = value;
+    item.image = makePng(sz, rgb);
+    item.owner = owner;
+    // формируем ассоциативный массив для быстрого(мгновенного) поиска цвета по его int-значению
+    if (!control._colors) control._colors = [];
+    control._colors[value] = { item:item, owner:item.owner };
+    // Удаляет из списка значение (используется в настройках)
+    control.removeValue = function(val) {
+        if (val in this._colors) {
+            this.remove(this._colors[val].item);
+            //this._colors.splice(indexOf(this._colors, val), 1);
+            delete this._colors[val];
+        };
+    }
+    return true;
+}
 // ===================
 // глобальное обновление всех выпадающих списков цветов новым элементом-значением
-// value - Int, name - {string} - имя, если неопределено - формируется авт.
-BuilderApplication.prototype._addToColorList = function(value, name) { 
-    try {
-        var name = (name)||null;
-        if (name === null) {
-            rgb = toRGB(value);
-            name = " r="+rgb[0]+",g="+rgb[1]+",b="+rgb[2]+" ("+parseColor(value)+")";
-        }
-        var list, item, sz, 
-               app = this;
-        for (var i=0, controls=app._ceditors; i<controls.length; i++) {
-            list = controls[i].control; 
-            sz = (controls[i].id == 'fontColor') ? [18, 12] : [24, 12];
-            item = list.items[list.items.length-1];
-            item.text = name;
-            item.value = value;
-            item.image = makePng(sz, toRGB(value));
-            list[value] = { item:item, owner:'user' };
-            item = list.add("item", ". . .");
-            item.value = -1;
-        }
-    } catch(e) { log('addcolor:', e.description) };
+// value - Int, name - {string} - имя, если неопределено - формируется авт., owner - откуда пришёл
+BuilderApplication.prototype._addToAllColorLists = function(value, name, owner) {
+    var app = this,
+        owner = (owner)||"user";
+    // Инициализация элементов управления в Tabs и Caption
+    each(app._ceditors, function(view) {
+        app._addToColorList(value, view.control, name, view.id == 'fontColor', owner); 
+    });
+    // Инициализация элементов управления в Settings
+    // app.settingColorFields:{Collection of DropDownList} - создаётся в buildSettingsWindow()->build_pAppearance();
+    each(app.settingColorFields, function(control) {
+        app._addToColorList(value, control, name, false, owner);
+    });
+    // Пополнение списка для настройки подсветки в Settings.pMain
+    var control = app.getViewByID("_settings_highlightColor").control;
+    app._addToColorList(value, control, name, false, owner);
+    // Дополнительная инициализация списка пользовательских цветов в настройках
+    // app.userColorList:{ListBox} - создаётся в buildSettingsWindow()->build_pColors();
+    if (owner == "user" && name != "separator") {
+        app._addToColorList(value, app.userColorList, name, false, owner);
+    }
 };
-
+// Удаление значения цвета из всех списков (используется в настройках)
+BuilderApplication.prototype._removeFromAllColorLists = function(value) {
+    if (isNaN(value)) return;
+    // Удаление из Tabs и Caption
+    each(app._ceditors, function(view) { view.control.removeValue(value) });
+    // Удаление из элементов управления в Settings
+    each(app.settingColorFields, function(control) { control.removeValue(value) });
+    // Удаление из настройки pMain - highlightColor
+    var view = app.getViewByID("_settings_highlightColor");
+    view.unbind();
+    view.control.removeValue(value);
+    // Удаление из специальной вкладки Settings.pColors
+    // app.userColorList.removeValue(value);
+};
 // ===================
 // инициализация списков стандартных (ESTK) картинок
 BuilderApplication.prototype._initImageFields = function(ddList) {

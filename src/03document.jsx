@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  03document.jsx
 *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
-*  @@@BUILDINFO@@@ 03document.jsx 1.42 Sat Jun 07 2014 00:37:45 GMT+0300
+*  @@@BUILDINFO@@@ 03document.jsx 1.50 Thu Jun 19 2014 20:52:01 GMT+0300
 * 
 * NOTICE: 
 * 
@@ -90,10 +90,11 @@ BuilderDocument.prototype.saveAs = function() {
 BuilderDocument.prototype.addItem = function (item) {
     if(!item) return null;
     var doc = this,
-           app = doc.app,
-           uiCategories = app.uiCategories,
-           uiProperties = app.uiProperties,
-           uiControls = app.uiControls;
+        app = doc.app,
+        uiCategories = app.uiCategories,
+        uiProperties = app.uiProperties,
+        uiControls = app.uiControls,
+        dlgs = "dialog,palette,window";
    doc.modified = true;
    var CPROPS = COLORSTYLES.CS;
    // Добываем type добавляемого ScriptUI объекта в нижнем регистре!
@@ -103,8 +104,8 @@ BuilderDocument.prototype.addItem = function (item) {
             if (x2 == -1) type = item.toLowerCase(); else type = item.substr(0, x2).toLowerCase();
         } else type = item.substr(0, x1).toLowerCase();
     } else type = item.substr(0, x).toLowerCase();
-    var contrl = ((type == 'dialog' || type == 'palette') ? 'panel' : type)  + item.slice(type.length);
-    var item = (type == 'dialog' || type == 'palette') ? 'Window' : item.substr(0, type.length);
+    var contrl = (dlgs.indexOf(type) != -1 ? 'panel' : type) + item.slice(type.length);
+    var item = (dlgs.indexOf(type) != -1 ? 'Window' : item.substr(0, type.length));
 
     // Определяем контейнер для добавляемого контрола
     if (!doc.activeContainer) doc.activeContainer = doc.window;  // только при первом вызове
@@ -136,6 +137,7 @@ BuilderDocument.prototype.addItem = function (item) {
                   str = ((tr)||'') + model.jsname+":"+ label+" {",
                   ptr = "properties:{" + _toSource(props.properties, control.properties, model.properties.properties, "prop"),
                   sstr = _toSource(props, control, model.properties, "main");
+            //log("label =", model.label);
             if ( model.label == "TabbedPanel" || model.label == "Tab" ) str += "type:'"+model.label.toLowerCase()+"'"+(sstr.length == 0 ? "": ", ");
             if (sstr.length) str += sstr;
             if (ptr.length != 12) str += (sstr.length == 0 ? "": ", ") + ptr + "}";
@@ -239,7 +241,7 @@ BuilderDocument.prototype.addItem = function (item) {
            color_opt = app.options.doc;
     for (var p in model_prop) if (model_prop.hasOwnProperty(p) && CPROPS.hasOwnProperty(p)) {
         if (model_prop[p] === false) model_prop[p] = color_opt[p];
-        if (!list.hasOwnProperty(model_prop[p])) app._addToColorList(model_prop[p]); // добавляем цвет в набор, если его там небыло...
+        if (!(model_prop[p] in list._colors)) app._addToAllColorLists(model_prop[p]); // добавляем цвет во все наборы, если его там небыло...
     }
     if (model_prop.hasOwnProperty('font') &&  !model_prop.font) model_prop.font = color_opt.font;
     
@@ -299,7 +301,7 @@ BuilderDocument.prototype.addItem = function (item) {
         },
         control: { 
             _marked_:true, // сигнализирует о том, что элемент выбран и выделен
-            text: (uiControls[item].properties.hasOwnProperty('text') && type != 'tabbedpanel') ? model.control.jsname : "",
+            text: (uiControls[item].properties.hasOwnProperty('text') && type != 'tabbedpanel' && dlgs.indexOf(type) == -1) ? model.control.jsname : "",
             //onDraw:customDraw
             onDraw:(model.control.type == 'Container' || "listbox,separator".indexOf(type) != -1 ) ? undefined : customDraw
         }
@@ -363,7 +365,10 @@ try {
     doc.activeControl = model;
     // Добавляемся в список Tree
     app.treeView.addItem(doc.activeControl);
-
+    // если установлен autofocus и добавлен контейнер - переустанавливаем фокус на него:
+    if (app.options.autofocus) {
+        if (SUI.isContainer(model.view.control)) doc.activeContainer = model.view.control;
+    }
     return model;
     // ------------------------------------------------------------------------------------------------------------------------------------
     // Данные функции добавлены сюда для ускорения доступа к ним из представления модели 

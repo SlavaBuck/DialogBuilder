@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  02application.jsx
  *  DESCRIPTION: BuilderApplication: Основной класс приложения 
- *  @@@BUILDINFO@@@ 02application.jsx 1.42 Sat Jun 07 2014 00:37:32 GMT+0300
+ *  @@@BUILDINFO@@@ 02application.jsx 1.50 Thu Jun 19 2014 20:50:56 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -20,8 +20,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     var wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
-    version:"1.42",
-    caption:"1.42 Dialog Builder (build 0607, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    version:"1.50",
+    caption:"1.50 Dialog Builder (build 0619, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -62,7 +62,7 @@ BuilderApplication.prototype.Init = function() {
           views = app.views,
           title = app.version +" " + app.name + ": " + localize({ru:"Загрузка...", en:"Loading..."});
     app.pBar = SUI.ProgressBar(title);
-    app.pBar.reset(title, 16);
+    app.pBar.reset(title, 22);
     app.pBar.hit(localize({ ru:"Загрузка настроек...", en:"Loading settings..."}));
     // Загрузка настроек и метаданных
     app.processingOptions();
@@ -72,7 +72,7 @@ BuilderApplication.prototype.Init = function() {
     app.loadResources();    // app.LStr получает локализованные строки
     app.initJsNames();      // Инициализация наименований объектов диалога (могут переопределяться в опциях)
     
-    // Формирование представлений для главного окна и контеёнера документов (docView)
+    // Формирование представлений для главного окна и контейнера документов (docView)
     app.pBar.hit(localize(app.LStr.uiApp[36]));
     app.buildCaption(w.pCaption);               // id:"Caption"
     app.pBar.hit(localize(app.LStr.uiApp[37]));
@@ -83,12 +83,15 @@ BuilderApplication.prototype.Init = function() {
     app.pBar.hit(localize(app.LStr.uiApp[39]));
     app.buildTabs(w.pBottom.pTabs);             // id:"Tab"
     app.pBar.hit(localize(app.LStr.uiApp[40]));
-    app.buldStatusBar(w.pStatusBar);            // id:"SBar"        
+    app.buildSettingsWindow();                  // Окно для управления настройками app.settingsWindow
+    app.pBar.hit(localize(app.LStr.uiApp[41]));
+    app.buldStatusBar(w.pStatusBar);            // id:"SBar"
     app.treeView = app.getViewByID("Tree");     // создан в buildDialogTree
     app.JsName = app.getViewByID("JsName");     // создан в buildDocsView 
-    
     // Инициализация списков (цветовых наборов, шрифтов и картинок)
     app.initControls()
+    // Завершение настройки
+    app.pBar.hit(localize(app.LStr.uiApp[45]));
     
     // Регестрируем фабрику документов
     app.registerDocumentFactory(); // app.getViewByID("Documents")
@@ -152,7 +155,7 @@ BuilderApplication.prototype.loadResources = function() {
         try { f.open("r"); eval(f.read()); f.close(); } catch(e) { app.terminate("loadResources: " + e.description, e, f); }
         app.resources = appresources;
         
-        // Загрузка основных методанных 
+        // Загрузка основных метаданных 
         //#include "controls.jsxinc" 
         f = new File(this.resFolder + "controls.jsxinc");
         if (!f.exists) app.terminate(localize(LStr.uiErr[0], "controls.jsxinc"));
@@ -174,11 +177,10 @@ BuilderApplication.prototype.initJsNames = function() {
            controls = app.uiControls;
     if (JSNAMES.hasOwnProperty(shema)) {
         for (var p in controls) if (controls.hasOwnProperty(p)) controls[p].jsname = JSNAMES[shema][p];
-        opt.jsnames.myDialog = JSNAMES[shema].myDialog;
+        //opt.jsnames.myDialog = JSNAMES[shema].myDialog;
     } else if (shema == "user" && opt.jsnames) {
-         for (var p in opt.jsnames) if (p != "myDialog" && opt.jsnames.hasOwnProperty(p)) controls[p].jsname = opt.jsnames[p];
+         for (var p in opt.jsnames) if (opt.jsnames.hasOwnProperty(p) && controls.hasOwnProperty(p)) controls[p].jsname = opt.jsnames[p];
     };
-    if (!opt.jsnames.myDialog) opt.jsnames.myDialog = DEFOPTIONS.jsnames.myDialog;
 };
 
 // Строим заголовок
@@ -268,7 +270,7 @@ BuilderApplication.prototype.buildCaption = function(cont) {
                 case "openIn":  app.openInDocument();   break;
                 case "save":    app.saveDocument();     break;
                 case "saveAs":  app.saveAsDocument();   break;
-                case "settings":app.editOptions();      break;
+                case "settings":app.showSettings();     break;
                 case "eval":    app.evalDialog();       break;
                 case "code":    app.showCode();         break;
                 case "about":   app.about();            break;
@@ -866,11 +868,12 @@ BuilderApplication.prototype.addDocument = function() {
     var model = doc.addItem("dialog { preferredSize:[80, 20] }"), //, alignment:['','']
            pPnl = model.view.control,
            gfx = pPnl.graphics;
+    model.control.label = app.options.dialogtype;
     pPnl.alignment = ['left','top']; //
     model.control.properties.text = "";
     doc.window.layout.layout(true);
     // Искусственно переименовываем имя переменной дилога с pPanel0 на myDialog
-    doc.activeControl.control.jsname = app.treeView.control.items[0].text = app.options.jsnames.myDialog;
+    doc.activeControl.control.jsname = app.treeView.control.items[0].text = app.uiControls["Window"].jsname;
     doc.activeControl.code.initcode = doc.activeControl.control.jsname +".show();";
     doc.activeContainer = pPnl;
     doc.activeControl = doc.activeControl; // что бы обновить поле JsName

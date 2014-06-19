@@ -1,13 +1,20 @@
 ﻿/**************************************************************************
 *  01globals.jsx
 *  DESCRIPTION: Цвета и ресурсы
-*  @@@BUILDINFO@@@ 01globals.jsx 1.20 Fri Feb 14 2014 01:26:18 GMT+0200
+*  @@@BUILDINFO@@@ 01globals.jsx 1.50 Tue Jun 10 2014 02:00:29 GMT+0300
 * 
 * NOTICE: 
 * 
 /**************************************************************************
 * © Вячеслав aka SlavaBuck, 13.02.2014.  slava.boyko#hotmail.com
 */
+
+// Список доступных языков (Требуется чтобы соответствовало строкам в locales.jsxinc)
+var UILANGUAGES = [
+    {text:'Auto', value:""},
+    {text:'English', value:"en" },
+    {text:'Russian', value:"ru" }
+];
 
 var COLORSTYLES = {
     CS: {
@@ -25,15 +32,14 @@ var COLORSTYLES = {
 };
 
 var DEFOPTIONS = {
-    locale:'',                      // '' - язык интерфейса по умолчанию '' - локаль системы (Примеры: "ru" || "en" ...)
-    appcolors:'CS',            // doccolors = appcolors
-    doccolors:'',
-    jsname:'',                   // способ сокращённого наименования эл.управления Возможные значения '' - определяются в файле controls.jsxinc, 'user' - задаются настройками из
-                                     // файла options.jsxinc, 'full' или 'small' - предустановленные способы наименования см. JSNAMES
-    jsnames: {
-        myDialog:'myDialog'
-    },
-    highlightColor:0xF0B8F0  // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5],
+    locale:'',             // - язык интерфейса по умолчанию '' - локаль системы (Примеры: "ru" || "en" ...)
+    autofocus:false,       // авто-переключение фокуса на добавляемый контейнер
+    dialogtype:'dialog',   // тип окна по умолчанию для создаваемого документа (dialog || palette || window)
+    appcolors:'CS',        // цветовой набор оформления главного окна по умолчанию
+    doccolors:'',          // doccolors = appcolors 
+    jsname:'full',         // способ наименования эл.управления Возможные значения 'user' - задаются настройками из jsnames:{}
+                                // 'full' или 'small' - предустановленные способы наименования см. JSNAMES
+    highlightColor:0xF0B8F0     // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5]
 };
 var w = new Window('window');
 
@@ -59,22 +65,20 @@ var _FONT = {
 };
 
 // Шрифты по умолчанию
-var DEFFONTS = {
-    'dialog':0,
-    'Arial':0,
-    'Calibri':0,
-    'Georgia':0,
-    'Helvetica':0,
-//    'Lucida Grande':0,
-    'Tahoma':0,
-    'Verdana':0
-}
+var DEFFONTS = [
+    'dialog',
+    'Arial',
+    'Calibri',
+    'Georgia',
+    'Helvetica',
+    'Tahoma',
+    'Verdana'
+];
 
 // Сокращённые наименования объектов диалога в документах
 var JSNAMES = {
     full: {
-        myDialog:"myDialog",
-        Window:"win",
+        Window:"myDialog",
         Panel:"pPanel",
         Group:"gGroup",
         TabbedPanel:"tPanel",
@@ -95,7 +99,6 @@ var JSNAMES = {
         Progressbar:"pBar"
     },
     small: {
-        myDialog:"w",
         Window:"w",
         Panel:"p",
         Group:"g",
