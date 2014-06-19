@@ -150,60 +150,6 @@ BuilderApplication.prototype.saveOptions = function(options) {
 };
 
 // ===================
-// Отображает окно для редактирования файла настроек (также отображает текущие проинициализированные настройки)
-//
-BuilderApplication.prototype.editOptions = function(doc) {
-    var app = this,
-           LStr = app.LStr;
-           
-    var size = [470, 320];
-    var w = new Window ("dialog { text:'"+localize(LStr.uiApp[25])+"', spacing:5, margins:[5,5,5,5], spacing:5, properties:{resizeable:true }, \
-                                                    txt:StaticText { text:'"+localize({ru:"Файл настроек:", en:"Settings file:"})+"', alignment:['left','top'] }, \
-                                                    code:EditText { preferredSize:["+size[0]+","+size[1]+"], alignment:['fill','fill'], properties:{ multiline:true, scrolling:true } }, \
-                                                    sp:"+SUI.Separator + " \
-                                                    grp:Group { alignment:['fill','bottom'],  \
-                                                        btView:Button { alignment:['left','bottom'], text:'view all', helpTip:'"+localize({ ru:'Показать все текущие настройки', en:'View current options'})+"' }, \
-                                                        btSave:Button { alignment:['right','bottom'], text:'Save', helpTip:'"+localize({ ru:'Сохранить и применить', en:'Save and apply'})+"' }, \
-                                                        btCanсel:Button { alignment:['right','bottom'], text:'Canсel', helpTip:'"+localize({ ru:'Отмена', en:'Canсel and close'})+"' } \
-                                                   }               }");
-    SUI.SeparatorInit(w.sp, 'line');
-    w.code.text = app.parseOptions(app.loadedOptions);
-    w.onResizing = w.onResize = function() { w.layout.resize(); }
-    
-    w.grp.btCanсel.onClick = function() { w.close(); }
-    w.grp.btView.onClick = function() {
-        // Окно отображения текущих настроек
-        var size = [500, 380];
-        var w = new Window ("dialog { text:'"+localize(LStr.uiApp[26])+"', spacing:5, margins:[5,5,5,5], spacing:5, properties:{resizeable:true }, \
-                                                    txt:StaticText { text:'"+localize({ru:"Файл настроек:", en:"Settings file:"})+"', alignment:['left','top'] }, \
-                                                    code:EditText { preferredSize:["+size[0]+","+size[1]+"], alignment:['fill','fill'], properties:{ multiline:true, scrolling:true, readonly:true } }, \
-                                                    sp:"+SUI.Separator + " \
-                                                    grp:Group { alignment:['fill','bottom'],  \
-                                                        btOk:Button { alignment:['right','bottom'], text:'Close', helpTip:'"+localize({ ru:'Закрыть', en:'Close'})+"' } \
-                                                   }               }");
-       SUI.SeparatorInit(w.sp, 'line');
-       w.code.text = app.parseOptions(app.options);
-       w.onResizing = w.onResize = function() { w.layout.resize(); }
-       w.grp.btOk.onClick = function() { w.close(); }
-       w.show();
-    }
-    w.grp.btSave.onClick = function() { 
-        var err = false;
-        try { eval("("+w.code.text+")"); } catch(e) { err = e.description; }
-        if (!err) {
-            app.options = eval("("+w.code.text+")");
-            app.saveOptions();
-            app.processingOptions();
-            app.initJsNames();
-            w.close();
-        } else {
-            alert(err, ( (app.name || "Application") + localize({ ru:' Ошибка в настройках', en:' Error in settings' }) ), true); 
-        }
-    }
-    w.show();
-};
-
-// ===================
 // Отображает окно для редактирования файла настроек
 //
 BuilderApplication.prototype.showSettings = function() {
