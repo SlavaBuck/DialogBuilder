@@ -231,7 +231,6 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
         }
     });
     app.currentSettings.normalizeColors();
-try {
     app.settingsWindow = new Window("palette { text:'"+localize(uiSet[0])+"', spacing:5, margins:[15, 10, 15, 10],\
 		gMain:Group {  \
 				gLeft:Group {alignment:['left', 'fill'], margins:[0, 6, 0, 0],  \
@@ -277,8 +276,7 @@ try {
             page = this.activePage = pages[index];
             page.enabled = page.visible = true;
         }
-    }
-    //w.show();
+    };
     
     // --------------------
     // Настройка основных кнопок
@@ -290,21 +288,12 @@ try {
         btSave = btns.btSave;
     
     btCancel.onClick = function() {
-        var usercolors = app.options.usercolors,
-            list = app.userColorList;
         w.hide();
-        // восстанавливаем app.userColorList 
-        list.removeAll();
-        list._colors.length = 0;
-        each(usercolors, function(val, key) {
-            app._addToColorList(val, list, key, false, "user");
-        });
     };
     
-        
     btApply.onClick = function() {
         applyCurrentSettings();
-    }
+    };
     
     btOk.onClick = function() {
         applyCurrentSettings();
@@ -315,6 +304,7 @@ try {
     btDefaults.onClick = function() {
         if (!mlist.selection) return;
         var options = app.currentSettings.options;
+        // Нажатие кнопки defaults отрабатывает только для активной на данный моент страницы настроек. 
         switch (mlist.selection.index) {
             case 0:
                 options.locale = DEFOPTIONS.locale;
@@ -333,7 +323,8 @@ try {
                 break;
             default:
         } // switch
-        
+        // не обновлять поля пользовательских цветов и шрифтов
+        updateAllPanels(1);
     };
     
     // --------------------
@@ -344,40 +335,53 @@ try {
     return app.settingsWindow;
     ///////////
     // --------------------
-    // функции обновления настроек
-    function updateAllPanels() {
-        var options = merge(app.options),
+    // функции обновления вкладок текущими значениями настроек
+    function updateAllPanels(onlyvalues) {
+        var options = app.currentSettings.options,
             applist = app.getViewByID("_settings_appcolors"),
             doclist = app.getViewByID("_settings_doccolors"),
             view_hColor = app.getViewByID("_settings_highlightColor"),
             control = view_hColor.control;
         delete applist.render;
         delete doclist.render;
-        options.highlightColor = parseInt(parseColor(options.highlightColor));
-        extend(app.currentSettings.options, options);
-        app.currentSettings.normalizeColors();
-        
+        // синхронизируемся только если это не вызвов из btDefaults
+        if (!onlyvalues) { 
+            app.options.highlightColor = parseInt(parseColor(app.options.highlightColor));
+            extend(options, app.options);
+            app.currentSettings.normalizeColors();
+        };
         // Обновление элементов управления цветами:
         _updateColorsField();
         applist.render = doclist.render = _customRender;
-        // Не работает автобновление?!!!!
+        // Не работает автобновление ddList поля highlightColor на странице pMain!!!!
         view_hColor.rebind(app.currentSettings, "selection.value", "options.highlightColor");
         control.selection = control._colors[options.highlightColor].item;
+        // Обновление полей шрифтов в pAppearance
+        app.appFont.control._options = app.appFontSize.control._options = options;
+        app.docFont.control._options = app.docFontSize.control._options = options.doc;
+        app.appFont.control.selection = app.appFont.control._fonts[options.font.split(":")[0]].item;
+        app.docFont.control.selection = app.docFont.control._fonts[options.doc.font.split(":")[0]].item;
+        app.appFontSize.control.text = options.font.split(":")[1];
+        app.docFontSize.control.text = options.doc.font.split(":")[1];
+        
+        if (onlyvalues) return; // на выход, если не нужно обновлять списки (используется в btDefaults)
+        
+        // Обновление списка цветов
+        var list = app.userColorList;
+        list.removeAll();
+        delete list._colors;
+        each(options.usercolors, function(val, key) {
+            app._addToColorList(val, list, key, false, "user");
+        });
         
         // Обновление списка шрифтов
-        app.userFontList.removeAll();
-        delete app.userFontList._fonts;
-        each(app.currentSettings.options.userfonts, function(font) { app._addToFontList(app.userFontList, font); });
+        list = app.userFontList;
+        list.removeAll();
+        delete list._fonts;
+        each(options.userfonts, function(font) { 
+            app._addToFontList(list, font); 
+        });
         
-        // Обновление полей шрифтов в pAppearance
-
-        app.appFont.control._options = app.appFontSize.control._options = app.currentSettings.options;
-        app.docFont.control._options = app.docFontSize.control._options = app.currentSettings.options.doc;
-        app.appFont.control.selection = app.appFont.control._fonts[app.currentSettings.options.font.split(":")[0]].item;
-        app.docFont.control.selection = app.docFont.control._fonts[app.currentSettings.options.doc.font.split(":")[0]].item;
-        app.appFontSize.control.text = app.currentSettings.options.font.split(":")[1];
-        app.docFontSize.control.text = app.currentSettings.options.doc.font.split(":")[1];
-
         ///////
         // Вспомогательные методы:
         // механизм обновление CS/CC списков
@@ -398,16 +402,22 @@ try {
             usercolors = app.currentSettings.options.usercolors,
             view_hColor = app.getViewByID("_settings_highlightColor"),
             control = view_hColor.control;
-        // Синхронизация usercolors
+        // Подготовка к синхронизации usercolors
+        //  1) предварительная очистка всех списков цветов
         each(usercolors, function(val) { app._removeFromAllColorLists(val); });
-        // Синхронизация userfonts
+        //  2) предварительная очистка currentSettings от старых значений usercolors;
+        each(usercolors, function(val, key) { delete usercolors[key]; app.options.usercolors[key] });
+        //  3) инициализация currentSettings в соответствии с текущим содержимым app.userColorList
+        each(app.userColorList.items, function(item) { usercolors[item.text.slice(1)] = item.value; });
+        // Подготовка к синхронизации userfonts (аналогично usercolors)
         each(userfonts, function(val) { app._removeFromAllFontLists(val); });
-        userfonts.length = 0;
+        userfonts.length = app.options.userfonts.length = 0;
         each(app.userFontList.items, function(item) { userfonts.push(item.family); });
-        app.options.userfonts = [];
-        app.options.usercolors = {};
+        
+        // Глобальная синхронизация настроек: app.options <== app.currentSettings
         extend(app.options, app.currentSettings.options);
-        // Обновление списков Fonts и Colors
+        
+        // Обновление всех системных списков fonts и colors в соответствии с новыми usercolors{.} & userfonts[.]
         each(usercolors, function(val, key) { app._addToAllColorLists(val, key, "user"); });
         each(userfonts, function(val) { app._addToAllFontLists(val, "user"); });
         // Обновление коротких имён 
@@ -416,13 +426,7 @@ try {
         // Не работает автобновление?!!!!
         view_hColor.rebind(app.currentSettings, "selection.value", "options.highlightColor");
         control.selection = control._colors[app.currentSettings.options.highlightColor].item;
-        ///////
-        // Синхронизация userfonts
-        
     };  
-} catch(e) { trace(e) };    
-
-
     
     //////////
     // --------------------
@@ -668,7 +672,7 @@ try {
             var value = list.selection.value,
                 name = list.selection.text.slice(1);
             list.removeValue(value);
-            delete app.currentSettings.options.usercolors[name];
+            //delete app.currentSettings.options.usercolors[name];
         };
     
         btRename.onClick = function() {
@@ -678,10 +682,10 @@ try {
                 w = app.createEditDlg(name);
             if (w.show() == 1 && w.g0.et0.text) {
                 list.removeValue(value);
-                delete app.currentSettings.options.usercolors[name];
+                //delete app.currentSettings.options.usercolors[name];
                 name = w.g0.et0.text;
                 app._addToColorList(value, list, name, false, "user");
-                app.currentSettings.options.usercolors[name] = value;
+                //app.currentSettings.options.usercolors[name] = value;
                 list.selection = list.items[list.items.length-1];
             }
         };
@@ -703,7 +707,7 @@ try {
                 name = w.g0.et0.text;
             }
             app._addToColorList(value, list, name, false, "user");
-            app.currentSettings.options.usercolors[name] = value;
+            //app.currentSettings.options.usercolors[name] = value;
             list.selection = list.items[list.items.length-1];
         };
     
