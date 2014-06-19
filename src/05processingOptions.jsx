@@ -177,7 +177,7 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
         }
     });
     app.currentSettings.normalizeColors();
-    app.settingsWindow = new Window("palette { text:'"+localize(uiSet[0])+"', spacing:5, margins:[15, 10, 15, 10],\
+    app.settingsWindow = new Window("dialog { text:'"+localize(uiSet[0])+"', spacing:5, margins:[15, 10, 15, 10],\
 		gMain:Group {  \
 				gLeft:Group {alignment:['left', 'fill'], margins:[0, 6, 0, 0],  \
 					lbSettings:ListBox {alignment:['fill', 'fill'], minimumSize:[180, '']}},  \
