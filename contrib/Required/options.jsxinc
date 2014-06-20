@@ -1,4 +1,4 @@
-// <DBuilder options> Dialog Builder v1.50 options file (don't delete this string!!!) 
+﻿// <DBuilder options> Dialog Builder v1.50 options file (don't delete this string!!!) 
 {
 	locale:"",
 	autofocus:false,
@@ -20,7 +20,6 @@
 	disabledForegroundColor:0x6D6D6D,
 	font:"Segoe Ui:12",
 	jsnames:{
-		Window:"myDlg"
 	},
 	usercolors:{
 		highlightColor:0xF0B8F0

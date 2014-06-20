@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  05processingOptions.jsx
 *  DESCRIPTION: 
-*  @@@BUILDINFO@@@ 05processingOptions.jsx 1.50 Thu Jun 19 2014 20:52:42 GMT+0300
+*  @@@BUILDINFO@@@ 05processingOptions.jsx 1.50 Fri Jun 20 2014 20:50:53 GMT+0300
 * 
 * NOTICE: Работа с настройками приложения: чтение, сохранение, создание, приминение.
 *       processingSettings() - 
@@ -59,8 +59,8 @@ BuilderApplication.prototype.loadOptions = function() { //
     if (f.exists) {
         try { 
             f.open("r"); str = f.read(); f.close();
-            if (str.match(/<DBuilder options>/)) _loadOptions = eval("("+str+")");  
-        } catch(e) { log("loadOptions: " + e.description); return null; }
+            if (str.match(/<DBuilder options>/)) _loadOptions = eval("("+str+")");
+        } catch(e) { trace(e, "loadOptions:"); return merge(DEFOPTIONS); }
     } 
     return _loadOptions;
 };
