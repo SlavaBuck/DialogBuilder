@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  05processingOptions.jsx
 *  DESCRIPTION: 
-*  @@@BUILDINFO@@@ 05processingOptions.jsx 1.50 Fri Jun 20 2014 20:50:53 GMT+0300
+*  @@@BUILDINFO@@@ 05processingOptions.jsx 1.51 Sat Jun 21 2014 02:08:20 GMT+0300
 * 
 * NOTICE: Работа с настройками приложения: чтение, сохранение, создание, приминение.
 *       processingSettings() - 
@@ -59,8 +59,8 @@ BuilderApplication.prototype.loadOptions = function() { //
     if (f.exists) {
         try { 
             f.open("r"); str = f.read(); f.close();
-            if (str.match(/<DBuilder options>/)) _loadOptions = eval("("+str+")");
-        } catch(e) { trace(e, "loadOptions:"); return merge(DEFOPTIONS); }
+            if (str.match(/<DBuilder options>/)) _loadOptions = eval("("+str+")");  
+        } catch(e) { log("loadOptions: " + e.description); return null; }
     } 
     return _loadOptions;
 };
@@ -78,6 +78,7 @@ BuilderApplication.prototype.prepareOptions = function() {
     if (!options.locale) options.locale = DEFOPTIONS.locale;     // Языковые настройки (по умолчанию = '' - системная локаль)    
     if (!options.appcolors || (options.appcolors != 'CS' && options.appcolors !='CC')) options.appcolors = DEFOPTIONS.appcolors;
     if (!options.doccolors || (options.doccolors != 'CS' && options.doccolors !='CC')) options.doccolors = options.appcolors;
+    if (!options.doc) options.doc = {};
     _setColors(options.appcolors, options);
     _setColors(options.doccolors, options.doc);
     // highlightColor инициализируется в формате RGBA
@@ -91,7 +92,6 @@ BuilderApplication.prototype.prepareOptions = function() {
     if (!options.jsnames) options.jsnames = {};
     // ----------------------------------------
     // группа настроек документа:
-    if (!options.doc) options.doc = {};
     // шрифт документа по умолчанию
     if (!options.doc.font) options.doc.font = options.font;
     // пользовательские цвета
@@ -177,7 +177,7 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
         }
     });
     app.currentSettings.normalizeColors();
-    app.settingsWindow = new Window("dialog { text:'"+localize(uiSet[0])+"', spacing:5, margins:[15, 10, 15, 10],\
+    app.settingsWindow = new Window("palette { text:'"+localize(uiSet[0])+"', spacing:5, margins:[15, 10, 15, 10], properties:{closeButton:false}, \
 		gMain:Group {  \
 				gLeft:Group {alignment:['left', 'fill'], margins:[0, 6, 0, 0],  \
 					lbSettings:ListBox {alignment:['fill', 'fill'], minimumSize:[180, '']}},  \
@@ -235,6 +235,7 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
     
     btCancel.onClick = function() {
         w.hide();
+        app.window.enabled = true;
     };
     
     btApply.onClick = function() {
@@ -245,6 +246,7 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
         applyCurrentSettings();
         app.saveOptions(app.currentSettings.options);
         w.hide();
+        app.window.enabled = true;
     };
 
     btDefaults.onClick = function() {
@@ -277,7 +279,10 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
     // Методы для обновления элементов в окнах настройки
     w.onShow = function() {
         updateAllPanels();
+        app.window.enabled = false;
+        app.settingsWindow.enabled = true;
     };
+
     return app.settingsWindow;
     ///////////
     // --------------------
@@ -292,7 +297,7 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
         delete doclist.render;
         // синхронизируемся только если это не вызвов из btDefaults
         if (!onlyvalues) { 
-            app.options.highlightColor = parseInt(parseColor(app.options.highlightColor));
+            //app.options.highlightColor = parseInt(parseColor(app.options.highlightColor));
             extend(options, app.options);
             app.currentSettings.normalizeColors();
         };

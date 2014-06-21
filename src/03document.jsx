@@ -297,7 +297,7 @@ BuilderDocument.prototype.addItem = function (item) {
 
                 // Обновляем размеры окна документа
                 doc.window.layout.layout(true);
-            } catch(e) { log('addView: Init():', e.description) }
+            } catch(e) { trace(e, 'addView: Init():') }
         },
         control: { 
             _marked_:true, // сигнализирует о том, что элемент выбран и выделен

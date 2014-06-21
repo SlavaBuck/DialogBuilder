@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  04initControls.jsx
 *  DESCRIPTION: 
-*  @@@BUILDINFO@@@ 04initControls.jsx 1.50 Thu Jun 19 2014 20:52:22 GMT+0300
+*  @@@BUILDINFO@@@ 04initControls.jsx 1.51 Sat Jun 21 2014 02:08:05 GMT+0300
 * 
 * NOTICE: 
 *   initControls() - инициализация всех списков (цветовых наборов и шрифтов) для елементов управления в заголовке и в панели свойств
@@ -587,7 +587,7 @@ BuilderApplication.prototype._initColorListView = function() {
     var color = parseInt(parseColor(app.options.highlightColor)),
         control = app.getViewByID("fontColor").control;
         
-    if (!control.hasOwnProperty(color)) app.options.usercolors["system highlightColor"] = color;
+    if (!control.hasOwnProperty(color)) app.options.usercolors["highlightColor"] = color;
     each(COLORSTYLES.CS, function(val, key) {
         color = parseInt(parseColor(app.options[key]));  // если что-то новое в app.options
         if (!(color in control._colors)) app.options.usercolors["user "+key+" (app)"] = color;
@@ -641,23 +641,35 @@ BuilderApplication.prototype._initColorListView = function() {
 
 BuilderApplication.prototype._addToColorList = function(value, control, name, toFontColor, owner) {
     if (!control) return false;
-    var list, item, sz, 
+    var list, item, img = {},
         app = this,
         value = parseInt(parseColor(value)),
         rgb = toRGB(value),
         name = (name)||(" r="+rgb[0]+",g="+rgb[1]+",b="+rgb[2]+" ("+parseColor(value)+")"),
-        owner = (owner)||"user";
+        owner = (owner)||"user",
+        _icons = app.resources._listIcons_,
+        sz = [24, 12],          // размер большого цветного прямоугольника
+        prop = "_inControls";   // большие прямоугольники (_inFonts - малые 18х12)
     if (name == "separator") {
         control.add("separator");
         return true;
     }
     // берём любой список и прверяем - есть ли там такой цвет:
     if (control._colors && (value in control._colors)) return false;
-
-    sz = (toFontColor ? [18, 12] : [24, 12]);       // размер цветного прямоугольника
+    if (toFontColor) {
+        sz = [18, 12]; // размер цветного прямоугольника
+        prop = "_inFonts"; 
+    };
+    // кеширование цветных прямоугольников:
+    //log(prop, _icons[prop].toSource());
+    if (!(value in _icons[prop])) {
+        _icons[prop][value] = makePng(sz, rgb);
+    }
+    img = _icons[prop][value];
+    
     item = control.add("item", " "+name);
     item.value = value;
-    item.image = makePng(sz, rgb);
+    item.image = img;
     item.owner = owner;
     // формируем ассоциативный массив для быстрого(мгновенного) поиска цвета по его int-значению
     if (!control._colors) control._colors = [];

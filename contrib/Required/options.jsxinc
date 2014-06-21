@@ -1,29 +1,29 @@
-// <DBuilder options> Dialog Builder v1.50 options file (don't delete this string!!!) 
+// <DBuilder options> Dialog Builder v1.51 options file (don't delete this string!!!) 
 {
 	locale:"",
 	autofocus:false,
 	dialogtype:"dialog",
 	appcolors:"CS",
 	doccolors:"CS",
-	jsname:"small",
+	jsname:"full",
 	highlightColor:0xF0B8F0,
 	doc:{
 		backgroundColor:0xF0F0F0,
 		foregroundColor:0x000000,
 		disabledBackgroundColor:0xF4F4F4,
 		disabledForegroundColor:0x6D6D6D,
-		font:"Segoe Ui:12"
+		font:"Segoe Ui:12.0"
 	},
 	backgroundColor:0xF0F0F0,
 	foregroundColor:0x000000,
 	disabledBackgroundColor:0xF4F4F4,
 	disabledForegroundColor:0x6D6D6D,
-	font:"Segoe Ui:12",
+	font:"Segoe Ui:12.0",
 	jsnames:{
 		
 	},
 	usercolors:{
 		highlightColor:0xF0B8F0
 	},
-	userfonts:["Courier", "Times"]
+	userfonts:[]
 }
