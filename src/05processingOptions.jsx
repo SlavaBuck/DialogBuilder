@@ -153,7 +153,9 @@ BuilderApplication.prototype.saveOptions = function(options) {
 // Отображает окно для редактирования файла настроек
 //
 BuilderApplication.prototype.showSettings = function() {
+    this.window.enabled = false;
     this.settingsWindow.show();
+    this.settingsWindow.enabled = true;
 };
 
 // ===================
