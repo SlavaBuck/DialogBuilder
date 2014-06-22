@@ -69,9 +69,12 @@ var DEFFONTS = [
     'dialog',
     'Arial',
     'Calibri',
+    'Courier',
+    'Helvetica',    
     'Georgia',
-    'Helvetica',
+    'Impact',
     'Tahoma',
+    'Times',
     'Verdana'
 ];
 
