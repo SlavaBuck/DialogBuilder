@@ -259,6 +259,7 @@ LStr.uiErr[3] = { ru:"Ошибка получения кода диалога", 
 LStr.uiErr[4] = { ru:"Ошибка в коде диалога", en:"Error in code of dialog"};
 LStr.uiErr[5] = { ru:"Ошибка создания шрифта %1", en:"Can not create font %1"};
 LStr.uiErr[6] = { ru:"Шрифт %1 уже есть в списке.", en:"Font %1 already in list."};
+LStr.uiErr[7] = { ru:"Критичиская ошибка!", en:"Critical error!" };
 
 LStr.uiSet = [];
 LStr.uiSet[0] = { ru:"Настройки", en:"Program settings" };

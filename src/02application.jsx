@@ -11,13 +11,13 @@
 // #includepath нужно настроить на папку с библиотеками
 #includepath "../../Include/"
 #include "MVC.DOM.jsx"
-
 #include "SimpleUI.jsx"
 #include "PNGLib.jsx"
 
 function BuilderApplication (wtype) { // wtype = dialog || palette
     if (!(this instanceof BuilderApplication)) return new BuilderApplication(wtype);
-    var wtype = (wtype) || "dialog";
+    var app = this,
+        wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
     version:"1.51",
@@ -27,21 +27,23 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
                                            LeftPnl:Panel { margins:[0,0,0,0], spacing:2, alignment:['left','fill'], alignChildren:['Left','top'], orientation:'column' }, \
                                            MainPnl:Panel { preferredSize:[450,300], margins:[0,0,0,0], spacing:2, alignment:['fill','fill'], orientation:'column', properties:{borderStyle:'sunken'} }, \
-                                           sp:"+SUI.Separator + "\
+                                           sp:"+SUI.Separator+"\
                                            RightPnl:Panel { margins:[0,0,0,0], spacing:2, alignment:['right','fill'], orientation:'column' } }, \
                       pBottom:Panel { margins:[0,2,0,4], spacing:0, alignment:['fill','bottom'], orientation:'column', properties:{borderStyle:'etched'}, \
                                               pTabs:Group { margins:[4,0,4,0], spacing:4, alignment:['fill','top'], orientation:'row', alignChildren:['fill','fill'] } }, \
                       pStatusBar:Group { margins:[4,4,4,0], spacing:4, alignment:['fill','bottom'], orientation:'row' } \
                  }"
     });
-    SUI.SeparatorInit(this.window.pMain.sp);
+    app.vname = app.name + " v" + app.version;
+    app.activeControl = null;  // Ссылка на модель текущий (добавляемый) элемент в контейнер документа
+
     // Настройка главного окна:
-    var gfx = this.window.pMain.MainPnl.graphics;
+    SUI.SeparatorInit(app.window.pMain.sp);
+    var gfx = app.window.pMain.MainPnl.graphics;
     gfx.disabledBackgroundColor = gfx.backgroundColor = gfx.newBrush(0, [0.5, 0.5, 0.5, 1]); // цвет области документов - серый 50%    
-    this._editors = new Collection();  // общий список всех въюшек свойств формируемых в app.buildTabs (для быстрого блокирования/разблокирования в app.updateTabs);
-    this._ceditors = new Collection(); // отдельный список въюшек для редактирования свойств цвета
-    this._ieditors = new Collection(); // отдельный список въюшек для отображающих имена для изображений
-    this.activeControl = null;              // Ссылка на модель текущий (добавляемый) элемент в контейнер документа
+    app._editors = new Collection();  // общий список всех въюшек свойств формируемых в app.buildTabs (для быстрого блокирования/разблокирования в app.updateTabs);
+    app._ceditors = new Collection(); // отдельный список въюшек для редактирования свойств цвета
+    app._ieditors = new Collection(); // отдельный список въюшек для отображающих имена для изображений
 };
 
 inherit (BuilderApplication, MVCApplication);
@@ -56,21 +58,20 @@ BuilderApplication.prototype.Init = function() {
     
     // Настройка локальных ссылок
     var app = this,
-          w = this.window,
+          w = app.window,
           controllers = app.controllers,
           models = app.models,
           views = app.views,
           title = app.version +" " + app.name + ": " + localize({ru:"Загрузка...", en:"Loading..."});
     app.pBar = SUI.ProgressBar(title);
     app.pBar.reset(title, 22);
+
     app.pBar.hit(localize({ ru:"Загрузка настроек...", en:"Loading settings..."}));
-    // Загрузка настроек и метаданных
     app.processingOptions();
 
     app.pBar.hit(localize({ ru:"Загрузка ресурсов...", en:"Loading resources..."}));
-    // Загрузка ресурсов
     app.loadResources();    // app.LStr получает локализованные строки
-    app.initJsNames();      // Инициализация наименований объектов диалога (могут переопределяться в опциях)
+    app.initJsNames();
     
     // Формирование представлений для главного окна и контейнера документов (docView)
     app.pBar.hit(localize(app.LStr.uiApp[36]));
@@ -90,6 +91,7 @@ BuilderApplication.prototype.Init = function() {
     app.JsName = app.getViewByID("JsName");     // создан в buildDocsView 
     // Инициализация списков (цветовых наборов, шрифтов и картинок)
     app.initControls()
+    
     // Завершение настройки
     app.pBar.hit(localize(app.LStr.uiApp[45]));
     
@@ -99,7 +101,7 @@ BuilderApplication.prototype.Init = function() {
     
     // Обеспечивает переключение указателя активного документа при клике на табе
     docsView.onChange = function() { 
-        app.activeDocument = (this.selection ? app.getDocumentByName(this.selection.text) : null); 
+        app.activeDocument = (this.selection ? app.getDocumentByName(this.selection.text) : null);
     };
     // Нужно для переключение поля JsName на свойство jsname активного документа при клике на уже активной вкладке (когда событие onChange не генерируется)
     docsView.addEventListener ('click', function(e) { 
@@ -131,7 +133,7 @@ BuilderApplication.prototype.Init = function() {
         return newVal;
     });
 
-    // Обеспечивает обновление текста дерева в реальном времени
+    // Обеспечивает  в реальном времени обновление текста в дереве при редактировании имени переменной в поле JsName
     app.JsName.control.addEventListener("keyup", function (kb) {
         app.treeView.control.activeItem.text = this.text;
     });
@@ -141,31 +143,42 @@ BuilderApplication.prototype.Init = function() {
 // ===================
 // Загрузка графических ресурсов, локализованных строк и метаданных объектов пользовательского графического интерфейса
 BuilderApplication.prototype.loadResources = function() {
-        var app = this;
-    try {
-        // Загрузка локализованных строк 
-        var f = new File(this.resFolder + "locales.jsxinc"); 
-        if (!f.exists) app.terminate(localize({ ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" }, "locales.jsxinc"));
-        try { f.open("r"); app.LStr = eval(f.read()); f.close(); } catch(e) { app.terminate("loadResources: " + e.description); }
-        
-        // Загрузка пиктограмм 
-        //#include "_resources.jsxinc"
-        f = new File(this.resFolder + "_resources.jsxinc"); 
-        if (!f.exists) app.terminate(localize(LStr.uiErr[0], "_resources.jsxinc"));
-        try { f.open("r"); eval(f.read()); f.close(); } catch(e) { app.terminate("loadResources: " + e.description, e, f); }
-        app.resources = appresources;
-        
-        // Загрузка основных метаданных 
-        //#include "controls.jsxinc" 
-        f = new File(this.resFolder + "controls.jsxinc");
-        if (!f.exists) app.terminate(localize(LStr.uiErr[0], "controls.jsxinc"));
-        try { f.open("r"); eval(f.read()); f.close(); } catch(e) { app.terminate("loadResources: " + e.description, e, f); }
-        app.uiCategories = uiCategories;
-        app.uiProperties = uiProperties;
-        app.uiControls = uiControls;
-    } catch(e) { trace(e); app.terminate(localize({ ru:"Критичиская ошибка: ", en:"Critical error: " }) +e.description); } 
+    var app = this,  msg = "",
+        bodyOfScriptFile = "",
+        // упреждающее определение ресурсной строки из locales.jsxinc
+        LStr = { uiErr:[{ 
+                ru:"Критичиская ошибка. Файл %1 не найден", 
+                en:"Critical error. File %1 not found"
+        }]};
+
+    // Загрузка локализованных строк
+    bodyOfScriptFile = _getBodyOfRequreFile("locales.jsxinc");
+    try { app.LStr = eval(bodyOfScriptFile); } catch(e) { app.terminate(e, "loadResources: Critical error!"); }
+    var msg = "loadResources: " + localize(LStr.uiErr[7]);
+    
+    // Загрузка пиктограмм 
+    bodyOfScriptFile = _getBodyOfRequreFile("_resources.jsxinc");
+    try { eval(bodyOfScriptFile); } catch(e) { app.terminate(e, msg); }
+    app.resources = appresources;
+    
+    // Загрузка основных метаданных
+    bodyOfScriptFile = _getBodyOfRequreFile("controls.jsxinc");
+    try { eval(bodyOfScriptFile); } catch(e) { app.terminate(e, msg); }
+    app.uiCategories = uiCategories;
+    app.uiProperties = uiProperties;
+    app.uiControls = uiControls;
+
     // пиктограммы для ускорения создания списков с цветами:
     app.resources._listIcons_ = { '_inFonts':[], '_inControls':[] };
+
+    // вспомогательные функции:
+    function _getBodyOfRequreFile(name) {
+        var f = new File(app.resFolder + name),
+            str = "";
+        if (!f.exists) app.terminate(null, "loadResources: " + localize(LStr.uiErr[0], name));
+        f.open("r"); str = f.read(); f.close();
+        return str;
+    };
 };
 
 // ===================
@@ -174,14 +187,13 @@ BuilderApplication.prototype.loadResources = function() {
 BuilderApplication.prototype.initJsNames = function() {
     // Предполагается что опции и ресурсы уже загружены и корректно подготовлены
     var app = this,
-           opt = app.options,
-           shema = opt.jsname,
-           controls = app.uiControls;
+        opt = app.options,
+        shema = opt.jsname,
+        controls = app.uiControls;
     if (JSNAMES.hasOwnProperty(shema)) {
         for (var p in controls) if (controls.hasOwnProperty(p)) controls[p].jsname = JSNAMES[shema][p];
-        //opt.jsnames.myDialog = JSNAMES[shema].myDialog;
     } else if (shema == "user" && opt.jsnames) {
-         for (var p in opt.jsnames) if (opt.jsnames.hasOwnProperty(p) && controls.hasOwnProperty(p)) controls[p].jsname = opt.jsnames[p];
+        for (var p in opt.jsnames) if (controls.hasOwnProperty(p)) controls[p].jsname = opt.jsnames[p];
     };
 };
 
@@ -195,53 +207,53 @@ BuilderApplication.prototype.buildCaption = function(cont) {
            g = cont.add("group { alignment:['fill', 'top'], spacing:0 }");
     // Кнопки в верхней панели:
     var btNew = g.add("iconbutton { label:'new', helpTip:'"+uiApp[6]+"', enabled:true, properties:{style:'"+stl+"', toggle:false }}");
-           btNew.image =  img.btNew;
+        btNew.image =  img.btNew;
     var btOpen = g.add("iconbutton { label:'open', helpTip:'"+uiApp[7]+"', enabled:true, properties:{style:'"+stl+"', toggle:false }}");
-           btOpen.image =  img.btOpen;
+        btOpen.image =  img.btOpen;
     var btSave = g.add("iconbutton { label:'save', helpTip:'"+uiApp[9]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
-           btSave.image = img.btSave;
+        btSave.image = img.btSave;
     var btSaveAs = g.add("iconbutton { label:'saveAs', helpTip:'"+uiApp[16]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
-           btSaveAs.image = img.btSaveAs;
+        btSaveAs.image = img.btSaveAs;
     var btClose = g.add("iconbutton { label:'close', helpTip:'"+uiApp[8]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
-           btClose.image = img.btClose;
+        btClose.image = img.btClose;
     var btSettings = g.add("iconbutton { label:'settings', helpTip:'"+uiApp[10]+"', enabled:true, properties:{style:'"+stl+"', toggle:false }}");
-           btSettings.image = img.btSettings
+        btSettings.image = img.btSettings
     var sp = g.add(SUI.Separator);
-          SUI.SeparatorInit(sp, 'line', 2);
+        SUI.SeparatorInit(sp, 'line', 2);
     var btEval = g.add("iconbutton { label:'eval', helpTip:'"+uiApp[14]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
-           btEval.image = img.btEval;
+        btEval.image = img.btEval;
     var btCode = g.add("iconbutton { label:'code', helpTip:'"+uiApp[15]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
-           btCode.image = img.btCode;
+        btCode.image = img.btCode;
     var btOpenIn = g.add("iconbutton { label:'openIn', helpTip:'"+uiApp[17]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
-           btOpenIn.image = img.btOpenIn;
-          sp = g.add(SUI.Separator);
-          SUI.SeparatorInit(sp, 'line', 2);
+        btOpenIn.image = img.btOpenIn;
+        sp = g.add(SUI.Separator);
+        SUI.SeparatorInit(sp, 'line', 2);
     var grp = g.add("group { margins:[2,0,2,0], spacing:1, alignment:['left', 'fill'], alignChildren:['left', 'center'], orientation:'column', \
-                                           st:StaticText { text:'"+uiApp[20]+"' }, g:Group { spacing:1 }}");
-          grp.st.graphics.font = ScriptUI.newFont("dialog:8.5");
+                             st:StaticText { text:'"+uiApp[20]+"' }, g:Group { spacing:1 }}");
+        grp.st.graphics.font = ScriptUI.newFont("dialog:8.5");
+        
     app.btBOLD = grp.g.bBOLD = grp.g.add("iconbutton { label:"+_BOLD+", preferredSize:[23,23], properties:{style:'button', toggle:true }}"); // Кнопка управления BOLD
     app.btBOLD.image = img.bBOLD;
     app.btITALIC = grp.g.bITALIC = grp.g.add("iconbutton { label:"+_ITALIC+", preferredSize:[23,23], properties:{style:'button', toggle:true }}"); // Кнопка управления ITALIC
     app.btITALIC.image = img.bITALIC;
-    app.fontStyle = new MVC.View("fontStyle", grp.g); // Группа управления стилем шрифта  
+    app.fontStyle = new MVC.View("fontStyle", grp.g);
     app.views.add(app.fontStyle);
-    //app._editors.add(app.fontStyle);
     sp = g.add(SUI.Separator);
     SUI.SeparatorInit(sp, 'line', 2);
-    
-           grp = g.add("Group {  margins:[2,0,2,0], spacing:0, alignChildren:['left', 'center'], orientation:'column',   \
-                            g1:Group { spacing:2, \
-                                st:StaticText {text:'"+uiApp[21]+"', characters:6},  \
-                                dd:DropDownList {preferredSize:['90', '18']},  \
-                                et:EditText {preferredSize:['38', '18']}},  \
-                            g2:Group { spacing:2, \
-                                st:StaticText {text:'"+uiApp[22]+"', characters:6},  \
-                                dd:DropDownList { preferredSize:['90', '18']}, \
-                                bt:IconButton {helpTip:'"+uiApp[23]+"', preferredSize:[38,20], properties:{style:'button', toggle:false }}}}");
-          grp.g1.et.graphics.font = ScriptUI.newFont("dialog-bold:11");
-          grp.g1.st.graphics.font = grp.g2.st.graphics.font = ScriptUI.newFont("dialog:10");
-          grp.g1.dd.graphics.font = ScriptUI.newFont("dialog-bold:9");
-          grp.g2.dd.graphics.font = ScriptUI.newFont("dialog-bold:8.5");
+        // Группа управления стилем шрифта
+        grp = g.add("Group {  margins:[2,0,2,0], spacing:0, alignChildren:['left', 'center'], orientation:'column',   \
+                        g1:Group { spacing:2, \
+                            st:StaticText {text:'"+uiApp[21]+"', characters:6},  \
+                            dd:DropDownList {preferredSize:['90', '18']},  \
+                            et:EditText {preferredSize:['38', '18']}},  \
+                        g2:Group { spacing:2, \
+                            st:StaticText {text:'"+uiApp[22]+"', characters:6},  \
+                            dd:DropDownList { preferredSize:['90', '18']}, \
+                            bt:IconButton {helpTip:'"+uiApp[23]+"', preferredSize:[38,20], properties:{style:'button', toggle:false }}}}");
+        grp.g1.et.graphics.font = ScriptUI.newFont("dialog-bold:11");
+        grp.g1.st.graphics.font = grp.g2.st.graphics.font = ScriptUI.newFont("dialog:10");
+        grp.g1.dd.graphics.font = ScriptUI.newFont("dialog-bold:9");
+        grp.g2.dd.graphics.font = ScriptUI.newFont("dialog-bold:8.5");
     app.btClearFont = grp.g2.bt;
     app.btClearFont.image = img.bCancel;
     app.fontName = new MVC.View("fontName", grp.g1.dd); // View для управления именем шрифта текста
@@ -252,16 +264,14 @@ BuilderApplication.prototype.buildCaption = function(cont) {
     app.fontColor.control.__key = 'foregroundColor';
     app.views.add(app.fontColor); app._editors.add(app.fontColor); 
     app._ceditors.add(app.fontColor);
-    
-    //~     sp = g.add(SUI.Separator);
-    //~     SUI.SeparatorInit(sp, 'line', 2);
-          sp = cont.add(SUI.Separator);
-          SUI.SeparatorInit(sp, 'line', 2);
+
+        sp = cont.add(SUI.Separator);
+        SUI.SeparatorInit(sp, 'line', 2);
     var btInfo = cont.add("iconbutton { label:'about', helpTip:'"+uiApp[11]+"', preferredSize:[32, 32], alignment:['right', 'fill'], properties:{style:'"+stl+"', toggle:false }}");
-           btInfo.image = img.btInfo;          
+        btInfo.image = img.btInfo;          
 
     // Обработка кликов по кнопкам-меню:
-    cont.addEventListener ("click", function (e) {
+    cont.addEventListener("click", function (e) {
         var _enableButtons = function() { btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = true; }
         var _disableButtons = function() { btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = false; }
         if (e.target.type == 'iconbutton') {
@@ -353,7 +363,7 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
             // ...
         },
         control:{
-            activeItem:null,  // Соответствует doc.activeControl
+            activeItem:null, // Соответствует doc.activeControl
             activeNode:null, // Соответствует doc.activeContainer
             onChanging:false,
             onChange:false,
@@ -424,18 +434,16 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
 };
 
 // =================== 
-// Строим панель кнопок
+// Строим панель кнопок (Добавляем кнопки исходя из содержимого controls.jsxinc -> uiControls)
 BuilderApplication.prototype.buildControlsBtns = function(cont, columns) {
     // Получаем локальные ссылки
     var app = this,
-           uiControls = app.uiControls;
-    // Добавляем кнопки исходя из содержимого uiControls
-    var img = app.resources.images,
-           //dir = app.resFolder + "/icons/",
-           prop, i, j, max, jmax,
-           ctrls_arr = [],                   // Все элементы
-           grps_arr = [],                   // Группы по типам элементов
-           columns = (columns)||2;  // Кол-во кнопок в строке, в левой панели кнопок
+        uiControls = app.uiControls,
+        img = app.resources.images,
+        prop, i, j, max, jmax,
+        ctrls_arr = [],          // Все элементы
+        grps_arr = [],           // Группы по типам элементов
+        columns = (columns)||2;  // Кол-во кнопок в строке, в левой панели кнопок
     // Формируем массивы контролов и групп
     for (prop in uiControls) {
         if (uiControls.hasOwnProperty(prop)) {
@@ -451,8 +459,8 @@ BuilderApplication.prototype.buildControlsBtns = function(cont, columns) {
             if (uiControls.hasOwnProperty(prop) && uiControls[prop].type == grps_arr[i] && prop != 'Window') btns[grps_arr[i]].push(uiControls[prop]);
     }
     // Добавляем контролы в Панель с группировкой по группам
-    var grpRes = "group {text:'', margins:[0,0,0,0], spacing:0, alignChildren:['Left','top'], orientation:'row'  }",
-           grp = null, sp = null, bt = null;
+    var grpRes = "group {text:'', margins:[0,0,0,0], spacing:0, alignChildren:['Left','top'], orientation:'row' }",
+        grp = null, sp = null, bt = null;
     for (prop in btns) {
         if (!btns.hasOwnProperty(prop)) continue;
         sp = cont.add(SUI.Separator); 
@@ -468,51 +476,49 @@ BuilderApplication.prototype.buildControlsBtns = function(cont, columns) {
     }
     // Обработка кликов по контролам:
     cont.addEventListener ("click", function (e) {
-        if (e.target.type == 'iconbutton') {
-            if (app.activeDocument) app.activeDocument.addItem(e.target.label);
-        }
+        if (e.target.type == 'iconbutton' && app.activeDocument) app.activeDocument.addItem(e.target.label);
     });
     // Формирование объекта View
     return app.views.add(new MVC.View("Controls", cont));
 };
+
 // =================== 
 // Строим панель вкладок Properties
 BuilderApplication.prototype.buildTabs = function(cont) {
     // Получаем локальные ссылки
     var app = this,
-           uiCategories = this.uiCategories,
-           uiProperties = this.uiProperties,
-           uiControls = this.uiControls,
-           controllers = this.controllers,
-           models = this.models,
-           views = this.views,
-           Lstr = this.LStr.uiApp,
-           CPROPS = COLORSTYLES.CS;
-    // Кол-во и имена вкладок соответствуют списку категорий в uiCategories
-    var prop, tabs = [], maxlength, val, tval, i, j, n, max, t, p, g, fmax = Math.max, text, view, lt, type, hstr, ctrl, ch;
-    var chrs = 20, mstr = (new Array(chrs+1)).join("0");        // общая длинна в символах группы полей редактирования (и подстановочная строка той же длинны)
+        uiCategories = this.uiCategories,
+        uiProperties = this.uiProperties,
+        uiControls = this.uiControls,
+        controllers = this.controllers,
+        models = this.models,
+        views = this.views,
+        Lstr = this.LStr.uiApp,
+        CPROPS = COLORSTYLES.CS,
+        // Кол-во и имена вкладок соответствуют списку категорий в uiCategories
+        prop, tabs = [], maxlength, val, tval, i, j, n, max, t, p, g, text, view, lt, type, hstr, ctrl, ch;
+    var chrs = 20, mstr = (new Array(chrs+1)).join("0"); // общая длинна в символах группы полей редактирования (и подстановочная строка той же длинны)
 //~     var stBtn = ScriptUI.newImage(dir + "btClear16_RO.png", undefined, dir + "btClear16.png", dir + "btClear16.png"),
-//~           st = "toolbutton", sz = [22, 22];                                    // Кнопка "очистка" для группы полей редактирования
-    var tb = cont.add("tabbedpanel");
-    // Размер символов текущего шрифта в точках для масштабирования полей ввода (списков и эдитбоксов)
-    var gfx = tb.graphics;
-    //ox  = gfx.measureString(',')[0];
-    var oxy = gfx.measureString(mstr);  // Длинна символа и высота символа в точках текущим шрифтом + поправка (пока расчёт только на моноширинные шрифты)
-    var oy = oxy[1] + 5;    // Поправка на dropdownlist-ы (edittext-ы уже на 5 тч.)
-    var ps = 175,               // общая ширина для группы ввода (без подписи и кнопки)
-          counts = 0, scrl,
-          hgt = 4*(5+oy);
-    var view = null;  // дежурный view для связывания полей ввода с model
-    for (prop in uiCategories) if (uiCategories.hasOwnProperty(prop)) { // =============== Добавляем табы по кол-ву категорий в модели (соответствует uiCategories)
+//~     st = "toolbutton", sz = [22, 22];                       // Кнопка "очистка" для группы полей редактирования
+    var tb = cont.add("tabbedpanel"),
+        gfx = tb.graphics,
+        oxy = gfx.measureString(mstr),  // Длинна символа и высота символа в точках текущим шрифтом + поправка (пока расчёт только на моноширинные шрифты)
+        oy = oxy[1] + 5,    // Поправка на dropdownlist-ы (edittext-ы уже на 5 тч.)
+        ps = 175,               // общая ширина для группы ввода (без подписи и кнопки)
+        counts = 0, scrl,
+        hgt = 4*(5+oy),
+        view = null;  // дежурный view для связывания полей ввода с model
+    // =============== Добавляем табы по кол-ву категорий в модели (соответствует uiCategories)
+    for (prop in uiCategories) if (uiCategories.hasOwnProperty(prop)) { 
         // hit при инициализации
         app.pBar.hit(localize(Lstr[39]) + uiCategories[prop].label);        
         // добавляем вкладку группы:
         t = tb.add("tab { text:'"+uiCategories[prop].label+"', helpTip:'"+uiCategories[prop].description+"', margins:[5,5,5,5], spacing:0, alignChildren:['Left','top'] }");
-        g = t.add("group", [0, 5, 550, hgt]); 
+        g = t.add("group", [0, 5, 550, hgt]);
         extend (g, { margins:0, spacing:0, alignChildren:['left','top'], orientation:'row' } );  
         // упреждающий просмотр для определения самой длинной строки label в точках
         maxlength = counts = 0;  
-        for (p in uiProperties) if (uiProperties.hasOwnProperty(p) && uiProperties[p].category == prop ) { maxlength = fmax(maxlength, gfx.measureString(p)[0]);  counts++ };       
+        for (p in uiProperties) if (uiProperties.hasOwnProperty(p) && uiProperties[p].category == prop ) { maxlength = Math.max(maxlength, gfx.measureString(p)[0]); counts++ };       
         // ==== Добавляем в таб скроллируемую панель, если кол-во групп настройки больше 4 (counts*5) ======
         if (prop == "Image") {
             // Специальная обработка для Image: учитываем размер группы дополнительных настроек для скроллируемой панели:
@@ -523,7 +529,6 @@ BuilderApplication.prototype.buildTabs = function(cont) {
             scrl.margins = [5,10,0,0];
         } else {
             if ((counts)*oy+counts*5 > hgt) {
-
                 scrl = SUI.addScrollablePanel(g, 0, 0, 485, hgt+10, false, (counts+1)*oy+counts, 20);
                 extend (scrl, { margins:0, spacing:0, alignChildren:['left','center'], orientation:'column' } ); 
             } else {
@@ -537,7 +542,7 @@ BuilderApplication.prototype.buildTabs = function(cont) {
             extend (g, { margins:0, spacing:5, alignChildren:['left','top'], orientation:'row', helpTip:hstr, label:p } );
             with (g.add("statictext { text:'"+p+":'}")) { preferredSize[0] = maxlength+5; helpTip = hstr };             // Подпись
             grp =  extend(g.add("group",[0, 0, ps, oy]), { margins:[0,0,0,0], spacing:5, alignChildren:['fill','fill'], orientation:'row' } ); // Общая группа для полей ввода
-            ch = g.add("checkbox"); ch.helpTip = Lstr[5]; ch.enabled = false;      // Флажок "Определить";
+            ch = g.add("checkbox { helpTip:'"+localize(Lstr[5])+"', enabled:false }"); ch.label = p;     // Флажок "Определить";
             // Заполняем группу полями ввода:
             g = grp;
             val = uiProperties[p].value;   // Представляет объект из uiProperties.value типа '' или массив (['',''] или ['','','',''])
@@ -546,14 +551,10 @@ BuilderApplication.prototype.buildTabs = function(cont) {
             if (prop == "Graphics") {
                 if (p == "font") {
                     view = this.addView({ id:p, parent:g, view:"edittext { properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
-                    //var btFont = g.add("iconbutton { title:'. . .', titleLayout:{alignment:['center', 'center'] }, alignment:['right', 'fill'] }"); 
-                    //var btFont = g.add("iconbutton { text:'. . .', preferredSize:["+24+","+oy+"] }, alignment:['right', 'fill'] }"); 
-                    view.check.label = p;
                     this._editors.add(view);
                     continue; // for (p in uiProperties)...
                 } else if (CPROPS.hasOwnProperty(p)) {
                     view = this.addView({ id:p, parent:g, view:"dropdownlist", check:ch, control:{ __key:p, helpTip:hstr, enabled:false } });
-                    view.check.label = p;
                     this._editors.add(view);
                     this._ceditors.add(view);   // отдельная коллекция контролов для управления цветом
                     continue; // for (p in uiProperties)...
@@ -568,7 +569,6 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                         view.control.add("item", ""); // Для возможности обнуления списка!
                         for (j=0, max=tval.length; j<max; j++) { view.control.add("item", tval[j]); }; // Добавляем все значения из uiProperties.values
                         view.control.selection = 0;
-                        view.check.label = p;
                         this._editors.add(view); // общий список всех контроллёров свойств (для быстрого блокирования/разблокирования)
                     } // for
                 } else { // val не массив также имеет предустановленные знчения
@@ -576,8 +576,7 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                     view.control.add("item", ""); // Для возможности обнуления списка!
                     for (j=0, max=tval.length; j<max; j++) { view.control.add("item", tval[j]); }; // Добавляем все значения из uiProperties.values
                     view.control.selection = 0;
-                    view.check.label = p;
-                    this._editors.add(view); // общий список всех контроллёров свойств (для быстрого блокирования/разблокирования)                   
+                    this._editors.add(view); // общий список всех контроллёров свойств (для быстрого блокирования/разблокирования)
                 } // else
             } else { // tval не массив (предустановленных значений нет)
                 if (val instanceof Array) { // свойство - массив без предустановленных значений
@@ -585,7 +584,6 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                         view = (p in {'bounds':0, 'frameLocation':0, 'image':0}) ? 
                                 this.addView({ id:p+i, parent:g, view:"edittext { properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } }) :
                                 this.addView({ id:p+i, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
-                        view.check.label = p;
                         this._editors.add(view);
                         if (p == 'image') this._ieditors.add(view); // отдельная коллекция контролов для отображения имён картинок
                     }
@@ -601,34 +599,36 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                         // получаем подгруппу с дополнительными полями настройки Image
                         view.control.text += ' (not implemented in this version)';
                         view.control.enabled = false;
+                        //this._editors.add(view);
                     }
                 } else { // свойство - значение без предустановленных значений
+                    var viewEdit = "edittext { characters:18, properties:{ readonly:true } }",
+                        btView = "button { text:'...', enabled:false, preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"' }";
                     if (p == 'items' ) {
-                        view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
-                        app.btList = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false, bname:'btList' }");
+                        view = this.addView({ id:p, parent:g, view:viewEdit, check:ch, control:{helpTip:hstr, enabled:false} });
+                        app.btList = g.add(btView); 
+                        app.btList.bname = 'btList';
                     } else if (p == 'columnWidths') {
-                        view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
-                        app.btListCW = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false, bname:'btListCW' }");                        
+                        view = this.addView({ id:p, parent:g, view:viewEdit, check:ch, control:{helpTip:hstr, enabled:false} });
+                        app.btListCW = g.add(btView);
+                        app.btListCW.bname = 'btListCW';                        
                     } else if (p == 'columnTitles') {
-                        view = this.addView({ id:p, parent:g, view:"edittext { characters:18, properties:{ readonly:true } }", check:ch, control:{ helpTip:hstr, enabled:false } });
-                        app.btListCT = g.add("button { text:'...', preferredSize:["+24+","+oy+"], alignment:'right', helpTip:'"+Lstr[27]+"', enabled:false, bname:'btListCT' }");  
+                        view = this.addView({ id:p, parent:g, view:viewEdit, check:ch, control:{helpTip:hstr, enabled:false} });
+                        app.btListCT = g.add(btView);
+                        app.btListCT.bname = 'btListCT';  
                     } else {
                         view = this.addView({ id:p, parent:g, view:"edittext", check:ch, control:{ helpTip:hstr, enabled:false } });
                     }
-                    view.check.label = p;
                     this._editors.add(view);
                 }
             }
             //g.enabled = false; // По умолчанию все недоступно - будем включать в зависимости от добавляемого элемента
         } // for (p in uiCategories[prop])
     } // for (prop in uiCategories)  - Конец добавления табов
-    //for (i = 0; i<this._editors.length; i++) log ((i < 10) ? "0" + i : i,"-", this._editors[i].id);
     p = app._getField('alignment0').control; p.remove('top'); p.remove('bottom');
     p = app._getField('alignment1').control; p.remove('left'); p.remove('right');
     p = app._getField('alignChildren0').control; p.remove('top'); p.remove('bottom');
     p = app._getField('alignChildren1').control; p.remove('left'); p.remove('right');    
-    // 
-    //btFont.size = [24, oy]; btFont.parent.layout.layout(true);
     
     // Обработка чекбокса (установленный значок означает добавлять свойство в элемент при формировании диалога, снятый - игнорировать)
     tb.addEventListener ("click", function (e) {
@@ -659,7 +659,6 @@ BuilderApplication.prototype.buildTabs = function(cont) {
         }
     });
     
-    // btList.onClick = function() { app._notImplemented(); }
     // Формирование объекта View
     return app.views.add(MVC.View("Tab", tb));
 };
@@ -885,10 +884,6 @@ BuilderApplication.prototype.addDocument = function() {
 // Быстрое отвязывание всех контролов
 BuilderApplication.prototype.disableAllTabs = function() {
     var editors = this._editors;
-//~     app.fontStyle.unbind();
-//~     app.fontColor.unbind();
-//~     app.fontName.unbind();
-//~     app.fontSize.unbind();
     app._updateFontField(null);
     for (var i=0, max=editors.length; i<max; i++) {
         editors[i].unbind();
@@ -938,18 +933,7 @@ try {
                 if (!newVal.control.properties.hasOwnProperty("text")) app._ceditors.getFirstByKeyValue('id', "fontColor").unbind(); //control.enabled = false;
                 continue;
             }
-            // Специальная обработка для image (поля в табах)
-//~             if (p == "image") {
-//~                 view = app._ceditors.getFirstByKeyValue('id', p); 
-//~                 view.control.enabled = view.check.enabled = true; view.check.value = flags[p];
-//~                 view.control.graphics.foregroundColor = (view.check.value ? cBlack : cGray);
-//~                 view.rebind(newVal);
-//~                 if (p == "foregroundColor") app._ceditors.getFirstByKeyValue('id', "fontColor").rebind(newVal);
-//~                 if (!newVal.control.properties.hasOwnProperty("text")) app._ceditors.getFirstByKeyValue('id', "fontColor").unbind(); //control.enabled = false;
-//~                 continue;
-//~             }
-
-            //val = view_obj[p];
+            // Стандартная обработка для всех остальных...
             val = app.uiProperties[p].value;
             if (typeof val == 'object') {
                 for (i=0; i<control[p].length; i++) {
@@ -1064,15 +1048,12 @@ BuilderApplication.prototype.onExit = function() {
     if (notsaved && confirm(localize(app.LStr.uiApp[19]), false, this.name))  app.saveAllDocument();
 };
 
-BuilderApplication.prototype.terminate = function(msg, err, file) {
-    var msg = (msg)||"Critical error. Application is terminated",
-          txt = msg;
-    if (err instanceof Error) {
-        if (file instanceof File) err.fileName = File.decode(file.displayName);
-        txt = trace(err, msg);
-    }
-    alert(txt, (app.name)||"Application", true); 
-    if (this.window && this.window.visible) this.window.close();
+BuilderApplication.prototype.terminate = function(err, msg) {
+    var app = this,
+        msg = (msg)||"Critical error. Application is terminated",
+        txt = (err instanceof Error ? trace(err, msg) : msg);
+    alert(txt, app.vname, true); 
+    if (app.window && app.window.visible) app.window.close();
     throw Error(msg);
 };
 
