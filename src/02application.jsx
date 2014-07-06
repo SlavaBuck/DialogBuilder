@@ -864,7 +864,7 @@ BuilderApplication.prototype.addDocument = function() {
      // Вызываем перекрытый родительский метод:
     MVCApplication.prototype.addDocument.call(this);
     var app = this,
-           doc = app.activeDocument;
+        doc = app.activeDocument;
     // Добавляем и настраиваем родительский контейнер для всех элементов диалога
     var model = doc.addItem("dialog { preferredSize:[80, 20] }"), //, alignment:['','']
            pPnl = model.view.control,

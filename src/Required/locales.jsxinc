@@ -250,6 +250,7 @@ LStr.uiApp[42] = { ru:"Импорт строк из текстового фай�
 LStr.uiApp[43] = { ru:"По умолчанию", en:"Set defaults" };
 LStr.uiApp[44] = { ru:"Применить", en:"Apply" };
 LStr.uiApp[45] = { ru:"Завершение настройки...", en:"Completing adjustment..." };
+LStr.uiApp[46] = { ru:"// Файл создан с помощью ", en:"// File created with " };
 
 LStr.uiErr = [];
 LStr.uiErr[0] = { ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" };

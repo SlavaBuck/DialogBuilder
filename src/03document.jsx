@@ -1,29 +1,29 @@
 ﻿/**************************************************************************
-*  03document.jsx
-*  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
-*  @@@BUILDINFO@@@ 03document.jsx 1.50 Thu Jun 19 2014 20:52:01 GMT+0300
-* 
-* NOTICE: 
-* 
+ *  03document.jsx
+ *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
+ *  @@@BUILDINFO@@@ 03document.jsx 1.51 Fri Jul 04 2014 15:43:24 GMT+0300
+ * 
+ * NOTICE: 
+ * 
 /**************************************************************************
-* © Вячеслав aka SlavaBuck, 10.02.2014.  slava.boyko#hotmail.com
-*/
+ * © Вячеслав aka SlavaBuck, 10.02.2014.  slava.boyko#hotmail.com
+ */
 
 function BuilderDocument(appRef) {
     if (!(this instanceof BuilderDocument)) return new BuilderDocument(appRef);
     // Вызов базового конструктора
     BuilderDocument.prototype.__super__.constructor.call(this, appRef, { view:"tab { margins:[0,0,0,0] }" });
     this.modified = true; // сигнализирует о несохранённых изминениях
+    this.activeContainer = this.window;
 };
 
+// Наследуемся напрямую от MVCDocument
 inherit (BuilderDocument, MVCDocument);
-// Фильтры окна открытия/сохранения документов
                                      
 // Функции сохранения и открытия
 BuilderDocument.prototype.load = function() {
     var doc = this,
-           app = doc.app;
-    //$.locale = doc.app.options.locale;        // язык интерфейса
+        app = doc.app;
     // К моменту вызова этого метода уже должны быть установлены свойства name и file в прототипном методе приложения loadDocument...
     if (!this.file.exists) return false;
     try {
@@ -38,7 +38,6 @@ BuilderDocument.prototype.save = function() {
     var doc = this,
         app = doc.app,
         LStr = app.LStr;
-    //$.locale = doc.app.options.locale;        // язык интерфейса
     try {
         if (!doc.file || !doc.file.exists ) {
            var msg = localize(LStr.uiApp[24]) + (doc.name[0] == '*' ? doc.name.slice(1) : doc.name);
@@ -57,7 +56,7 @@ BuilderDocument.prototype.save = function() {
         doc.name = File.decode(doc.file.name);
         app.window.text = app.version + " " + app.name + " - " +doc.name;
         doc.file.open("w");
-        var str = localize({ ru:"// Файл создан с помощью ", en:"// File created with " }) + doc.app.name + " v"+doc.app.version + "\r\r";
+        var str = localize(LStr.uiApp[46]) + doc.app.name + " v"+doc.app.version + "\r\r";
         doc.file.write(str + doc.getSourceString());
         doc.file.close();
         doc.modified = false;
@@ -87,493 +86,40 @@ BuilderDocument.prototype.saveAs = function() {
 
 // Основные методы документа:
 // Добавление элемента в диалог
-BuilderDocument.prototype.addItem = function (item) {
-    if(!item) return null;
+BuilderDocument.prototype.addItem = function (rcString) {
+    if(!rcString) return null;
     var doc = this,
         app = doc.app,
         uiCategories = app.uiCategories,
         uiProperties = app.uiProperties,
         uiControls = app.uiControls,
+        CPROPS = COLORSTYLES.CS,
         dlgs = "dialog,palette,window";
-   doc.modified = true;
-   var CPROPS = COLORSTYLES.CS;
-   // Добываем type добавляемого ScriptUI объекта в нижнем регистре!
-    var type, x1, x2, x = Math.min(x1 = item.indexOf(' '), x2 =item.indexOf('{'));
-    if (x == -1) {
-        if (x1 == -1) {
-            if (x2 == -1) type = item.toLowerCase(); else type = item.substr(0, x2).toLowerCase();
-        } else type = item.substr(0, x1).toLowerCase();
-    } else type = item.substr(0, x).toLowerCase();
-    var contrl = (dlgs.indexOf(type) != -1 ? 'panel' : type) + item.slice(type.length);
-    var item = (dlgs.indexOf(type) != -1 ? 'Window' : item.substr(0, type.length));
-
-    // Определяем контейнер для добавляемого контрола
-    if (!doc.activeContainer) doc.activeContainer = doc.window;  // только при первом вызове
-    if (type == 'tab' && doc.activeContainer.type != 'tabbedpanel') return; // танцы с tabbedpanel
-    if (doc.activeContainer.type == 'tabbedpanel' && type != 'tab') return; //doc.activeContainer = doc.findController(doc.activeControl).view.control;
-    if (! doc._counters_.hasOwnProperty(item)) doc._counters_[item] = 0;
-    // Данная модель представляет данные самого элемента управления
-    /*
-            Пока до конца не решён вопрос с использованием библиотеки SimpleUI (как собственно и с её архитектурной) будем временно использовать
-            костыль с предварительным парсингом представлений из данной библиотеки и последующей специальной инициализацией.
-       */
-    if (type == 'separator') { contrl = SUI.Separator; }
-    var ctrl = merge(uiControls[item]);
-    ctrl.jsname = uiControls[item].jsname + (doc._counters_[item]++);
-    ctrl.id = doc.id + ctrl.jsname;
-    // Данная модель представляет данные самого элемента управления
-    var model = doc.addModel({ 
-        id:ctrl.id, 
-        control:ctrl,                                                     // отражает соостояние графического элемента и связывается с полями редактирования
-        properties:merge(uiControls[item].properties), // содержит флаги к соответствующим свойствам, которые определяют добавление свойства в результатирующий документ(диалог)
-        code:{ varname:"", gfxname:"", initcode:"", initgfx:""},     // содержит код инициализации ui-элемента (формируется динамически)
-        view:null,                                                       // view - вспомогательный указатель на соответсвующее реальное представление
-        // Метод формирует и возвращает ресурсную ScriptUI-строку для данной ui-модели (свойства в строку попадают в зависимости от флагов из model.properties.properties)
-        toSourceString:function(tr) {
-            var model = this.control,
-                  props = this.properties,
-                  control = this.view.control,
-                  label = (model.label == "Tab" ? "Panel" : model.label).replace(/Tabbed/, ""),
-                  str = ((tr)||'') + model.jsname+":"+ label+" {",
-                  ptr = "properties:{" + _toSource(props.properties, control.properties, model.properties.properties, "prop"),
-                  sstr = _toSource(props, control, model.properties, "main");
-            //log("label =", model.label);
-            if ( model.label == "TabbedPanel" || model.label == "Tab" ) str += "type:'"+model.label.toLowerCase()+"'"+(sstr.length == 0 ? "": ", ");
-            if (sstr.length) str += sstr;
-            if (ptr.length != 12) str += (sstr.length == 0 ? "": ", ") + ptr + "}";
-            return str += "}";
-            function _toSource(prop_obj, control_obj, model_obj, model) {
-                var str = '',
-                    val, val1;
-                for (var p in prop_obj) if (prop_obj.hasOwnProperty(p) && p != 'properties' && p != 'graphics' && prop_obj[p] === true) {
-                    str += p + ":"
-                    //val = control_obj[p];
-                    val = model_obj[p];
-                    // специальная обработка для image
-                    if (p == 'image') { val = model_obj[p][0]; }
-                    // Решение проблемы с крилицей (Array.toSource() возвращает коды символов...)
-                    var type = app.uiProperties[p].type.toLowerCase();
-                    var sstr = (function _toSafeSource(val, type) {
-                        var s = "";
-                        switch (typeof val) {
-                            case 'boolean': 
-                            case 'number': s = val+", "; break;
-                            case 'string':
-                                if (type == "Number") s = (val.indexOf(".") != -1 ? parseFloat(val) : parseInt(val))+", "; else {
-                                    s = "'"+val.replace(/"/g, "\\\"").replace(/'/g, "\\\\'")+"', "; 
-                                }
-                                break;
-                            case 'object':
-                                if (val instanceof Array) {
-                                    for (var i=0, max=val.length; i<max; i++ ) s += _toSafeSource(val[i], typeof val[i]);
-                                    break;
-                                }
-                                // break
-                            default: 
-                                s = val.toSource().replace(/'/g, "\\\\'").replace(/"/g, "'")+", ";
-                        }
-                        return s;
-                    }(val));
-                    sstr = sstr.slice(0, -2); // убираем последнюю запятую
-                    str += ((val instanceof Array) ? "["+sstr+"]" : sstr) + ", ";
-                } // for
-                return str.slice (0, -2); // убираем последнюю запятую 
-            } // function _toSource()
-        }, // model._toSourceString()
-         // Метод формирует и возвращает строку, содержащую JavaScript код для дополнительной инициализации элемента
-        getCode:function() {
-            var model = this.control,
-                   props = this.properties,
-                   control = this.view.control,
-                   code = this.code;
-           var ctrl = control,
-                  dlg = doc.window.children[0],
-                  names = [];
-           // Для начала найдём главное родительское окно (у него свойства parent всегда = null
-           if (ctrl === dlg) code.varname = model.jsname; else {
-               while ( ctrl !== dlg) { 
-                   names.push(doc.findController(ctrl).model.control.jsname);
-                   ctrl =  ctrl.parent; 
-               };
-               code.varname =  "var " + model.jsname + " = " + doc.findController(dlg).model.control.jsname + "." +names.reverse().join(".");
-           }
-           code.gfxname = "var gfx = " + model.jsname +".graphics";
-           var font = "", colors = [], strs = [];
-           for (var p in props.graphics) if (props.graphics.hasOwnProperty(p) && props.graphics[p]) {
-               if ( p in CPROPS) {
-                    if (p.match(/foreground/i)) colors.push( "gfx."+p+" = "+"gfx.newPen(gfx.PenType.SOLID_COLOR, "+toRGBA(model.properties.graphics[p]).toSource()+", 1)");
-                    else colors.push( "gfx."+p+" = "+"gfx.newBrush(gfx.BrushType.SOLID_COLOR, "+toRGBA(model.properties.graphics[p]).toSource()+")");
-               } else if ( p == "font" ) { 
-                   font = "gfx.font = ScriptUI.newFont(\""+model.properties.graphics.font+"\")"; 
-               } else {
-                   strs.push("gfx."+[p]+" = " + model.properties.graphics[p]);
-               }
-           }
-           var gfxstr = [];
-           if (font || colors.length || strs.length) {
-               gfxstr.push(code.gfxname);
-               if (font) gfxstr.push(font);
-               if (colors.length) for (var i=0; i<colors.length; i++) gfxstr.push(colors[i]);
-               if (strs.length) for (var i=0; i<strs.length; i++) gfxstr.push(strs[i]);
-           }; 
-           var retval = (control === dlg ? "" : code.varname + ";\r" );
-           // формируем общую строку кода инициализации:
-           if (gfxstr.length) code.initgfx = retval += gfxstr.join(";\r")+";\r"; else code.initgfx = "";
-           if (code.initcode) retval += code.initcode + "\r";
-           // временное решение для сепараторов:
-           if (control.isSeparator) {
-               var parent = doc.findController(control.parent).model;
-               parent.getCode();
-               parent = (parent.code.varname.indexOf("=") ? parent.code.varname.slice(parent.code.varname.indexOf("=")+1) : parent.code.varname);
-               if (parent[0] == " ") parent = parent.slice(1);
-               retval = retval.replace(/<parent>/, parent).replace(/<this>/g, model.jsname);
-           };
-           // временное решение для dialog:
-           code.initresizing = (props.properties.resizeable ? model.jsname + ".onResizing = " + model.jsname + ".onResize = function() { this.layout.resize () };\r" : "");
-           
-           return (code.initcode || gfxstr.length) ? retval : "";
-        }
-    }); 
+    // Добываем type добавляемого ScriptUI объекта в нижнем регистре!
+    var type = (rcString.indexOf("{") != -1 ? rcString.substr(0, rcString.indexOf("{")) : rcString).replace(/\s/g,"").toLowerCase();
+    var item = (dlgs.indexOf(type) != -1 ? 'Window' : rcString.substr(0, type.length));
+    // танцы с добавлением tabbedpanel и tab:
+    if (type == 'tab' && doc.activeContainer.type != 'tabbedpanel') return;
+    if (doc.activeContainer.type == 'tabbedpanel' && type != 'tab') return;
     
-    // *** Блок обновления данных модели *** //   
-    var  list = app._ceditors.getFirstByKeyValue('id', "fontColor").control, 
-           model_prop = model.control.properties.graphics,
-           color_opt = app.options.doc;
-    for (var p in model_prop) if (model_prop.hasOwnProperty(p) && CPROPS.hasOwnProperty(p)) {
-        if (model_prop[p] === false) model_prop[p] = color_opt[p];
-        if (!(model_prop[p] in list._colors)) app._addToAllColorLists(model_prop[p]); // добавляем цвет во все наборы, если его там небыло...
-    }
-    if (model_prop.hasOwnProperty('font') &&  !model_prop.font) model_prop.font = color_opt.font;
+    doc.modified = true;    
+    // Инициализация счётчика соответствующих элементов:
+    if (!doc._counters_.hasOwnProperty(item)) doc._counters_[item] = 0;
     
-    // *** *** //
-
-    //log(item, (model.control.type == 'Container' || (type in bkgctrl)));
-    model.view = doc.addView({ 
-        id:model.id, 
-        parent:doc.activeContainer,
-        view:contrl,
-        render:customUpdate,
-        Init:function(){
-            try {
-                var self = this,
-                    type = this.type,
-                    gfx = this.graphics,
-                    model_prop = model.control.properties.graphics; // пробрасываем локально
-                // *** Блок обновления данных элемента данными модели *** //
-                for (var p in model_prop) if (model_prop.hasOwnProperty(p) && CPROPS.hasOwnProperty(p)) {
-                    gfx[p] = (p.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(model_prop[p]), 1) : gfx.newBrush(_BSOLID, toRGBA(model_prop[p])) );
-                }
-                if (model_prop.hasOwnProperty('font') && model_prop.font) gfx.font = ScriptUI.newFont(model_prop.font);
-                //
-                if (type == 'listbox' || type == 'dropdownlist' ) {
-                    model.control.properties.properties.items = ["Some Text 1", "Some Text 2"];
-                    each(model.control.properties.properties.items, function(str) { self.add("item", str) });
-                }
-                if (type == 'group' || type == 'image') { if (!this.preferredSize[0] && !this.preferredSize[1]) this.preferredSize = [8, 15] }
-                //if (type != 'tabbedpanel' && type != 'iconbutton' && this.hasOwnProperty('text')) this.text = model.control.jsname;
-                if (type == "tab") {
-                    var tp = this.parent,
-                        model_tp = doc.findController(tp).model;
-                    //log(model_tp);
-                    if (!(model.properties.properties.size || model.properties.properties.preferredSize)) {
-                        var add_sz = (this.text ? 42 : Math.max(28 + gfx.measureString(this.text), 42)),
-                            ch = tp.children.length;
-                        if (ch > 1) tp.size[0] += add_sz; else {
-                            tp.size[0] = (ch == 1 ? Math.max(tp.size[0], add_sz+28) : Math.max(tp.size[0], add_sz + gfx.measureString(tp.children[1].text)) );
-                        }
-                        model_tp.control.properties.size[0] = model_tp.control.properties.bounds[2] = tp.size[0];
-                    }
-                }
-                // Специальная обработка для Separator-ов
-                if (this.isSeparator) SUI.SeparatorInit(this, 'line');
-                // Обязательно патчим свойство alignment
-                if (!this.alignment && this.parent) { this.alignment = this.parent.alignChildren }
-                // *** *** //
-                var c = app.options.highlightColor;
-                //gfx._marked = gfx.newBrush(_BSOLID, app.options.highlightColor);
-                gfx._marked = gfx.newBrush(_BSOLID, [c[0], c[1]/1.5, c[2], 0.5]);
-                //gfx._unmarked = gfx.newBrush(_BSOLID, [c[0], c[1]/1.5, c[2], 0]);
-                //if (model.control.type == 'Container') gfx.foregroundColor =  gfx.newPen(_PSOLID, [0,0,0,1], 1); 
-
-                // Обновляем размеры окна документа
-                doc.window.layout.layout(true);
-            } catch(e) { trace(e, 'addView: Init():') }
-        },
-        control: { 
-            _marked_:true, // сигнализирует о том, что элемент выбран и выделен
-            text: (uiControls[item].properties.hasOwnProperty('text') && type != 'tabbedpanel' && dlgs.indexOf(type) == -1) ? model.control.jsname : "",
-            //onDraw:customDraw
-            onDraw:(model.control.type == 'Container' || "listbox,separator".indexOf(type) != -1 ) ? undefined : customDraw
-        }
-    });
-    /*
-            Пока до конца не решён вопрос с использованием библиотеки SimpleUI (как собственно и с её архитектурной) будем временно использовать
-            костыль с предварительным парсингом представлений из данной библиотеки и последующей специальной инициализацией.
-       */
-    if (type == 'separator') { 
-        model.code.initcode += "if (<parent>.orientation == 'column') { <this>.maximumSize[1] = 1; <this>.alignment = ['fill', 'top']; } else { <this>.maximumSize[0] = 1; <this>.alignment = ['left', 'fill']; };";
-    }
+    var rcString = (type == 'separator' ? SUI.Separator.toString() : (dlgs.indexOf(type) != -1 ? 'panel' : type) + rcString.slice(type.length));
     
-    if (model.control.properties.hasOwnProperty('text')) model.control.properties.text = model.view.control.text;
-    // Теперь необходимо связать все свойства модели с соответствующими свойствами представления (это позволит в реальном времени 
-    // изменять значения свойств модели и её графическое состояние). Свойства цвета и шрифта требуют специальной обработки:
-    //
-    // Связывание контролёрами всех свойств модели со свойствами графического элемента
-    // _modifyController в зависимости от класса и типа свойства назначает специальные обработчики _updateView (обновляющие представление)
-    // для соответствующих контролёров:
-    // - обработчик _updViewMsts (размер и положение объекта)                 - в связи с необходимостью дополнительного обхода связанных свойств
-    // - обработчик _updViewAlign (выравнивания объекта в контеёнере) - из за каличного поведения некоторых свойств в ScripUI - alignment и т.п.)
-    if (!model.view.control.properties) model.view.control.properties = {};
-    var model_bstr = "", view_bstr = "", 
-           view_prop, val, defval, p, i, 
-          propers = model.control.properties;  
-    for (p in uiProperties) if (!(CPROPS.hasOwnProperty(p) || p == 'font')) { 
-try {         
-        if (propers.hasOwnProperty(p)) {
-                model_bstr = model.id + ".control.properties." +p; view_bstr = model.id + "."+p;
-                model_prop = model.control.properties; view_prop = model.view.control;
-            } else if (propers.properties.hasOwnProperty(p)) { 
-                model_bstr =  model.id + ".control.properties.properties."+p; view_bstr = model.id + ".properties."+p; 
-                model_prop = model.control.properties.properties; view_prop = model.view.control.properties; 
-            } else if (propers.graphics.hasOwnProperty(p)) { 
-                model_bstr =  model.id + ".control.properties.graphics."+p; view_bstr = model.id + ".graphics."+p; 
-                model_prop = model.control.properties.graphics; view_prop = model.view.control.graphics; 
-        } else continue; // for (p in uiProperties)
-
-        // везде обновляем модель только в случае необходимости (отсутствия значения у самой модели)!
-        val = uiProperties[p].value;   // Представляет объект из uiProperties.value типа '' или массив (['',''] или ['','','','']) 
-        defval = uiProperties[p].defvalue;
-        try { if (view_prop[p] === undefined) view_prop[p] = (model_prop[p] !== false) ? model_prop[p] : ((defval !== undefined) ?  defval : val ); } catch(e) { e.description }; // Errors: shortcutKey, icon { log(p, e.description) }
-        if (val instanceof Array) {    // свойство объекта массив! (alignment, alignChildren, bounds, size....)
-            if (typeof view_prop[p] == 'string') {
-                for (i = 0; i<val.length; i++) val[i] = view_prop[p];
-                view_prop[p] = val;
-            }
-            if (!model_prop[p]) model_prop[p] = new Array(val.length);
-            for (i=0; i<val.length; i ++) {
-                if (model_prop[p][i] !== view_prop[p][i]) model_prop[p][i] = view_prop[p][i];
-                _modifyController(p, doc.addController({ binding:model_bstr+"."+i+":"+view_bstr+"."+i, bind:false })); // Переопределяем _updateView
-            } // for
-        } else { // свойство объекта - одно значение или объект
-             if (!model_prop[p]) model_prop[p] = view_prop[p];
-             _modifyController(p, doc.addController({ binding:model_bstr+":"+view_bstr, bind:false })); // Переопределяем _updateView            
-        } // else
-} catch(e) { log('rebind:', p, e.description) }           
-    } // for (p in uiProperties)
-
-    app.models.add(model);
-    doc.activeControl = model;
-    // Добавляемся в список Tree
-    app.treeView.addItem(doc.activeControl);
-    // если установлен autofocus и добавлен контейнер - переустанавливаем фокус на него:
-    if (app.options.autofocus) {
-        if (SUI.isContainer(model.view.control)) doc.activeContainer = model.view.control;
-    }
-    return model;
-    // ------------------------------------------------------------------------------------------------------------------------------------
-    // Данные функции добавлены сюда для ускорения доступа к ним из представления модели 
-    // ------------------------------------------------------------------------------------------------------------------------------------
-    // Отображаемся с учётом собственного свойства _marked_
-    function customDraw(ds) {
-        var gfx = this.graphics,
-               x = this.size[0],
-               y = this.size[1];
-        gfx.drawOSControl();
-        // аккуратное выделение:
-        if (this._marked_) {
-            if (this.type == 'button' || this.type == 'iconbutton') gfx.rectPath(2,2, x-4, y-4); else gfx.rectPath(0,0, x, y);
-            gfx.fillPath(gfx._marked);
-        }
-        if (this.type == 'checkbox' || this.type == 'radiobutton') {
-            y = (y - gfx.measureString(this.text)[1])/2; 
-            gfx.drawString(this.text, gfx.foregroundColor, 16, (y < 0 ? 0 : y));
-        }
-    };
-    // Дополнительно вызывается при обновлении модели (Предназначена в основном для обновления ращмеров элемента, связанного с обновлением
-    // размера текста.
-    function customUpdate(ctrl, newVal, oldVal, key) {
-        // this указывает на элемент управления!!
-        // Исключаем из обработки случаи, для которых были предусмотрены специальные обработчики:
-        if (ctrl.special) return; // _updViewMsts и _updViewAlign повторно обрабатывать не нужно!
-        if (ctrl.binding.indexOf(".image.") != -1) return; // исключаем работу для свойства image;
-        try {
-            //log('customUpdate', key, ctrl.binding, '\r', oldVal, newVal);
-            if (key == 'text' && this.hasOwnProperty('text') && !ctrl.model.properties.size) { 
-                var ctrls = ctrl.model._controllers,
-                      model_obj = ctrl.model.control.properties,
-                      control = this,
-                      gfx = control.graphics,
-                      oldSize = gfx.measureString(oldVal),
-                      textSize = gfx.measureString(newVal), //, gfx.font, this.size[0]),
-                      x = control.size[0] + (textSize[0]-oldSize[0]), x = (x<0) ? 0 : x, 
-                      y = control.size[1] + (textSize[1]-oldSize[1]), y = (y<0) ? 0 : y;
-                switch (control.type) {
-                    case 'button': x = (x<80 || textSize[0]< 52) ? 80 : textSize[0] + 28; break;
-                    // iconbutton ... нужно посчитать..
-                    // tabbedpanel... нужно посчитать..
-                    case 'tab': //x -= Math.max(0, 28 - textSize[0]); break;
-                    default:
-                }
-                app._getField('size0').control.text = ctrl.model.control.properties.size[0] = x;
-            } else {
-                var prop = ctrl.binding.split(':')[0].split('.'),
-                      prop = (parseInt(prop[prop.length -1]) ? prop[prop.length - 2] : prop[prop.length - 1]);
-                if (uiProperties[prop].type == "Boolean") {
-                    if (newVal == '') newVal = (uiProperties[prop].defvalue) || false;
-                    ctrl.model_obj[prop] = ctrl.view_obj[prop] = (newVal == 'true') ? true : false;
-                }
-                ctrl.app.window.layout.layout(true); 
-                ctrl.app.window.layout.resize();
-            }
-        } catch(e) { log('customUpdate:', e.description + "\r", key, prop); }
-    };
-
-    // ------------------------------------------------------------------------------------------------------------------------------------
-    // Данные функции заменяют стандартный механизм _updateView из библиотеки MVC 
-    // Оказалось, что определённые свойства ScriptUI объектов - динамические (происходит нечто подобное смены адреса (например для свойства alignment) 
-    // после присвоения ему нового значения). В связи с этим такие свойства нужно обновлять "в-ручном" режиме, для них нужны отдельные обновлялки.
-    function _modifyController(p, ctrl) {  // Переопределяем _updateView
-        switch (uiProperties[p].category) {
-            case "Measurements":    if (p != "indent" || p != "justify") ctrl._updateView = _updViewMsts;   break;
-            case "Alignment":       if (p != "orientation") ctrl._updateView =  _updViewAlign;              break;
-            //case "Image":           if (p != "orientation") ctrl._updateView =  _updViewAlign;              break;
-            default:
-        }
-    };
-
-    // Специальная обработка для свойств размера
-    function _updViewMsts(newVal, oldVal, key) {
-        // this указывает на объект контролёра. watch не работает. (данные модели требуют обновления вручную)
-        // this.model_obj уже имеет новое значение, инициализированное в диспатчере
-        this.special = true; // Ставим метку в котроллёре, чтобы повторно не отрабатывать в customUpdate: 
-        var model_obj = this.model_obj,
-               model_pro = this.model.control.properties,
-               control = this.view.control,
-               w = this.app.window,
-               prop = this.binding.split(':')[0].split('.');
-               prop = (key == 'characters') ? key : prop[prop.length -2];
-        switch (prop) {
-            case 'characters':
-                control.characters = newVal;
-                if (!app._getField('size0').check.value) {
-                    var sz = control.graphics.measureString((new Array(parseInt(newVal)+1)).join("X"));
-                    sz[0] += this.model.control.defaults.size[0];
-                    switch (control.type) { // Нужно проверить с разными размерами шрифтов!!!
-                        case 'checkbox':
-                        case 'radiobutton':  
-                        case 'statictext':      break;
-                        case 'edittext':         sz[0] -= 10; sz[1] += 6;break;
-                        default:                 
-                    }
-                    app._getField('size0').control.text = model_pro.size[0] = sz[0];
-                    app._getField('size1').control.text = model_pro.size[1] = sz[1];
-                }
-                break;
-            case 'size':
-                control.preferredSize[key] = control.size[key] = model_obj[key];
-                w.layout.layout(true); w.layout.resize();
-                key = parseInt(key)+2;
-                app._getField('bounds'+key).control.text = control.bounds[key];
-                //app._getField('preferredSize'+key).control.text = control.preferredSize[key];
-                break;
-            case 'preferredSize':
-                control.preferredSize[key] = model_obj[key];
-                w.layout.layout(true); w.layout.resize();
-                if (!app._getField('size0').check.value) { 
-                    control.size[key] = control.preferredSize[key];
-                    w.layout.layout(true); w.layout.resize();
-                    app._getField('size'+key).control.text = control.size[key];
-                }
-                key = parseInt(key)+2;
-                app._getField('bounds'+key).control.text = control.bounds[key];
-                break;
-            case 'minimumSize': control.minimumSize[key] = model_obj[key]; break; 
-            case 'maximumSize': control.maximumSize[key] = model_obj[key]; break;
-            case 'bounds': control.bounds[key] = model_obj[key]; break;
-            case 'location':
-                control.location[key] = model_obj[key];
-                w.layout.layout(true); w.layout.resize();
-                model_pro.bounds[key] = control.bounds[key];
-                app._getField('bounds'+key).control.text = control.bounds[key];
-                break;
-            default:
-                log("_updViewMsts: "+prop+" - unrecognized key '"+key+"', newVal =", newVal);
-        }
-    };
-
-    // Специальная обработка для свойств выравнивания
-    function _updViewAlign(newVal, oldVal, key) {
-        // this указывает на объект контролёра. watch не работает. (данные модели требуют обновления вручную)
-        // this.model_obj уже имеет новое значение, инициализированное в диспатчере
-         this.special = true; // Ставим метку в котроллёре, чтобы повторно не отрабатывать в customUpdate: 
     try {
-        var model_obj = this.model_obj,
-               model_pro = this.model.control.properties,
-               control = this.view.control,
-               w = this.app.window,
-               prop = this.binding.split(':')[0].split('.'),
-               prop = (key == 'spacing' || key == 'indent' || key == 'justify' ) ? key : prop[prop.length -2];
-        switch (prop) {
-            case 'margins':
-            case 'alignChildren':
-                control[prop][key] = model_obj[key];
-                w.layout.layout(true); w.layout.resize();
-                break;
-            case 'alignment': // Обновлять нужно массив целиком!!! control[prop][key] = newVal или control[prop][key] - model_obj[key] не работает!!!
-                control[prop] = ((key == '0') ? [newVal, model_obj[1]] : [model_obj[0], newVal]);
-                if (newVal == '' && !app._getField('location0').check.value && control.parent) {
-                        control[prop] = ((key == '0') ? [control.parent.alignChildren[0], control[prop][1]] : [control[prop][0], control.parent.alignChildren[1]]);
-                }
-                if (oldVal == 'fill' && newVal != 'fill') { // Восстанавливаем размер по предыдущему значению размера в модели!
-                    control.size[0] = model_pro.size[0];
-                    control.size[1] = model_pro.size[1];
-                } 
-                w.layout.layout(true); w.layout.resize();
-                break;
-            case 'spacing':
-            case 'indent':
-            case 'justify':
-                control[prop] = newVal;
-                w.layout.layout(true); w.layout.resize();
-                break;
-             default:
-                 log("_updViewAlign: "+prop+" - unrecognized key '"+key+"', newVal =", newVal);
-            }
-            // Теперь нужно обновить данные location и bounds в моделях всех детей, а также скорректировать свои собственные модели включая size и bounds
-            // скорректируем размер
-            // Корректируем выравнивание детей
-            var i, j, max, jmax, items, ctrls, val;
-            if (prop == 'alignChildren') {
-               for (i=0, items = app.treeView.control.activeItem.items, max = items.length; i<max; i++) {
-                    if (items[i].model.properties.alignment) continue;
-                    items[i].model.control.properties.alignment[key] = newVal;
-                }
-            } else if (prop == 'margins' || prop == 'spacing') {
-               for (i=0, items = app.treeView.control.activeItem.items, max = items.length; i<max; i++) {
-                    if (items[i].model.properties.location) continue;
-                    items[i].model.control.properties.location[0] = items[i].model.view.control.location[0];
-                    items[i].model.control.properties.location[1] = items[i].model.view.control.location[1];
-                }
-            }
+    var view = new uiView(doc, item, type);
+    view.createControl(doc.activeContainer, rcString); // выолнить инициализацию control
+    var model = new uiModel(view);
+    } catch(e) { trace(e) }
+    
+    doc.activeControl = model;
 
-            // Корректируем собственные данные 
-            app._getField('location0').control.text = model_pro.location[0] = control.location[0]; // Bounds исправится автоматом
-            app._getField('location1').control.text = model_pro.location[1] = control.location[1];                 
-            if (prop == 'margins' || prop == 'spacing') {  // Доработать!!! 
-                if (!app._getField('size0').check.value) { // Доработать!!! Изменять и восстанавливать размер после смены margins
-                    app._getField('size0').control.text = model_pro.size[0] = control.size[0];
-                    app._getField('size1').control.text = model_pro.size[1] = control.size[1];
-                 } else {
-                    app._getField('size0').control.text =  app._getField('preferredSize0').control.text = control.preferredSize[0] = control.size[0] = model_pro.preferredSize[0] = model_pro.size[0];
-                    app._getField('size1').control.text =  app._getField('preferredSize1').control.text = control.preferredSize[1] = control.size[1] = model_pro.preferredSize[1] = model_pro.size[1];
-                    w.layout.layout(true); w.layout.resize();
-                }
-                app._getField('bounds2').control.text = model_pro.bounds[2] = control.bounds[2];
-                app._getField('bounds3').control.text = model_pro.bounds[3] = control.bounds[3];
-            } // if (prop == 'margins' || prop == 'spacing')
-        } catch(e) { log("_updViewAlign:", e.description, prop + '['+key+'] =', newVal, ", model_obj =", model_obj+ ", newVal =", newVal ) }
-    };
+    // если установлен autofocus и добавлен контейнер - переустанавливаем фокус на него:
+    if (app.options.autofocus && SUI.isContainer(model.view.control)) doc.activeContainer = model.view.control;
 
+    return model;
 };
 
 // Документ - удаление контрола (активного)
