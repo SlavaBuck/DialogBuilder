@@ -31,13 +31,13 @@ inherit (uiView, MVCView);
 uiView.prototype.createControl = function (parent, rcView) {
     this.control = parent.add(rcView);
     this.initControl();
-    this.registerControl(this.control, rcView); // Всё, что нужно выполнить над готовым элементом
+    this.registerHandlers(this.control, rcView); // Всё, что нужно выполнить над готовым элементом
     //this.control._marked_ = true;
 };
 
 // ===========================
 // Инициализация обработчиков элемента управления (выполняется после его полной инициализации в диалоге)
-uiView.prototype.registerControl = function(control, rcView) {
+uiView.prototype.registerHandlers = function(control, rcView) {
     this.view = rcView;
     if (this.control !== control) this.control = control;
     // Общие операции для нового и/или ранее добавленного в диалог элемента:
@@ -60,10 +60,13 @@ uiView.prototype.registerControl = function(control, rcView) {
         color_opt = app.options.doc,
         CPROPS = COLORSTYLES.CS;
     for (var p in CPROPS) if (gfx_prop.hasOwnProperty(p)) {
+        //if (!gfx[p]) 
         gfx[p] = (p.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(color_opt[p]), 1) : gfx.newBrush(_BSOLID, toRGBA(color_opt[p])) );
-    };
-    // TODO: Инициализируем шрифт
-    //if (gfx_prop.hasOwnProperty('font')) gfx.font = ScriptUI.newFont(model_prop.font);
+    }
+    // TODO: Инициализируем шрифт (патч чтобы преобразовать family из 'Segoe UI' в 'Segoe Ui');
+    if (gfx_prop.hasOwnProperty('font')) {
+        if (gfx.font.family == 'Segoe UI') gfx.font = ScriptUI.newFont('Segoe Ui', gfx.font.style, gfx.font.size);
+    }
 };
 
 // ===========================
@@ -106,7 +109,7 @@ uiView.prototype.initControl = function () {
     if (type == 'group' || type == 'image') { if (!control.preferredSize[0] && !control.preferredSize[1]) control.preferredSize = [8, 15] }
 
     // Специальная обработка для Separator-ов
-    if (control.isSeparator) SUI.SeparatorInit(control, 'line');    
+    if (control.isSeparator) SUI.SeparatorInit(control, 'line');
 
     // Обновляем размеры окна документа
     doc.window.layout.layout(true);
@@ -137,7 +140,7 @@ uiView.prototype.render = function(ctrl, newVal, oldVal, key) {
     if (ctrl.special) return; // _updViewMsts и _updViewAlign повторно обрабатывать не нужно!
     if (ctrl.binding.indexOf(".image.") != -1) return; // исключаем работу для свойства image;
     try {
-    var app = ctrl.app,
+    var app = ctrl.app.app,
         uiProperties = app.uiProperties;
     } catch(e) { trace(e, 'customUpdate: problems with app & uiProperties', key, classof(ctrl)); }
     //log("render", classof(app), classof(ctrl), classof(app._getField));
@@ -164,8 +167,8 @@ uiView.prototype.render = function(ctrl, newVal, oldVal, key) {
                 if (newVal == '') newVal = (uiProperties[prop].defvalue) || false;
                 ctrl.model_obj[prop] = ctrl.view_obj[prop] = (newVal == 'true') ? true : false;
             }
-            app.window.layout.layout(true); 
-            app.window.layout.resize();
+            ctrl.app.window.layout.layout(true); 
+            ctrl.app.window.layout.resize();
         }
     } catch(e) { trace(e, 'customUpdate:', key, classof(ctrl), prop); }
 };

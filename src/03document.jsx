@@ -103,8 +103,6 @@ BuilderDocument.prototype.addItem = function (rcString) {
     if (doc.activeContainer.type == 'tabbedpanel' && type != 'tab') return;
     
     doc.modified = true;    
-    // Инициализация счётчика соответствующих элементов:
-    if (!doc._counters_.hasOwnProperty(item)) doc._counters_[item] = 0;
     
     var rcString = (type == 'separator' ? SUI.Separator.toString() : (dlgs.indexOf(type) != -1 ? 'panel' : type) + rcString.slice(type.length));
     
@@ -112,7 +110,7 @@ BuilderDocument.prototype.addItem = function (rcString) {
     var view = new uiView(doc, item, type);
     view.createControl(doc.activeContainer, rcString); // выолнить инициализацию control
     var model = new uiModel(view);
-    } catch(e) { trace(e) }
+    } catch(e) { trace(e, "addItem();") }
     
     doc.activeControl = model;
 
@@ -125,9 +123,9 @@ BuilderDocument.prototype.addItem = function (rcString) {
 // Документ - удаление контрола (активного)
 BuilderDocument.prototype.removeItem = function(model) {
     var doc = this,
-           tree = doc.app.treeView,
-           model = (model)||tree.control.activeItem.model,
-           control = (model === null) ? null : model.view.control;
+        tree = doc.app.treeView,
+        model = (model)||tree.control.activeItem.model,
+        control = (model === null) ? null : model.view.control;
     if (!control) { log("control == null, такого быть не должно!!!"); return null; }
     if (model === doc.models[0]) { log("Нельзя удалить, как вариант - закрываем документ"); return null; }
     doc.modified = true;
@@ -152,11 +150,22 @@ BuilderDocument.prototype.removeItem = function(model) {
         if (node && node.model) {
             if (node.type == 'node') {
                 for (var i=0, items = node.items, max = items.length; i<max; i++) try {
-                    if (items[i].type == 'node') _removeItems(doc, items[i]); else { doc.app.removeModel(items[i].model.id); doc.removeMVC(items[i].model); }
-                } catch(e) { continue; }; // for
+                    if (items[i].type == 'node') _removeItems(doc, items[i]); else { 
+                        doc.app.removeModel(items[i].model.id);
+                        // !!!!!!!!!!! Проверить MVCApplication.removeMVC() !!!!!!!!!!!!!
+                        doc.removeView(node.model.id);
+                        doc.removeModel(node.model);
+                        //doc.removeMVC(items[i].model); 
+                    }
+                } catch(e) { log(e.toSource()); continue; }; // for
             }
+            try {
             doc.app.removeModel(node.model.id);
-            doc.removeMVC(node.model);
+            // !!!!!!!!!!! Проверить MVCApplication.removeMVC() !!!!!!!!!!!!!
+            doc.removeView(node.model.id);
+            doc.removeModel(node.model);
+            //doc.removeMVC(node.model);
+            } catch(e) { trace(e); }
         }
     }(doc, oldItem));
     tree.removeItem(oldItem);                // Удаляем элемент(ы) из дерева
@@ -165,7 +174,7 @@ BuilderDocument.prototype.removeItem = function(model) {
     tree.control.selectItem(tree.control.activeItem); 
     doc.activeControl = tree.control.activeItem.model;
     doc.activeContainer = tree.control.activeNode.model.view.control;
-    } catch(e) { _debug(e) }
+    } catch(e) { trace(e) }
     return doc.activeControl;
 };
 

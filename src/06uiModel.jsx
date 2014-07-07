@@ -23,7 +23,7 @@ function uiModel(view) {
         view:view,                                               // ссылка на ассоциированный MVCView
         code:{ varname:"", gfxname:"", initcode:"", initgfx:""}  // содержит код инициализации ui-элемента (формируется динамически)
     });
-
+    //this.initDefaults();
     this.registerComponents();
     this.updateFromView();
     this.initControllers();
@@ -32,18 +32,31 @@ function uiModel(view) {
 // Наследуемся напрямую от MVCModel
 inherit (uiModel, MVCModel);
 
+
+uiModel.prototype.initDefaults = function() {
+    var uiProperties = this.doc.app.uiProperties,
+        model_prop = this.control.properties;
+        _initDefaults = function(model_prop) {
+            for (var p in model_prop) if (uiProperties.hasOwnProperty(p) && p != "properties" && p != "graphics")
+                model_prop[p] = (uiProperties[p].value instanceof Array) ? new Array(uiProperties[p].value.length) : uiProperties[p].value;
+        };
+    _initDefaults(model_prop);
+    _initDefaults(model_prop.properties);
+    _initDefaults(model_prop.graphics);
+};
 // ===========================
 // Регистрация и добавление модели и ассоциированного с ней представления в документ и приложение
 uiModel.prototype.registerComponents = function() {
-    var doc = this.view.doc;
+    var doc = this.doc,
+        app = this.doc.app;
     if (doc.getModelByID(this.id)) throw Error("Invalid model.id: "+this.id+" alredy present in doc.models collection");
     if (doc.getViewByID(this.id)) throw Error("Invalid model.view.id: "+this.id+" alredy present in doc.views collection");
     this.control.jsname = this.view.jsname;
-    this.control.id = this.id;
+    //this.control.id = this.id;
     doc.views.add(this.view);
     doc.models.add(this);
-    doc.app.models.add(this);
-    doc.app.treeView.addItem(this);
+    app.models.add(this);
+    app.treeView.addItem(this);
 };
 
 // ===========================
@@ -78,7 +91,7 @@ uiModel.prototype._updGraphicsProperty = function() {
 // ===========================
 uiModel.prototype._updCodeProperty = function() {
     var model = this;
-    switch (model.type) {
+    switch (model.view.type) {
         case  'separator':
             // Пока до конца не решён вопрос с использованием библиотеки SimpleUI (как собственно и с её архитектурной) будем временно использовать
             // костыль с предварительным парсингом представлений из данной библиотеки и последующей специальной инициализацией.
@@ -104,13 +117,13 @@ uiModel.prototype.initControllers = function() {
         doc = this.doc,
         uiProperties = this.doc.app.uiProperties,
         model_bstr = "", view_bstr = "", 
-        view_prop, model_prop, val, defval, p, i, 
+        view_prop, model_prop, 
+        val, defval, p, i, 
         propers = model.control.properties,
         CPROPS = COLORSTYLES.CS;
         
     // Связывание контролёрами всех свойств модели со свойствами графического элемента
     for (p in uiProperties) if (!(CPROPS.hasOwnProperty(p) || p == 'font')) { 
-    try {         
         if (propers.hasOwnProperty(p)) {
                 model_bstr = model.id + ".control.properties." +p; view_bstr = model.id + "."+p;
                 model_prop = model.control.properties; view_prop = model.view.control;
@@ -121,11 +134,12 @@ uiModel.prototype.initControllers = function() {
                 model_bstr =  model.id + ".control.properties.graphics."+p; view_bstr = model.id + ".graphics."+p; 
                 model_prop = model.control.properties.graphics; view_prop = model.view.control.graphics; 
         } else continue; // for (p in uiProperties)
-
+    try {
         // везде обновляем модель только в случае необходимости (отсутствия значения у самой модели)!
-        val = uiProperties[p].value;   // Представляет объект из uiProperties.value типа '' или массив (['',''] или ['','','','']) 
+        val = uiProperties[p].value;    // Представляет объект типа пустую строку '' или массив (['',''] или ['','','','']) 
         defval = uiProperties[p].defvalue;
         try { if (view_prop[p] === undefined) view_prop[p] = (model_prop[p] !== false) ? model_prop[p] : ((defval !== undefined) ?  defval : val ); } catch(e) { e.description }; // Errors: shortcutKey, icon { log(p, e.description) }
+        //try { if (!view_prop.hasOwnProperty(p)) view_prop[p] = ((defval !== undefined) ?  defval : val ); } catch(e) { log(e.description) };
         if (val instanceof Array) {    // свойство объекта массив! (alignment, alignChildren, bounds, size....)
             if (typeof view_prop[p] == 'string') {
                 for (i = 0; i<val.length; i++) val[i] = view_prop[p];
@@ -137,13 +151,14 @@ uiModel.prototype.initControllers = function() {
                 this._modifyController(p, doc.addController({ binding:model_bstr+"."+i+":"+view_bstr+"."+i, bind:false })); // Переопределяем _updateView
             } // for
         } else { // свойство объекта - одно значение или объект
-             model_prop[p] = view_prop[p];
-             this._modifyController(p, doc.addController({ binding:model_bstr+":"+view_bstr, bind:false })); // Переопределяем _updateView            
+            //log(p)
+            model_prop[p] = view_prop[p];
+            this._modifyController(p, doc.addController({ binding:model_bstr+":"+view_bstr, bind:false })); // Переопределяем _updateView            
         } // else
-    } catch(e) { log('initControllers:', p, e.description) }           
+    } catch(e) { trace(e, 'initControllers:', p) }           
     } // for (p in uiProperties)
-};
 
+};
 
 // ===========================
 // Переопределяем _updateView в контролёре:

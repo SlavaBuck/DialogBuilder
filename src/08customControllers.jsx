@@ -16,15 +16,17 @@
 // ------------------------------------------------------------------------
 // Специальная обработка для свойств размера
 function _updViewMsts(newVal, oldVal, key) {
+    try {
     // this указывает на объект контролёра. watch не работает. (данные модели требуют обновления вручную)
     // this.model_obj уже имеет новое значение, инициализированное в диспатчере
     this.special = true; // Ставим метку в котроллёре, чтобы повторно не отрабатывать в customUpdate: 
-    var model_obj = this.model_obj,
-           model_pro = this.model.control.properties,
-           control = this.view.control,
-           w = this.app.window,
-           prop = this.binding.split(':')[0].split('.');
-           prop = (key == 'characters') ? key : prop[prop.length -2];
+    var app = this.app.app, // this.app указывает на BuilderDocument а нам нужен BuilderApplication
+        w = this.app.window,
+        model_obj = this.model_obj,
+        model_pro = this.model.control.properties,
+        control = this.view.control,
+        prop = this.binding.split(':')[0].split('.');
+    prop = (key == 'characters') ? key : prop[prop.length -2];
     switch (prop) {
         case 'characters':
             control.characters = newVal;
@@ -35,7 +37,7 @@ function _updViewMsts(newVal, oldVal, key) {
                     case 'checkbox':
                     case 'radiobutton':  
                     case 'statictext':      break;
-                    case 'edittext':         sz[0] -= 10; sz[1] += 6;break;
+                    case 'edittext': sz[0] -= 10; sz[1] += 6; break;
                     default:                 
                 }
                 app._getField('size0').control.text = model_pro.size[0] = sz[0];
@@ -72,6 +74,7 @@ function _updViewMsts(newVal, oldVal, key) {
         default:
             log("_updViewMsts: "+prop+" - unrecognized key '"+key+"', newVal =", newVal);
     }
+    } catch(e) { trace(e, "_updViewMsts:") }
 };
 
 // ------------------------------------------------------------------------
@@ -81,12 +84,13 @@ function _updViewAlign(newVal, oldVal, key) {
     // this.model_obj уже имеет новое значение, инициализированное в диспатчере
     this.special = true; // Ставим метку в котроллёре, чтобы повторно не отрабатывать в customUpdate: 
     try {
-    var model_obj = this.model_obj,
-           model_pro = this.model.control.properties,
-           control = this.view.control,
-           w = this.app.window,
-           prop = this.binding.split(':')[0].split('.'),
-           prop = (key == 'spacing' || key == 'indent' || key == 'justify' ) ? key : prop[prop.length -2];
+    var app = this.app.app, // this.app указывает на BuilderDocument а нам нужен BuilderApplication
+        w = this.app.window,    
+        model_obj = this.model_obj,
+        model_pro = this.model.control.properties,
+        control = this.view.control,
+        prop = this.binding.split(':')[0].split('.');
+    prop = (key == 'spacing' || key == 'indent' || key == 'justify' ) ? key : prop[prop.length -2];
     switch (prop) {
         case 'margins':
         case 'alignChildren':
