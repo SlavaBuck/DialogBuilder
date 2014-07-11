@@ -116,7 +116,7 @@ BuilderApplication.prototype.Init = function() {
         if (!newVal) { app.JsName.unbind(); app.JsName.control.enabled = false; } else {
             app.JsName.control.enabled = true;
             if (newVal.hasOwnProperty('document')) app.JsName.rebind(newVal, 'text', 'document.jsname'); else app.JsName.rebind(newVal, 'text', 'control.jsname'); 
-       }
+        }
         app.updateTabs(newVal); // при null - всё отвяжеться
         return newVal;
     });
@@ -337,7 +337,7 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
                     }
                 }
             }(tree, doc, doc.window.children[0]));
-            // Бывают проблемы с doc.activeControl !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // upd: Были проблемы с doc.activeControl!!!
             app.treeView.selectItem(doc.activeControl);
              if (tree.activeItem.type == "node") tree.activeNode = tree.activeItem; else tree.activeNode = tree.activeItem.parent;
              doc.activeContainer = tree.activeNode.model.view.control;
@@ -355,7 +355,6 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
             tree.active = true;
         },
         removeItem:function(item) {
-            // см. doc.removeItem(...);
             if (item && item.parent) item.parent.remove(item);
         },
         swapItems:function(direction) { // "Up" || "Down" Вызывается нажатием кнопок Up, Down 
@@ -380,7 +379,6 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
                 var prop = (prop)||'text',
                       cursor = this.items[0], 
                       res = null;
-                //log ('this.items =', cursor.model.id);
                 res = (function _find(item, cursor, prop) {
                     var res = null; 
                     if (cursor[prop] === item) return cursor;
@@ -865,19 +863,9 @@ BuilderApplication.prototype.addDocument = function() {
     MVCApplication.prototype.addDocument.call(this);
     var app = this,
         doc = app.activeDocument;
-    // Добавляем и настраиваем родительский контейнер для всех элементов диалога
-    var model = doc.addItem("dialog { preferredSize:[80, 20] }"), //, alignment:['','']
-           pPnl = model.view.control,
-           gfx = pPnl.graphics;
-    model.control.label = app.options.dialogtype;
-    pPnl.alignment = ['left','top']; //
-    model.control.properties.text = "";
-    doc.window.layout.layout(true);
-    // Искусственно переименовываем имя переменной дилога с pPanel0 на myDialog
-    doc.activeControl.control.jsname = app.treeView.control.items[0].text = app.uiControls["Window"].jsname;
-    doc.activeControl.code.initcode = doc.activeControl.control.jsname +".show();";
-    doc.activeContainer = pPnl;
-    doc.activeControl = doc.activeControl; // что бы обновить поле JsName
+    // Добавляем родительское окно в пустой документ:
+    doc.activeControl = doc.addItem(app.options.dialogtype + " { preferredSize:[80, 20], alignment:['left','top'] }");
+    doc.activeContainer = doc.activeControl.view.control;
     return doc;
 };
 

@@ -90,13 +90,17 @@ uiModel.prototype._updGraphicsProperty = function() {
 
 // ===========================
 uiModel.prototype._updCodeProperty = function() {
-    var model = this;
-    switch (model.view.type) {
-        case  'separator':
+    var model = this,
+        code = model.code;
+    switch (model.view.item) {
+        case 'Separator':
             // Пока до конца не решён вопрос с использованием библиотеки SimpleUI (как собственно и с её архитектурной) будем временно использовать
             // костыль с предварительным парсингом представлений из данной библиотеки и последующей специальной инициализацией.
-            model.code.initcode = "if (<parent>.orientation == 'column') { <this>.maximumSize[1] = 1; <this>.alignment = ['fill', 'top']; } else { <this>.maximumSize[0] = 1; <this>.alignment = ['left', 'fill']; };";
+            code.initcode = "if (<parent>.orientation == 'column') { <this>.maximumSize[1] = 1; <this>.alignment = ['fill', 'top']; } else { <this>.maximumSize[0] = 1; <this>.alignment = ['left', 'fill']; };";
             break;
+        case 'Window':
+            code.initcode = model.control.jsname +".show();"
+            break;          
         default:
     };
 };

@@ -103,7 +103,8 @@ uiView.prototype.initControl = function () {
         dlgs = "dialog,palette,window";
         
     // установка текста (выборочно)
-    if (uiControl.hasOwnProperty('text') && dlgs.indexOf(type) == -1 && type != "tabbedpanel") control.text = this.jsname;
+    if (item == 'Window') this.jsname = this.jsname.slice(0, -1); else
+        if (uiControl.hasOwnProperty('text') && type != "tabbedpanel") control.text = this.jsname;
     
     // Корректировка начальных размеров для групп и картинок
     if (type == 'group' || type == 'image') { if (!control.preferredSize[0] && !control.preferredSize[1]) control.preferredSize = [8, 15] }

@@ -103,37 +103,34 @@ BuilderDocument.prototype.addItem = function (rcString) {
     if (doc.activeContainer.type == 'tabbedpanel' && type != 'tab') return;
     
     doc.modified = true;    
-    
     var rcString = (type == 'separator' ? SUI.Separator.toString() : (dlgs.indexOf(type) != -1 ? 'panel' : type) + rcString.slice(type.length));
-    
+
     try {
-    var view = new uiView(doc, item, type);
-    view.createControl(doc.activeContainer, rcString); // выолнить инициализацию control
-    var model = new uiModel(view);
+        var view = new uiView(doc, item, type);
+        view.createControl(doc.activeContainer, rcString);
+        var model = new uiModel(view);
     } catch(e) { trace(e, "addItem();") }
-    
-    doc.activeControl = model;
 
     // если установлен autofocus и добавлен контейнер - переустанавливаем фокус на него:
     if (app.options.autofocus && SUI.isContainer(model.view.control)) doc.activeContainer = model.view.control;
 
-    return model;
+    return doc.activeControl = model;
 };
 
 // Документ - удаление контрола (активного)
 BuilderDocument.prototype.removeItem = function(model) {
     var doc = this,
+        app = this.app,
         tree = doc.app.treeView,
         model = (model)||tree.control.activeItem.model,
         control = (model === null) ? null : model.view.control;
-    if (!control) { log("control == null, такого быть не должно!!!"); return null; }
-    if (model === doc.models[0]) { log("Нельзя удалить, как вариант - закрываем документ"); return null; }
+
+    if (model.view.item === "Window") return null;
     doc.modified = true;
-    doc.activeControl = null; 
+    doc.activeControl = null;
     // Запоминаем текущий элемент и его индекс в родительском контейнере
     var oldItem = tree.control.activeItem;
     for (var index=0, children=control.parent.children; index<children.length; index++) if ( children[index] === control) break;
-    try {
     // Определяем следующий активный контрол и контэйнер, переключаемся на него в дереве, а затем и в диалоге
     if (tree.control.activeItem === tree.control.activeNode) {
         tree.control.activeItem = tree.control.activeNode = tree.control.activeNode.parent;
@@ -145,36 +142,25 @@ BuilderDocument.prototype.removeItem = function(model) {
             tree.control.activeItem = tree.control.activeNode.items[index];
         }
     }
-    // Удаляем из диалога
+    // Удаляемся из диалога
+    // v1.61 значительно ускорено удаление контейнеров: 
+    // doc.removeMVC(), вызывавший множественное удаление представлений в контейнерах заменён на раздельное
+    // удаление моделей и контролёров. Представление удаляется только однажды (после выполнения _removeItems)
     (function _removeItems(doc, node) {
-        if (node && node.model) {
-            if (node.type == 'node') {
-                for (var i=0, items = node.items, max = items.length; i<max; i++) try {
-                    if (items[i].type == 'node') _removeItems(doc, items[i]); else { 
-                        doc.app.removeModel(items[i].model.id);
-                        // !!!!!!!!!!! Проверить MVCApplication.removeMVC() !!!!!!!!!!!!!
-                        doc.removeView(node.model.id);
-                        doc.removeModel(node.model);
-                        //doc.removeMVC(items[i].model); 
-                    }
-                } catch(e) { log(e.toSource()); continue; }; // for
-            }
-            try {
-            doc.app.removeModel(node.model.id);
-            // !!!!!!!!!!! Проверить MVCApplication.removeMVC() !!!!!!!!!!!!!
-            doc.removeView(node.model.id);
-            doc.removeModel(node.model);
-            //doc.removeMVC(node.model);
-            } catch(e) { trace(e); }
-        }
+        if (node.type == 'node') each(node.items, function(item) { _removeItems(doc, item);  });
+        doc.app.models.removeByValue(node.model);
+        doc.views.splice(doc.views.indexOf(node.model.view), 1);
+        doc.removeModel(node.model);
     }(doc, oldItem));
-    tree.removeItem(oldItem);                // Удаляем элемент(ы) из дерева
+    // Удаляем само представление и соответствующие элемент(ы) из дерева 
+    oldItem.model.view.remove();
+    tree.removeItem(oldItem);
     doc.window.layout.layout(true);
     // устанавливаем активные указатели:
-    tree.control.selectItem(tree.control.activeItem); 
+    tree.control.selectItem(tree.control.activeItem);
     doc.activeControl = tree.control.activeItem.model;
     doc.activeContainer = tree.control.activeNode.model.view.control;
-    } catch(e) { trace(e) }
+
     return doc.activeControl;
 };
 
@@ -208,7 +194,11 @@ BuilderDocument.prototype.getSourceString = function() {
     //str += "\r"+ tree.items[0].model.control.jsname + ".show();";
     return str;
 };
-
+BuilderDocument.prototype.removeModel = function(model) {
+    var app = this.app;
+    app.models.splice(app.models.getFirstIndexByKeyValue("id", model.id), 1);
+    this.__super__.removeModel.call(this, model);
+}
 BuilderDocument.prototype.swapItem = function(model, direct) {
     // direct = Up || Down
 };
