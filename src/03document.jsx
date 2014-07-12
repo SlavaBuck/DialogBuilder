@@ -33,35 +33,41 @@ BuilderDocument.prototype.load = function() {
     } catch(e) { log(e.description); return false; }
 };
 
-    
+//~ // TODO: Оптимизировать для быстрого закрытия окна документа:
+//~ BuilderDocument.prototype.close = function() {
+//~     this.window.visible = false;
+//~     this.app.documentsView.control.layout.layout(true);
+//~     return true;
+//~ }
+
 BuilderDocument.prototype.save = function() {
     var doc = this,
         app = doc.app,
         LStr = app.LStr;
-    try {
-        if (!doc.file || !doc.file.exists ) {
-           var msg = localize(LStr.uiApp[24]) + (doc.name[0] == '*' ? doc.name.slice(1) : doc.name);
-           doc.file = File.saveDialog(msg, app.filters); 
-           if (!doc.file) return false;
-           if (doc.file.exists) {
-                if (! confirm(localize(LStr.uiErr[1]), true, doc.app.name) ) { doc.file = null; return doc.save(); } else {
-                    var name = File.decode(doc.file.name);
-                    // Ищем открытый файл с таким именем
-                    if (doc.app.documents.getFirstByKeyValue('name', name) || doc.app.documents.getFirstByKeyValue('name', '*'+name)) {
-                        if (confirm(localize(LStr.uiErr[2]), true, doc.app.name)) { doc.file = null; return doc.save(); } else { doc.file = null; return false; }
-                    }
+    if (!doc.file || !doc.file.exists ) {
+       var msg = localize(LStr.uiApp[24]) + (doc.name[0] == '*' ? doc.name.slice(1) : doc.name);
+       doc.file = File.saveDialog(msg, app.filters); 
+       if (!doc.file) return false;
+       if (doc.file.exists) {
+            if (! confirm(localize(LStr.uiErr[1]), true, doc.app.name) ) { doc.file = null; return doc.save(); } else {
+                var name = File.decode(doc.file.name);
+                // Ищем открытый файл с таким именем
+                if (doc.app.documents.getFirstByKeyValue('name', name) || doc.app.documents.getFirstByKeyValue('name', '*'+name)) {
+                    if (confirm(localize(LStr.uiErr[2]), true, doc.app.name)) { doc.file = null; return doc.save(); } else { doc.file = null; return false; }
                 }
-           }
-        }
-        doc.name = File.decode(doc.file.name);
-        app.window.text = app.version + " " + app.name + " - " +doc.name;
+            }
+       }
+    }
+    doc.name = File.decode(doc.file.name);
+    app.window.text = app.version + " " + app.name + " - " +doc.name;
+    try {
         doc.file.open("w");
         var str = localize(LStr.uiApp[46]) + doc.app.name + " v"+doc.app.version + "\r\r";
         doc.file.write(str + doc.getSourceString());
         doc.file.close();
-        doc.modified = false;
-        return true;
-    } catch(e) { log(e.description); return false; }
+    } catch(e) { trace(e); return false; }
+    doc.modified = false;
+    return true;
 };
 
 BuilderDocument.prototype.saveAs = function() {
@@ -90,26 +96,26 @@ BuilderDocument.prototype.addItem = function (rcString) {
     if(!rcString) return null;
     var doc = this,
         app = doc.app,
-        uiCategories = app.uiCategories,
-        uiProperties = app.uiProperties,
         uiControls = app.uiControls,
         CPROPS = COLORSTYLES.CS,
         dlgs = "dialog,palette,window";
     // Добываем type добавляемого ScriptUI объекта в нижнем регистре!
     var type = (rcString.indexOf("{") != -1 ? rcString.substr(0, rcString.indexOf("{")) : rcString).replace(/\s/g,"").toLowerCase();
     var item = (dlgs.indexOf(type) != -1 ? 'Window' : rcString.substr(0, type.length));
+    
     // танцы с добавлением tabbedpanel и tab:
+    if (!uiControls.hasOwnProperty(item)) return;
     if (type == 'tab' && doc.activeContainer.type != 'tabbedpanel') return;
     if (doc.activeContainer.type == 'tabbedpanel' && type != 'tab') return;
-    
+
     doc.modified = true;    
     var rcString = (type == 'separator' ? SUI.Separator.toString() : (dlgs.indexOf(type) != -1 ? 'panel' : type) + rcString.slice(type.length));
-
+    
     try {
         var view = new uiView(doc, item, type);
         view.createControl(doc.activeContainer, rcString);
         var model = new uiModel(view);
-    } catch(e) { trace(e, "addItem();") }
+    } catch(e) { trace(e) }
 
     // если установлен autofocus и добавлен контейнер - переустанавливаем фокус на него:
     if (app.options.autofocus && SUI.isContainer(model.view.control)) doc.activeContainer = model.view.control;
@@ -125,7 +131,7 @@ BuilderDocument.prototype.removeItem = function(model) {
         model = (model)||tree.control.activeItem.model,
         control = (model === null) ? null : model.view.control;
 
-    if (model.view.item === "Window") return null;
+    //if (model.view.item === "Window") return null;
     doc.modified = true;
     doc.activeControl = null;
     // Запоминаем текущий элемент и его индекс в родительском контейнере
@@ -157,10 +163,13 @@ BuilderDocument.prototype.removeItem = function(model) {
     tree.removeItem(oldItem);
     doc.window.layout.layout(true);
     // устанавливаем активные указатели:
-    tree.control.selectItem(tree.control.activeItem);
-    doc.activeControl = tree.control.activeItem.model;
-    doc.activeContainer = tree.control.activeNode.model.view.control;
-
+    if (model.view.item != "Window") {
+        tree.control.selectItem(tree.control.activeItem);
+        doc.activeControl = tree.control.activeItem.model;
+        doc.activeContainer = tree.control.activeNode.model.view.control;
+    } else {
+        doc.activeControl = doc.activeContainer = null;
+    };
     return doc.activeControl;
 };
 
@@ -194,11 +203,74 @@ BuilderDocument.prototype.getSourceString = function() {
     //str += "\r"+ tree.items[0].model.control.jsname + ".show();";
     return str;
 };
+
+// Обеспечивается корректная очистка коллекций моделей в родительском приложении:
 BuilderDocument.prototype.removeModel = function(model) {
     var app = this.app;
     app.models.splice(app.models.getFirstIndexByKeyValue("id", model.id), 1);
-    this.__super__.removeModel.call(this, model);
-}
+    return this.__super__.removeModel.call(this, model);
+};
+
 BuilderDocument.prototype.swapItem = function(model, direct) {
     // direct = Up || Down
+};
+
+BuilderDocument.prototype.load = function() {
+    // документ был создан только-что с помощью addDocument() (см. MVC.DOM: MVCApplication.loadDocument())
+    var doc = this,
+        app = this.app,
+        file = doc.file,
+        win = null;
+    file.open("r"); 
+    var body = file.read();
+    var rcWin = body.slice(body.indexOf("new Window(")+12, body.indexOf('");')).replace(/\\[\r|\n]/g, "");
+    file.close();
+    // переустанавливаем родительское окно
+    doc.removeItem(doc.findController(doc.window.children[0]).model);
+    doc.activeContainer = doc.window;
+    win = doc.addItem(rcWin);
+    
+    if (!(win && win.view.control)) {
+        //log("Неудачная попытка открытия документа", localize(app.LStr.uiErr[7]));
+        alert(localize(app.LStr.uiErr[7]), app.name +" v"+app.version, true);
+        app.closeDocument(doc);
+        return false;
+    };
+    win = win.view.control;
+    win.alignment = ['left','top'];
+    
+    var dlgName = body.slice(body.indexOf("var")+3, body.indexOf("new Window(")).replace(/[\s|=]/g, "");
+    var evalcode = "var " + dlgName + " = win;\r" + body.slice(body.indexOf('");')+3);
+    evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".show()"));
+    evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".onResizing"));
+    //log(evalcode);
+    try {
+        eval(evalcode);
+    } catch(e) { trace(e) }
+    doc.window.layout.layout(true);
+    doc.window.layout.resize();
+    //win.layout.layout(true);
+    //win.layout.resize();
+    
+    var uiControls = doc.app.uiControls,
+        hashControls = {};
+    each(uiControls, function(ctrl, key) { hashControls[key.toLowerCase()] = ctrl.label; });
+
+    log(doc.window.children.length, doc.window.children[0].children.length);
+
+    (function _creatItems(doc, body, control) {
+        each(control.children, function(child) {
+            var type = (child.isSeparator ? 'separator' : child.type),
+                item = hashControls[type];
+            //log(type, item, SUI.isContainer(type));
+            var view = new uiView(doc, item, type);
+            view.registerHandlers(child, child.toSource());
+            var model = new uiModel(view);
+            if (SUI.isContainer(type)) _creatItems(doc, body, child);
+        })
+    }(doc, body, doc.window.children[0]));
+
+    app.treeView.refreshItems(doc);
+    log("ok!")
+    return true;
 };

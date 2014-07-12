@@ -128,7 +128,7 @@ BuilderApplication.prototype.Init = function() {
             var doc = app.getModelByID(newVal.id);
             app.window.text = app.version + " " + app.name + " - " + (doc.document.name[0] == '*' ? doc.document.name.slice(1) : doc.document.name);
             if (newVal.activeControl)  app.activeControl = app.getModelByID(newVal.activeControl.id); else app.activeControl = doc;
-        }
+        };
         app.treeView.refreshItems(newVal);
         return newVal;
     });
@@ -279,7 +279,7 @@ BuilderApplication.prototype.buildCaption = function(cont) {
                 case "new":     app.addDocument(); _enableButtons();         break;
                 case "open":    if (app.loadDocument()) _enableButtons();    break; // возвращает activeDocument, если загрузка удачная
                 case "close":   if (!app.closeDocument()) _disableButtons(); break; // возвращает activeDocument, null - если всё закрыто.
-                case "openIn":  app.openInDocument();   break;
+                case "openIn":  app.openInESTK();       break;
                 case "save":    app.saveDocument();     break;
                 case "saveAs":  app.saveAsDocument();   break;
                 case "settings":app.showSettings();     break;
@@ -407,8 +407,8 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
     g.addEventListener ("click", function (e) {
         var doc = app.activeDocument;
         if (doc && e.target.type == 'iconbutton') {
-            if (e.target.label == 'Del') return doc.removeItem(doc.activeControl);
-            if (e.target.label == 'Up') return doc.swapItem(doc.activeControl, 'Up');           // пока не реализовано
+            if (e.target.label == 'Del' && doc.activeControl && doc.activeControl.view.item != "Window") return doc.removeItem(doc.activeControl);
+            if (e.target.label == 'Up') return doc.swapItem(doc.activeControl, 'Up');       // пока не реализовано
             if (e.target.label == 'Down') return doc.swapItem(doc.activeControl, 'Down');   // пока не реализовано
         }
     });
@@ -858,13 +858,14 @@ BuilderApplication.prototype.CreateDocument = function() {
     return doc;
 };
 
-BuilderApplication.prototype.addDocument = function() {
+BuilderApplication.prototype.addDocument = function(body) {
      // Вызываем перекрытый родительский метод:
     MVCApplication.prototype.addDocument.call(this);
     var app = this,
-        doc = app.activeDocument;
+        doc = app.activeDocument
+        body = (body)||app.options.dialogtype + " { preferredSize:[80, 20], alignment:['left','top'] }";
     // Добавляем родительское окно в пустой документ:
-    doc.activeControl = doc.addItem(app.options.dialogtype + " { preferredSize:[80, 20], alignment:['left','top'] }");
+    doc.activeControl = doc.addItem(body);
     doc.activeContainer = doc.activeControl.view.control;
     return doc;
 };
@@ -970,24 +971,21 @@ BuilderApplication.prototype.markControl = function(cont, model) {
 
 BuilderApplication.prototype.evalDialog = function(rc) {
     var app = this,
-           rc = (rc)||this.activeDocument.getSourceString();
+        rc = (rc)||this.activeDocument.getSourceString();
     if (!rc) return app.alert(localize(app.LStr.uiErr[3]) );
     try { log (eval(rc)); } catch(e) { app.alert(localize(app.LStr.uiErr[4])+':\r'+e.description); }
 };
 
-BuilderApplication.prototype.openInDocument = function(doc) {
-    var app = this,
-           doc = (doc)||app.activeDocument;
-    if (!doc) return false;
+BuilderApplication.prototype.openInESTK = function(doc) {
+    var doc = (doc)||this.app.activeDocument;
     try {
-        doc.save();
-        if (doc.file && doc.file.exists) return doc.file.execute(); else return false;
-    } catch(e) { log(e.description) }
+        if (doc && doc.save()) return doc.file.execute(); else return false;
+    } catch(e) { trace(e); return false; }
 };
 
 BuilderApplication.prototype.alert = function(msg, caption) {
     var app = this;
-    var caption = (caption)||app.name +": "+ localize({ru:"Ошибка!", en:"Error!"});
+    var caption = (caption)||app.name +": "+localize(app.LStr.uiErr[7]);
     var size = [370, 260];
     var w = new Window ("dialog { text:'"+caption+"', spacing:5, margins:[5,5,5,5], spacing:5, properties:{resizeable:true }, \
                                                     msg:StaticText { preferredSize:["+size[0]+","+size[1]+"], alignment:['fill','fill'], properties:{ multiline:true, scrolling:true } }, \
@@ -1031,7 +1029,7 @@ BuilderApplication.prototype.showCode = function(doc) {
 
 BuilderApplication.prototype.onExit = function() {
     var app = this, 
-           notsaved = false;
+        notsaved = false;
     for (var i=0, docs =app.documents; i<docs.length; i++) notsaved = docs[i].modified;
     if (notsaved && confirm(localize(app.LStr.uiApp[19]), false, this.name))  app.saveAllDocument();
 };
@@ -1046,6 +1044,8 @@ BuilderApplication.prototype.terminate = function(err, msg) {
 };
 
 // Заглушка...
-BuilderApplication.prototype.loadDocument = function() {
-    this._notImplemented();
-};
+//~ BuilderApplication.prototype.loadDocument = function() {
+//~     var doc = this.__super__.loadDocument.call(this);
+//~     //log(doc.id, doc.name);
+//~     this.closeDocument(doc);
+//~ };
