@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  03document.jsx
  *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
- *  @@@BUILDINFO@@@ 03document.jsx 1.55 Fri Jul 04 2014 15:43:24 GMT+0300
+ *  @@@BUILDINFO@@@ 03document.jsx 1.61 Sun Jul 13 2014 22:35:38 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -231,7 +231,7 @@ BuilderDocument.prototype.load = function() {
     
     // переустанавливаем родительское окно
     doc.removeItem(doc.models[doc.models.length-1]);
-    //doc.activeContainer = doc.window;
+
     var model = doc.addItem(rcWin);
     if (!model) {
         // "Неудачная попытка открытия документа"
@@ -261,7 +261,7 @@ BuilderDocument.prototype.load = function() {
     }(doc, body, model.view.control));
 
     app.treeView.refreshItems(doc);
-    //app.treeView.selectItem(model)
+    //app.treeView.selectItem(model);
     app.treeView.control.items[0].expanded = true;
     doc.modified = false;
     return true;

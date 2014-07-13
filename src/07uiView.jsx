@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  07uiView.jsx
  *  DESCRIPTION: uiView: Класс представления для класса ui-модели (представляет элемент управления в диалоге)
- *  @@@BUILDINFO@@@ 07uiView.jsx 1.51 Thu Jul 03 2014 21:52:09 GMT+0300
+ *  @@@BUILDINFO@@@ 07uiView.jsx 1.61 Sun Jul 13 2014 22:37:38 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -51,7 +51,6 @@ uiView.prototype.registerHandlers = function(control, rcView) {
     
     // Заглушка свойств
     if (!control.properties) control.properties = {};
-    //if (!control.text) control.text = "";
     // Патчим свойство alignment
     if (!control.alignment && control.parent) control.alignment = control.parent.alignChildren;
     // Инициализируем цвета
@@ -144,13 +143,12 @@ uiView.prototype.render = function(ctrl, newVal, oldVal, key) {
     var app = ctrl.app.app,
         uiProperties = app.uiProperties;
     } catch(e) { trace(e, 'customUpdate: problems with app & uiProperties', key, classof(ctrl)); }
-    //log("render", classof(app), classof(ctrl), classof(app._getField));
     try {
         if (key == 'text' && this.hasOwnProperty('text') && !ctrl.model.properties.size) { 
             var control = this,
                 gfx = control.graphics,
                 oldSize = gfx.measureString(oldVal),
-                textSize = gfx.measureString(newVal), //, gfx.font, this.size[0]),
+                textSize = gfx.measureString(newVal),
                 x = control.size[0] + (textSize[0]-oldSize[0]), x = (x<0) ? 0 : x, 
                 y = control.size[1] + (textSize[1]-oldSize[1]), y = (y<0) ? 0 : y;
             switch (control.type) {
