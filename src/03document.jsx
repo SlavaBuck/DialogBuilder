@@ -111,6 +111,8 @@ BuilderDocument.prototype.addItem = function (rcString) {
     if (doc.activeContainer.type == 'tabbedpanel' && type != 'tab') return;
 
     if (!doc.modified) doc.modified = true;
+    if (doc.activeControl) app.unmarkControl(doc.activeControl);
+    
     var rcString = (type == 'separator' ? SUI.Separator.toString() : (item == "Window" ? 'panel' : type) + rcString.slice(type.length));
     
     try {
@@ -219,6 +221,28 @@ BuilderDocument.prototype.swapItem = function(model, direct) {
     // direct = Up || Down
 };
 
+// Установка родительского диалога в документе
+BuilderDocument.prototype.creatDialog = function(rcWin) {
+    var doc = this,
+        model = null;
+    if (doc.dialogControl) doc.removeItem(doc.dialogControl);
+    if (!(model = doc.addItem(rcWin))) return null;
+    doc.activeContainer = model.view.control;
+    doc.activeContainer.alignment = ['left','top'];
+    // Инициализируем цвета:
+    var gfx_prop = model.control.properties.graphics,
+        gfx = doc.activeContainer.graphics;
+    each(COLORSTYLES[doc.app.options.doccolors], function(val, key){
+        gfx_prop[key] = val;
+        gfx[key] = key.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(val), 1) : gfx.newBrush(_BSOLID, toRGBA(val));
+    });
+    // Инициализируем шрифт: ...
+    //if (gfx.font.family == 'Segoe UI') gfx.font = ScriptUI.newFont('Segoe Ui', gfx.font.style, gfx.font.size);
+    
+    app.markControl(model);
+    return doc.dialogControl = model;
+};
+    
 BuilderDocument.prototype.load = function() {
     // документ был создан только-что с помощью addDocument() (см. MVC.DOM: MVCApplication.loadDocument())
     var doc = this,
@@ -230,16 +254,13 @@ BuilderDocument.prototype.load = function() {
     var rcWin = body.slice(body.indexOf("new Window(")+12, body.indexOf('");')).replace(/\\[\r|\n]/g, "");
     
     // переустанавливаем родительское окно
-    doc.removeItem(doc.models[doc.models.length-1]);
-
-    var model = doc.addItem(rcWin);
-    if (!model) {
+    if (!doc.creatDialog(rcWin)) {
         // "Неудачная попытка открытия документа"
         alert(localize(app.LStr.uiErr[7]), app.name +" v"+app.version, false);
         return false;
     };
-    var control = model.view.control;
-    control.alignment = ['left','top'];
+    app.unmarkControl(doc.dialogControl);
+    var control = doc.dialogControl.view.control;
     
     var dlgName = body.slice(body.indexOf("var")+3, body.indexOf("new Window(")).replace(/[\s|=]/g, "");
     var evalcode = "var " + dlgName + " = control;\r" + body.slice(body.indexOf('");')+3);
@@ -258,10 +279,12 @@ BuilderDocument.prototype.load = function() {
             new uiModel(new uiView(doc, item, type).registerHandlers(child, child.toSource()));
             if (SUI.isContainer(type)) _creatItems(doc, body, child);
         })
-    }(doc, body, model.view.control));
-
+    }(doc, body, control));
+    
+    doc.window.layout.layout(true);
+    app.markControl(doc.dialogControl);
     app.treeView.refreshItems(doc);
-    //app.treeView.selectItem(model);
+    //app.treeView.selectItem(doc.dialogControl);
     app.treeView.control.items[0].expanded = true;
     doc.modified = false;
     return true;

@@ -54,17 +54,17 @@ uiView.prototype.registerHandlers = function(control, rcView) {
     // Патчим свойство alignment
     if (!control.alignment && control.parent) control.alignment = control.parent.alignChildren;
     // Инициализируем цвета
-    var gfx_prop = uiControl.properties.graphics,
-        color_opt = app.options.doc,
-        CPROPS = COLORSTYLES.CS;
-    for (var p in CPROPS) if (gfx_prop.hasOwnProperty(p)) {
-        //if (!gfx[p]) 
-        gfx[p] = (p.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(color_opt[p]), 1) : gfx.newBrush(_BSOLID, toRGBA(color_opt[p])) );
-    };
-    // TODO: Инициализируем шрифт (патч чтобы преобразовать family из 'Segoe UI' в 'Segoe Ui');
-    if (gfx_prop.hasOwnProperty('font')) {
-        if (gfx.font.family == 'Segoe UI') gfx.font = ScriptUI.newFont('Segoe Ui', gfx.font.style, gfx.font.size);
-    };
+//~     var gfx_prop = uiControl.properties.graphics,
+//~         color_opt = app.options.doc,
+//~         CPROPS = COLORSTYLES[app.options.doccolors];
+//~     for (var p in CPROPS) if (gfx_prop.hasOwnProperty(p)) {
+//~         if (!gfx[p]) 
+//~         //gfx[p] = (p.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(color_opt[p]), 1) : gfx.newBrush(_BSOLID, toRGBA(color_opt[p])) );
+//~     };
+//~     // TODO: Инициализируем шрифт (патч чтобы преобразовать family из 'Segoe UI' в 'Segoe Ui');
+//~     if (gfx_prop.hasOwnProperty('font')) {
+//~         //if (gfx.font.family == 'Segoe UI') gfx.font = ScriptUI.newFont('Segoe Ui', gfx.font.style, gfx.font.size);
+//~     };
     return this;
 };
 

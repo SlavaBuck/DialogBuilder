@@ -556,6 +556,9 @@ BuilderApplication.prototype._addToFontList = function(control, font, owner) {
     item.item = item;
     item.family = family;
     item.owner = owner;
+    
+    //Обход
+    if (item.family == "Segoe Ui") control._fonts['Segoe UI'] = item;
     return true;
 }
 

@@ -850,8 +850,8 @@ BuilderApplication.prototype.CreateDocument = function() {
 
     // Каждое переключение активного контрола документа также переключает активный контрол в приложении
     doc.watch ('activeControl', function(key, oldVal, newVal) {
-        if (oldVal) app.unmarkControl(oldVal.view.control, oldVal);
-        if (newVal) app.markControl(newVal.view.control, newVal);
+        if (oldVal) app.unmarkControl(oldVal);
+        if (newVal) app.markControl(newVal);
         doc.app.activeControl = (newVal) ? doc.app.getModelByID(newVal.id) : null;
         return newVal;
     });
@@ -871,11 +871,8 @@ BuilderApplication.prototype.CreateDocument = function() {
 BuilderApplication.prototype.addDocument = function() {
     // Вызываем перекрытый родительский метод:
     var doc = BuilderApplication.prototype.__super__.addDocument.call(this);
-    // Добавляем родительское окно (bodyItem) в пустой документ:
-    if (doc) {
-        var bodyItem = doc.app.options.dialogtype + " { preferredSize:[80, 20], alignment:['left','top'] }";
-        doc.activeContainer = doc.addItem(bodyItem).view.control;
-    };
+    // Добавляем родительское окно в пустой документ:
+    if (doc) doc.creatDialog(doc.app.options.dialogtype + " { preferredSize:[80, 20], alignment:['left','top'] }");
     return doc;
 };
 
@@ -956,26 +953,32 @@ BuilderApplication.prototype._updateFontField = function(newVal) {
     app._getField("font").control.text = newVal.view.control.graphics.font.toString();
 };
 // Функции выделения doc.activeControl:
-BuilderApplication.prototype.unmarkControl = function(cont, model) {
-    cont._marked_ = false; // см. castomDraw (определена в doc.addItem(item))
-    var gfx = cont.graphics,
-           cBrush =  toRGBA(model.control.properties.graphics.backgroundColor),
-          type = cont.type;
+BuilderApplication.prototype.unmarkControl = function(model) {
+    try {
+    var control = model.view.control,
+        gfx = control.graphics,
+        cBrush =  toRGBA(model.control.properties.graphics.backgroundColor),
+        type = model.view.type;
     if (type == 'listbox') return gfx.backgroundColor = gfx.newBrush(_BSOLID, [1, 1, 1, 1]);
-    if (SUI.isContainer(cont) ||  type == 'separator' ) return gfx.backgroundColor = gfx.newBrush(_BSOLID, cBrush);
-    if (type == 'progressbar' || type == 'image') { cont.enabled = !cont.enabled; cont.enabled = !cont.enabled; return; }
-    cont.notify ('onDraw');
+    if (SUI.isContainer(type) ||  type == 'separator') return gfx.backgroundColor = gfx.newBrush(_BSOLID, cBrush);
+    if (type == 'progressbar' || type == 'image') { control.enabled = !control.enabled; control.enabled = !control.enabled; return; }
+    control._marked_ = false;
+    control.notify ('onDraw');
+    } catch(e) { trace(e) }
 };
 
-BuilderApplication.prototype.markControl = function(cont, model) {
-    cont._marked_ = true; // см. castomDraw (определена в doc.addItem(item))
-    var gfx = cont.graphics,
-           cBrush = this.options.highlightColor,
-           type = cont.type;
-    if (cont.type == 'listbox') return gfx.backgroundColor = gfx.newBrush(_BSOLID, [cBrush[0], cBrush[1], cBrush[2], 1]);
-    if (SUI.isContainer(cont) || type == 'separator' ) return gfx.backgroundColor = gfx.newBrush(_BSOLID, cBrush);
-    if (type == 'progressbar' || type == 'image') { cont.enabled = !cont.enabled; cont.enabled = !cont.enabled; return; }
-    cont.notify ('onDraw');
+BuilderApplication.prototype.markControl = function(model) {
+    try {
+    var control = model.view.control,
+        gfx = control.graphics,
+        cBrush = this.options.highlightColor,
+        type = model.view.type;
+    if (type == 'listbox') return gfx.backgroundColor = gfx.newBrush(_BSOLID, [cBrush[0], cBrush[1], cBrush[2], 1]);
+    if (SUI.isContainer(type) || type == 'separator') return gfx.backgroundColor = gfx.newBrush(_BSOLID, cBrush);
+    if (type == 'progressbar' || type == 'image') { cont.enabled = !control.enabled; control.enabled = !control.enabled; return; }
+    control._marked_ = true;
+    control.notify ('onDraw');
+    } catch(e) { trace(e) }
 };
 
 BuilderApplication.prototype.evalDialog = function(rc) {
@@ -1051,10 +1054,3 @@ BuilderApplication.prototype.terminate = function(err, msg) {
     if (app.window && app.window.visible) app.window.close();
     throw Error(msg);
 };
-
-// Заглушка...
-//~ BuilderApplication.prototype.loadDocument = function() {
-//~     var doc = this.__super__.loadDocument.call(this);
-//~     //log(doc.id, doc.name);
-//~     this.closeDocument(doc);
-//~ };
