@@ -31,8 +31,7 @@ inherit (uiView, MVCView);
 uiView.prototype.createControl = function (parent, rcView) {
     this.control = parent.add(rcView);
     this.initControl();
-    this.registerHandlers(this.control, rcView); // Всё, что нужно выполнить над готовым элементом
-    //this.control._marked_ = true;
+    return this.registerHandlers(this.control, rcView); // Всё, что нужно выполнить над готовым элементом
 };
 
 // ===========================
@@ -62,11 +61,12 @@ uiView.prototype.registerHandlers = function(control, rcView) {
     for (var p in CPROPS) if (gfx_prop.hasOwnProperty(p)) {
         //if (!gfx[p]) 
         gfx[p] = (p.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(color_opt[p]), 1) : gfx.newBrush(_BSOLID, toRGBA(color_opt[p])) );
-    }
+    };
     // TODO: Инициализируем шрифт (патч чтобы преобразовать family из 'Segoe UI' в 'Segoe Ui');
     if (gfx_prop.hasOwnProperty('font')) {
         if (gfx.font.family == 'Segoe UI') gfx.font = ScriptUI.newFont('Segoe Ui', gfx.font.style, gfx.font.size);
-    }
+    };
+    return this;
 };
 
 // ===========================

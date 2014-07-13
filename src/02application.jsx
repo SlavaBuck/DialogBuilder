@@ -58,11 +58,11 @@ BuilderApplication.prototype.Init = function() {
     
     // Настройка локальных ссылок
     var app = this,
-          w = app.window,
-          controllers = app.controllers,
-          models = app.models,
-          views = app.views,
-          title = app.version +" " + app.name + ": " + localize({ru:"Загрузка...", en:"Loading..."});
+        w = app.window,
+        controllers = app.controllers,
+        models = app.models,
+        views = app.views,
+        title = app.version +" " + app.name + ": " + localize({ru:"Загрузка...", en:"Loading..."});
     app.pBar = SUI.ProgressBar(title);
     app.pBar.reset(title, 22);
 
@@ -72,6 +72,10 @@ BuilderApplication.prototype.Init = function() {
     app.pBar.hit(localize({ ru:"Загрузка ресурсов...", en:"Loading resources..."}));
     app.loadResources();    // app.LStr получает локализованные строки
     app.initJsNames();
+    // hashControls содержит соответствие типов hashControls["tabbedpanel"] = "TabbedPanel", ...
+    app.hashControls = {};
+    each(app.uiControls, function(ctrl, key) { app.hashControls[key.toLowerCase()] = ctrl.label; });
+    app.hashControls['dialog'] = app.hashControls['palette'] = app.hashControls['window'] = "Window";
     
     // Формирование представлений для главного окна и контейнера документов (docView)
     app.pBar.hit(localize(app.LStr.uiApp[36]));
@@ -277,7 +281,7 @@ BuilderApplication.prototype.buildCaption = function(cont) {
         if (e.target.type == 'iconbutton') {
             switch (e.target.label) {
                 case "new":     app.addDocument(); _enableButtons();         break;
-                case "open":    if (app.loadDocument()) _enableButtons();    break; // возвращает activeDocument, если загрузка удачная
+                case "open":    if (app.openDocument()) _enableButtons();    break; // возвращает activeDocument, если загрузка удачная
                 case "close":   if (!app.closeDocument()) _disableButtons(); break; // возвращает activeDocument, null - если всё закрыто.
                 case "openIn":  app.openInESTK();       break;
                 case "save":    app.saveDocument();     break;
@@ -338,13 +342,15 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
                 }
             }(tree, doc, doc.window.children[0]));
             // upd: Были проблемы с doc.activeControl!!!
+            try {
             app.treeView.selectItem(doc.activeControl);
-             if (tree.activeItem.type == "node") tree.activeNode = tree.activeItem; else tree.activeNode = tree.activeItem.parent;
-             doc.activeContainer = tree.activeNode.model.view.control;
+            if (tree.activeItem.type == "node") tree.activeNode = tree.activeItem; else tree.activeNode = tree.activeItem.parent;
+            doc.activeContainer = tree.activeNode.model.view.control;
+            } catch(e) { trace(e, "refreshItems:" ) }
         },
         addItem:function(item) { // Вызывается из doc.addItem()
             var tree = this.control, 
-                   type = (item.control.type == 'Container') ? "node" : "item";
+                type = (item.control.type == 'Container') ? "node" : "item";
             if (tree.activeNode == null) {
                 tree.activeNode = tree.activeItem = tree.add( type, item.control.jsname );
             } else {
@@ -673,7 +679,7 @@ BuilderApplication.prototype._getField = function(id) {
 // строим родительский View документов
 BuilderApplication.prototype.buildDocsView = function(cont) {
     var app = this,
-           LStr = app.LStr;
+        LStr = app.LStr;
     // Родительский View для документов основан на TabbedPanel, каждый Tab которого будет представлять родительский View самого документа
     app.views.add(new MVC.View("Documents", cont.add("tabbedpanel { alignment:['fill','fill'] }")));
     // Панелька содержащая подпись 'Имя элемента' и поле редактирования JsName
@@ -851,22 +857,25 @@ BuilderApplication.prototype.CreateDocument = function() {
     });
     // Добавляем звёздочку в таб документа при его модификации // звёздочка убивается автоматом в doc.save()
     doc.watch ('modified', function(key, oldVal, newVal) {
-        if (newVal) if (doc.name[0] != "*") doc.name = "*" + doc.name;
+        if (newVal) {
+            if (doc.name[0] != "*") doc.name = "*" + doc.name;
+        } else {
+            if (doc.name[0] == "*") doc.name = doc.name.slice(1);
+        }
         return newVal;
     });
     
     return doc;
 };
 
-BuilderApplication.prototype.addDocument = function(body) {
-     // Вызываем перекрытый родительский метод:
-    MVCApplication.prototype.addDocument.call(this);
-    var app = this,
-        doc = app.activeDocument
-        body = (body)||app.options.dialogtype + " { preferredSize:[80, 20], alignment:['left','top'] }";
-    // Добавляем родительское окно в пустой документ:
-    doc.activeControl = doc.addItem(body);
-    doc.activeContainer = doc.activeControl.view.control;
+BuilderApplication.prototype.addDocument = function() {
+    // Вызываем перекрытый родительский метод:
+    var doc = BuilderApplication.prototype.__super__.addDocument.call(this);
+    // Добавляем родительское окно (bodyItem) в пустой документ:
+    if (doc) {
+        var bodyItem = doc.app.options.dialogtype + " { preferredSize:[80, 20], alignment:['left','top'] }";
+        doc.activeContainer = doc.addItem(bodyItem).view.control;
+    };
     return doc;
 };
 
