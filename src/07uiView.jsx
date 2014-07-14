@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  07uiView.jsx
  *  DESCRIPTION: uiView: Класс представления для класса ui-модели (представляет элемент управления в диалоге)
- *  @@@BUILDINFO@@@ 07uiView.jsx 1.51 Thu Jul 03 2014 21:52:09 GMT+0300
+ *  @@@BUILDINFO@@@ 07uiView.jsx 1.64 Mon Jul 14 2014 23:13:22 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -31,8 +31,7 @@ inherit (uiView, MVCView);
 uiView.prototype.createControl = function (parent, rcView) {
     this.control = parent.add(rcView);
     this.initControl();
-    this.registerHandlers(this.control, rcView); // Всё, что нужно выполнить над готовым элементом
-    //this.control._marked_ = true;
+    return this.registerHandlers(this.control, rcView); // Всё, что нужно выполнить над готовым элементом
 };
 
 // ===========================
@@ -52,21 +51,21 @@ uiView.prototype.registerHandlers = function(control, rcView) {
     
     // Заглушка свойств
     if (!control.properties) control.properties = {};
-    //if (!control.text) control.text = "";
     // Патчим свойство alignment
     if (!control.alignment && control.parent) control.alignment = control.parent.alignChildren;
     // Инициализируем цвета
-    var gfx_prop = uiControl.properties.graphics,
-        color_opt = app.options.doc,
-        CPROPS = COLORSTYLES.CS;
-    for (var p in CPROPS) if (gfx_prop.hasOwnProperty(p)) {
-        //if (!gfx[p]) 
-        gfx[p] = (p.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(color_opt[p]), 1) : gfx.newBrush(_BSOLID, toRGBA(color_opt[p])) );
-    }
-    // TODO: Инициализируем шрифт (патч чтобы преобразовать family из 'Segoe UI' в 'Segoe Ui');
-    if (gfx_prop.hasOwnProperty('font')) {
-        if (gfx.font.family == 'Segoe UI') gfx.font = ScriptUI.newFont('Segoe Ui', gfx.font.style, gfx.font.size);
-    }
+//~     var gfx_prop = uiControl.properties.graphics,
+//~         color_opt = app.options.doc,
+//~         CPROPS = COLORSTYLES[app.options.doccolors];
+//~     for (var p in CPROPS) if (gfx_prop.hasOwnProperty(p)) {
+//~         if (!gfx[p]) 
+//~         //gfx[p] = (p.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(color_opt[p]), 1) : gfx.newBrush(_BSOLID, toRGBA(color_opt[p])) );
+//~     };
+//~     // TODO: Инициализируем шрифт (патч чтобы преобразовать family из 'Segoe UI' в 'Segoe Ui');
+//~     if (gfx_prop.hasOwnProperty('font')) {
+//~         //if (gfx.font.family == 'Segoe UI') gfx.font = ScriptUI.newFont('Segoe Ui', gfx.font.style, gfx.font.size);
+//~     };
+    return this;
 };
 
 // ===========================
@@ -144,13 +143,12 @@ uiView.prototype.render = function(ctrl, newVal, oldVal, key) {
     var app = ctrl.app.app,
         uiProperties = app.uiProperties;
     } catch(e) { trace(e, 'customUpdate: problems with app & uiProperties', key, classof(ctrl)); }
-    //log("render", classof(app), classof(ctrl), classof(app._getField));
     try {
         if (key == 'text' && this.hasOwnProperty('text') && !ctrl.model.properties.size) { 
             var control = this,
                 gfx = control.graphics,
                 oldSize = gfx.measureString(oldVal),
-                textSize = gfx.measureString(newVal), //, gfx.font, this.size[0]),
+                textSize = gfx.measureString(newVal),
                 x = control.size[0] + (textSize[0]-oldSize[0]), x = (x<0) ? 0 : x, 
                 y = control.size[1] + (textSize[1]-oldSize[1]), y = (y<0) ? 0 : y;
             switch (control.type) {

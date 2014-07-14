@@ -251,6 +251,8 @@ LStr.uiApp[43] = { ru:"По умолчанию", en:"Set defaults" };
 LStr.uiApp[44] = { ru:"Применить", en:"Apply" };
 LStr.uiApp[45] = { ru:"Завершение настройки...", en:"Completing adjustment..." };
 LStr.uiApp[46] = { ru:"// Файл создан с помощью ", en:"// File created with " };
+LStr.uiApp[47] = { ru:"Системное сообщение", en:"System alert" };
+LStr.uiApp[48] = { ru:"Документ был изменён. Сохранить изменения?", en:"The document has been changed. Save changes?" };
 
 LStr.uiErr = [];
 LStr.uiErr[0] = { ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" };
@@ -261,6 +263,7 @@ LStr.uiErr[4] = { ru:"Ошибка в коде диалога", en:"Error in cod
 LStr.uiErr[5] = { ru:"Ошибка создания шрифта %1", en:"Can not create font %1"};
 LStr.uiErr[6] = { ru:"Шрифт %1 уже есть в списке.", en:"Font %1 already in list."};
 LStr.uiErr[7] = { ru:"Критичиская ошибка!", en:"Critical error!" };
+LStr.uiErr[7] = { ru:"Неудачная попытка открытия документа!", en:"Unsuccessful attempt to open the document!" };
 
 LStr.uiSet = [];
 LStr.uiSet[0] = { ru:"Настройки", en:"Program settings" };
