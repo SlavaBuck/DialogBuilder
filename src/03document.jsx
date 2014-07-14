@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  03document.jsx
  *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
- *  @@@BUILDINFO@@@ 03document.jsx 1.61 Sun Jul 13 2014 22:35:38 GMT+0300
+ *  @@@BUILDINFO@@@ 03document.jsx 1.64 Mon Jul 14 2014 23:11:04 GMT+0300
  * 
  * NOTICE: 
  * 

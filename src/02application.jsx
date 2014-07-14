@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  02application.jsx
  *  DESCRIPTION: BuilderApplication: Основной класс приложения 
- *  @@@BUILDINFO@@@ 02application.jsx 1.61 Sat Jun 21 2014 02:07:07 GMT+0300
+ *  @@@BUILDINFO@@@ 02application.jsx 1.64 Mon Jul 14 2014 23:10:46 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -20,8 +20,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
         wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
-    version:"1.61",
-    caption:"1.61 Dialog Builder (build 0713, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    version:"1.64",
+    caption:"1.64 Dialog Builder (build 0714, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \

@@ -1,7 +1,7 @@
 ﻿/* *************************************************************************
  *  00main.jsx
  *  DESCRIPTION: Файл сборки приложения DialogBuilder
- *  @@@BUILDINFO@@@ 00main.jsx 1.59 Sat Jul 05 2014 01:49:36 GMT+0300
+ *  @@@BUILDINFO@@@ 00main.jsx 1.64 Mon Jul 14 2014 23:13:30 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -22,9 +22,7 @@
     #include "07uiView.jsx"
     #include "08customControllers.jsx"
     
-    //var tm = new _timer(); tm.start();
     var app = new BuilderApplication((startmode ? "dialog" : "palette" ));
     app.run();
-    //tm.stop(); log("Время запуска:", tm); 
     
 }((typeof startmode == 'undefined' ? 1 : startmode)));
