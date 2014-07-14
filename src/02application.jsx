@@ -35,7 +35,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
                  }"
     });
     app.vname = app.name + " v" + app.version;
-    app.activeControl = null;  // Ссылка на модель текущий (добавляемый) элемент в контейнер документа
+    app.activeControl = null;   // Ссылка на модель текущий (добавляемый) элемент в контейнер документа
+    app.enabledTabs = true;     // Флаг, разрешающий обновление панелей свойств (используется в doc.load())
 
     // Настройка главного окна:
     SUI.SeparatorInit(app.window.pMain.sp);
@@ -890,6 +891,7 @@ BuilderApplication.prototype.disableAllTabs = function() {
 
 BuilderApplication.prototype.updateTabs = function(newVal) {
     var app = this;
+    if (!app.enabledTabs) return;
     app.disableAllTabs();   // Быстрая блокировка всех контролов - нужные потом последовательно разблокируем
     if (!newVal || newVal.hasOwnProperty('document')) return;
     var view_obj = newVal.view.control,

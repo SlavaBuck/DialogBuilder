@@ -22,19 +22,6 @@ function BuilderDocument(appRef) {
 inherit (BuilderDocument, MVCDocument);
                                      
 // Функции сохранения и открытия
-/*
-BuilderDocument.prototype.load = function() {
-    var doc = this,
-        app = doc.app;
-    // К моменту вызова этого метода уже должны быть установлены свойства name и file в прототипном методе приложения loadDocument...
-    if (!this.file.exists) return false;
-    try {
-        //....
-        app.window.text = app.version + " " + app.name + " - " +doc.name; // убрать в дщкумент document load
-        return true;
-    } catch(e) { log(e.description); return false; }
-};
-*/
 //~ // TODO: Оптимизировать для быстрого закрытия окна документа:
 //~ BuilderDocument.prototype.close = function() {
 //~     this.window.visible = false;
@@ -251,7 +238,7 @@ BuilderDocument.prototype.load = function() {
         body = "";
     file.open("r"); body = file.read(); file.close();
     // Вычленяем ресурсную строку, представляющую диалог целиком
-    var rcWin = body.slice(body.indexOf("new Window(")+12, body.indexOf('");')).replace(/\\[\r|\n]/g, "");
+    var rcWin = body.slice(body.indexOf("new Window(")+12, body.indexOf('");')).replace(/\\/g, "");
     
     // переустанавливаем родительское окно
     if (!doc.creatDialog(rcWin)) {
@@ -259,6 +246,7 @@ BuilderDocument.prototype.load = function() {
         alert(localize(app.LStr.uiErr[7]), app.name +" v"+app.version, false);
         return false;
     };
+    app.enabledTabs = false; // Отключаем обновление панелей свойств
     app.unmarkControl(doc.dialogControl);
     var control = doc.dialogControl.view.control;
     
@@ -267,34 +255,51 @@ BuilderDocument.prototype.load = function() {
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".show()"));
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".onResizing"));
     // Выполняется код под диалогом
+    
     try {
         eval(evalcode);
     } catch(e) { trace(e) }
-    // Не помогает ((
-    //doc.window.layout.layout(true);
-    //doc.window.layout.resize();
+    doc.window.layout.layout(true);
+    control.layout.resize(); // Не помогает ((
     
+    var counts = 1;
+    var rcObj = rcWin.replace(/^\t+(\w+\d:)(\w+\s[{])/mg,"$1{");
+    //var pObj = eval("("+rcObj.slice(rcObj.indexOf(" "))+")");
+    var arrObj = rcObj.replace(/^\t+.+[\r\n]/mg,"").split("\n");
+    arrObj[0] = dlgName+":"+arrObj[0].slice(arrObj[0].indexOf("{"));
+    
+    //var tm = new _timer(); tm.start();
     // Создаём модели для всех элементов диалога
-    (function _creatItems(doc, body, control) {
+    (function _creatItems(doc, control) {
         each(control.children, function(child) {
             var type = (child.isSeparator ? 'separator' : child.type),
                 item = doc.app.hashControls[type],
-                model = new uiModel(new uiView(doc, item, type).registerHandlers(child, child.toSource()));
+                view = new uiView(doc, item, type),
+                prop_str = arrObj[counts++];
+            // Создание модели
+            var model = new uiModel(view.registerHandlers(child, prop_str));
+            model.updateProperties(prop_str);
+            model.updateGraphics(evalcode);
             // Временное решение (обновление размера пока работает только для текстов):
-            if (type == 'statictext') {
+            if (type == 'statictext' && !model.properties.characters) {
                 var model_sz = model.control.properties.size,
                     gfx_sz = model.view.control.graphics.measureString(model.control.properties.text);
                 if (model_sz[0] != gfx_sz[0]) model_sz[0] = gfx_sz[0];
                 if (model_sz[1] != gfx_sz[1]) model_sz[1] = gfx_sz[1];
             }
-            if (SUI.isContainer(type)) _creatItems(doc, body, child);
+            if (SUI.isContainer(type)) _creatItems(doc, child);
         })
-    }(doc, body, control));
+    }(doc, control));
+    // Обновление для главного окна:
+    doc.dialogControl.updateProperties(arrObj[0]);
+    doc.dialogControl.updateGraphics(evalcode);
+    //tm.stop(); log("Время разбора:", tm, " Объектов:", doc.models.length);
     
-    app.markControl(doc.dialogControl);
     app.treeView.refreshItems(doc);
-    //app.treeView.selectItem(doc.dialogControl);
+    app.enabledTabs = true; // Включаем обновление панелей свойств
+    doc.activeControl = doc.dialogControl;
     app.treeView.control.items[0].expanded = true;
     doc.modified = false;
+    
     return true;
 };
