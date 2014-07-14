@@ -1056,3 +1056,10 @@ BuilderApplication.prototype.terminate = function(err, msg) {
     if (app.window && app.window.visible) app.window.close();
     throw Error(msg);
 };
+
+BuilderApplication.prototype.closeDocument = function() {
+    var app = this,
+        doc = app.activeDocument;
+    if (doc.modified && confirm(localize(app.LStr.uiApp[48]), true, app.name)) doc.save();
+    return BuilderApplication.prototype.__super__.closeDocument.call(this);
+}
