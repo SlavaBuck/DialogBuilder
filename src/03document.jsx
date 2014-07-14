@@ -270,18 +270,27 @@ BuilderDocument.prototype.load = function() {
     try {
         eval(evalcode);
     } catch(e) { trace(e) }
+    // Не помогает ((
+    //doc.window.layout.layout(true);
+    //doc.window.layout.resize();
     
     // Создаём модели для всех элементов диалога
     (function _creatItems(doc, body, control) {
         each(control.children, function(child) {
             var type = (child.isSeparator ? 'separator' : child.type),
-                item = doc.app.hashControls[type];
-            new uiModel(new uiView(doc, item, type).registerHandlers(child, child.toSource()));
+                item = doc.app.hashControls[type],
+                model = new uiModel(new uiView(doc, item, type).registerHandlers(child, child.toSource()));
+            // Временное решение (обновление размера пока работает только для текстов):
+            if (type == 'statictext') {
+                var model_sz = model.control.properties.size,
+                    gfx_sz = model.view.control.graphics.measureString(model.control.properties.text);
+                if (model_sz[0] != gfx_sz[0]) model_sz[0] = gfx_sz[0];
+                if (model_sz[1] != gfx_sz[1]) model_sz[1] = gfx_sz[1];
+            }
             if (SUI.isContainer(type)) _creatItems(doc, body, child);
         })
     }(doc, body, control));
     
-    doc.window.layout.layout(true);
     app.markControl(doc.dialogControl);
     app.treeView.refreshItems(doc);
     //app.treeView.selectItem(doc.dialogControl);
