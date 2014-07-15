@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  06uiModel.jsx
  *  DESCRIPTION: uiModel: Класс ui-модели (представляет данные элемента управления в диалоге)
- *  @@@BUILDINFO@@@ 06uiModel.jsx 1.64 Mon Jul 14 2014 23:11:26 GMT+0300
+ *  @@@BUILDINFO@@@ 06uiModel.jsx 1.65 Tue Jul 15 2014 16:12:23 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -293,6 +293,7 @@ uiModel.prototype.getCode = function() {
 // ===========================
 // Парсит ресурсную строку в формате <jsname>:{ ..., properties:{ .... }} и обновляет собственные флаги обнаруженных в ней свойств
 uiModel.prototype.updateProperties = function(prop_str) {
+    try {
     var model = this,
         index = prop_str.indexOf("}"),
         jsname = prop_str.split(":")[0];
@@ -300,10 +301,10 @@ uiModel.prototype.updateProperties = function(prop_str) {
     model.control.jsname = model.view.jsname = jsname;
     // Обновление свойств:
     if (index != -1) prop_str = prop_str.substring(0, index);
+
     prop_str += (new Array(prop_str.match(/[{]/g).length+1)).join("}");
-    try {    
-        var pObj = eval("({"+prop_str+"})");
-    } catch(e) { return false; }
+    var pObj = eval("({"+prop_str+"})");
+
     // Обновление свойств properties:
     if (pObj[jsname].properties) {
         each(model.properties.properties, function(val, key, obj) { if (key in pObj[jsname].properties) obj[key] = true; });
@@ -312,12 +313,14 @@ uiModel.prototype.updateProperties = function(prop_str) {
     delete pObj[jsname].properties;
     delete pObj[jsname].graphics;
     each(model.properties, function(val, key, obj) { if (key in pObj[jsname]) obj[key] = true; });
+    } catch(e) { return false; }
     return true;
 };
 
 // ===========================
 // Парсит програмный код на предмет наличия инициализации для графических свойств
 uiModel.prototype.updateGraphics = function(evalcode) {
+    try {
     var model = this,
         index = evalcode.indexOf("var gfx = "+this.control.jsname+".graphics;");
     if (index == -1) return;
@@ -326,5 +329,6 @@ uiModel.prototype.updateGraphics = function(evalcode) {
     each(model.properties.graphics, function(val, key, obj) {
         if (evalcode.indexOf("gfx."+key+" = ") != -1) obj[key] = true;
     });
+    } catch(e) { return false; }
     return true;
 };

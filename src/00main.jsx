@@ -1,7 +1,7 @@
 ﻿/* *************************************************************************
  *  00main.jsx
  *  DESCRIPTION: Файл сборки приложения DialogBuilder
- *  @@@BUILDINFO@@@ 00main.jsx 1.64 Mon Jul 14 2014 23:13:30 GMT+0300
+ *  @@@BUILDINFO@@@ 00main.jsx 1.65 Tue Jul 15 2014 16:34:05 GMT+0300
  * 
  * NOTICE: 
  * 

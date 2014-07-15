@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  03document.jsx
  *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
- *  @@@BUILDINFO@@@ 03document.jsx 1.64 Mon Jul 14 2014 23:11:04 GMT+0300
+ *  @@@BUILDINFO@@@ 03document.jsx 1.65 Tue Jul 15 2014 16:12:05 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -97,14 +97,13 @@ BuilderDocument.prototype.addItem = function (rcString) {
     if (type == 'tab' && doc.activeContainer.type != 'tabbedpanel') return;
     if (doc.activeContainer.type == 'tabbedpanel' && type != 'tab') return;
 
-    if (!doc.modified) doc.modified = true;
     if (doc.activeControl) app.unmarkControl(doc.activeControl);
     
     var rcString = (type == 'separator' ? SUI.Separator.toString() : (item == "Window" ? 'panel' : type) + rcString.slice(type.length));
     
     try {
         var model = new uiModel(new uiView(doc, item, type).createControl(doc.activeContainer, rcString));
-    } catch(e) { return null }
+    } catch(e) { trace(e); return null; }
 
     // если установлен autofocus и добавлен контейнер - переустанавливаем фокус на него:
     if (app.options.autofocus && SUI.isContainer(item)) {
@@ -112,6 +111,7 @@ BuilderDocument.prototype.addItem = function (rcString) {
         doc.activeContainer = model.view.control;
     };
 
+    if (!doc.modified) doc.modified = true;
     return doc.activeControl = model;
 };
 
@@ -238,12 +238,15 @@ BuilderDocument.prototype.load = function() {
         body = "";
     file.open("r"); body = file.read(); file.close();
     // Вычленяем ресурсную строку, представляющую диалог целиком
+    
+    body = body.replace(/new Window\s[(]/, "new Window(");
     var rcWin = body.slice(body.indexOf("new Window(")+12, body.indexOf('");')).replace(/\\/g, "");
     
     // переустанавливаем родительское окно
     if (!doc.creatDialog(rcWin)) {
         // "Неудачная попытка открытия документа"
-        alert(localize(app.LStr.uiErr[7]), app.name +" v"+app.version, false);
+        app.alert(localize(app.LStr.uiErr[7])+"\r\r"+rcWin, app.name +" v"+app.version, false);
+        doc.modified = false; // Чтобы избежать тупого запроса на сохранение
         return false;
     };
     app.enabledTabs = false; // Отключаем обновление панелей свойств
@@ -252,24 +255,36 @@ BuilderDocument.prototype.load = function() {
     
     var dlgName = body.slice(body.indexOf("var")+3, body.indexOf("new Window(")).replace(/[\s|=]/g, "");
     var evalcode = "var " + dlgName + " = control;\r" + body.slice(body.indexOf('");')+3);
-    evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".show()"));
+    evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".show"));
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".onResizing"));
     // Выполняется код под диалогом
-    
     try {
         eval(evalcode);
     } catch(e) { trace(e) }
     doc.window.layout.layout(true);
     control.layout.resize(); // Не помогает ((
     
-    var counts = 1;
-    var rcObj = rcWin.replace(/^\t+(\w+\d:)(\w+\s[{])/mg,"$1{");
-    //var pObj = eval("("+rcObj.slice(rcObj.indexOf(" "))+")");
-    var arrObj = rcObj.replace(/^\t+.+[\r\n]/mg,"").split("\n");
+    // Нужно из ресурсной строки вида stText25:StaticText {text:'stText25'},
+    // убрать имя конструктора StaticText, а также убить все предшествующие табуляции и пробелы,
+    // чтобы получить json-нотацию: stText25:{text:'stText25'}
+    var rcObj = rcWin.replace(/^\s+(\w+\d?:)(\w+\s?[{])/mg,"$1{");
+    // Теперь нужно прибить все пустые строки, и строки, содержащие только закрывающие скобки (с табуляцией и пробелами)
+    rcObj = rcObj.replace(/^\s+[}]+.+[\r|\n]/mg,"").replace(/^\s+/mg,"");
+    // Получаем массив строк, каждая строка должна определять единственный компонент диалога
+    var arrObj = rcObj.split("\n");
+    // Так как первая строка (содержащая "dialog..." слегка не шаблонная - подкоректируем 
+    // и дабавим в неё имя самого окна ("<имя>:dialog...):
     arrObj[0] = dlgName+":"+arrObj[0].slice(arrObj[0].indexOf("{"));
-    
+    // Очень часто встречается практика переноса свойств окна на новую строку, это протеворечит
+    // шаблону но попробуем обработать этот единственный допустимый не шаблонный случай:
+    if (app.uiProperties.hasOwnProperty(arrObj[1].split(":")[0])) {
+        arrObj[0] += arrObj[1];
+        arrObj.splice(1, 1);
+    }
     //var tm = new _timer(); tm.start();
+    
     // Создаём модели для всех элементов диалога
+    var counts = 1; // Начинаем с 1, потому как с первой итерации пропускаем ресурсную запись самого окна
     (function _creatItems(doc, control) {
         each(control.children, function(child) {
             var type = (child.isSeparator ? 'separator' : child.type),
@@ -280,6 +295,7 @@ BuilderDocument.prototype.load = function() {
             var model = new uiModel(view.registerHandlers(child, prop_str));
             model.updateProperties(prop_str);
             model.updateGraphics(evalcode);
+            
             // Временное решение (обновление размера пока работает только для текстов):
             if (type == 'statictext' && !model.properties.characters) {
                 var model_sz = model.control.properties.size,
@@ -299,7 +315,7 @@ BuilderDocument.prototype.load = function() {
     app.enabledTabs = true; // Включаем обновление панелей свойств
     doc.activeControl = doc.dialogControl;
     app.treeView.control.items[0].expanded = true;
-    doc.modified = false;
     
+    doc.modified = false;
     return true;
 };
