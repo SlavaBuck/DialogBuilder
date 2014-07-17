@@ -167,34 +167,17 @@ BuilderDocument.prototype.removeItem = function(model) {
 };
 
 BuilderDocument.prototype.getSourceString = function() {
-    var tree = this.app.treeView.control,
-           dlg = tree.items[0].model,
-           str = '', code = [];
-    str = (function _buildString(str, tr, node, code) {
-        var str = node.model.toSourceString(tr).slice(0, -1)+", \r\t"+tr;
-        var str1 = node.model.getCode();
-        if (str1) code.push(str1);
-        for (var i=0; i<node.items.length; i++) {
-            if (node.items[i].type == 'node') {
-                str += _buildString(str, tr+"\t", node.items[i], code).slice(0, -2) + "}, \r"+tr+"\t"; 
-            } else {
-                str += node.items[i].model.toSourceString(tr)+", \r"+tr+"\t";
-                str1 = node.items[i].model.getCode();
-                if (str1) code.push(str1);
-            }
-        }
-        return str.slice(0, -4) + "}\r";
-    }('', '', tree.items[0], code));
-    str = "var "+ tree.items[0].model.control.jsname + " = new Window(\""+ str.slice(str.indexOf(":")+1, -1) +"\");";
-    str = str.replace(/{,/g,"{").replace(/\r}, /g,"},").replace(/, }/g,",}").replace(/,}/g,"}").replace(/\r/g," \\\r");
-    str = str.replace(/:Separator {}/g, ":Panel { isSeparator:true }"); // временное решение для сепараторов
-    code.splice(0, 1);
-    // fix Замена имени окна на правильное в нижней скриптовой строке "<window>.show()"
-    // TODO: перенести в обработчик смены jsName:
-    var initcode = dlg.code.initcode.replace(/\w+\.show\(/, dlg.control.jsname + ".show(");
-    str += (dlg.code.initgfx ?  "\r" + dlg.code.initgfx : "") + "\r" + code.join("\r") +"\r" + dlg.code.initresizing + initcode;
-    //str += "\r"+ tree.items[0].model.control.jsname + ".show();";
-    return str;
+    var code = [],
+        winModel = this.app.treeView.control.items[0].model,
+        winName = winModel.control.jsname,
+        str = winModel.getSourceString(code);
+    // Добавляем косые вконце строк
+    str = "var " + winName + " = new Window (\"" + str.replace(/\r/mg, " \\\r") + "\");\r";
+    // Специальная обработка для Window
+    if (winModel.properties.properties.resizeable) code.push(winName + ".onResizing = " + winName+ ".onResize = function() { this.layout.resize () };");
+    code.push(winName + ".show();");
+    
+    return str + code.join("\r");
 };
 
 // Обеспечивается корректная очистка коллекций моделей в родительском приложении:

@@ -1016,7 +1016,9 @@ BuilderApplication.prototype.alert = function(msg, caption) {
 
 BuilderApplication.prototype.showModelCode = function(model) {
     if(!model) return;
-    log(model.control.toSource() +"\r----\r" + model.view.control.toSource());
+    //log(model.control.toSource() +"\r----\r" + model.view.control.toSource());
+    //log(model.toSourceString()+"\r"+model.getCode());
+    //log(model.getSourceString());
 };
 
 BuilderApplication.prototype.showCode = function(doc) {
