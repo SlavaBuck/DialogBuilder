@@ -236,7 +236,7 @@ BuilderDocument.prototype.load = function() {
     app.unmarkControl(doc.dialogControl);
     var control = doc.dialogControl.view.control;
     
-    var dlgName = body.slice(body.indexOf("var")+3, body.indexOf("new Window(")).replace(/[\s|=]/g, "");
+    var dlgName = body.match(/var\s(\S+)\s*=\s*new Window\(/)[1];
     var evalcode = "var " + dlgName + " = control;\r" + body.slice(body.indexOf('");')+3);
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".show"));
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".onResizing"));
