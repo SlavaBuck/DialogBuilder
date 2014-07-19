@@ -20,8 +20,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
         wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
-    version:"1.65",
-    caption:"1.65 Dialog Builder (build 0715, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    version:"1.66",
+    caption:"1.66 Dialog Builder (build 0719, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
