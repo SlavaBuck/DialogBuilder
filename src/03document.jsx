@@ -29,10 +29,11 @@ inherit (BuilderDocument, MVCDocument);
 //~     return true;
 //~ }
 
-BuilderDocument.prototype.save = function() {
+BuilderDocument.prototype.save = function(file) {
     var doc = this,
         app = doc.app,
         LStr = app.LStr;
+    if (file) doc.file = file;
     if (!doc.file || !doc.file.exists ) {
        var msg = localize(LStr.uiApp[24]) + (doc.name[0] == '*' ? doc.name.slice(1) : doc.name);
        doc.file = File.saveDialog(msg, app.filters); 
@@ -68,9 +69,9 @@ BuilderDocument.prototype.saveAs = function() {
         if (!doc.file) return false;
         if (doc.file.exists) {
             if (confirm(localize(LStr.uiErr[1]), true, doc.app.name) ) { 
-              return doc.save(); //doc.file = null; 
+                return doc.save(); //doc.file = null;
             } else {
-              doc.file = null; return false;
+                doc.file = null; return false;
             }
         } else {
             doc.file.open("w"); doc.file.write("test"); doc.file.close();
@@ -89,7 +90,7 @@ BuilderDocument.prototype.addItem = function (rcString) {
         CPROPS = COLORSTYLES.CS,
         dlgs = "dialog,palette,window";
     // Добываем type добавляемого ScriptUI объекта в нижнем регистре!
-    var type = (rcString.indexOf("{") != -1 ? rcString.substr(0, rcString.indexOf("{")) : rcString).replace(/\s/g,"").toLowerCase();
+    var type = rcString.match(/^\w+/)[0].toLowerCase();
     var item = app.hashControls[type];
     
     // танцы с добавлением tabbedpanel и tab:
@@ -187,8 +188,95 @@ BuilderDocument.prototype.removeModel = function(model) {
     return this.__super__.removeModel.call(this, model);
 };
 
-BuilderDocument.prototype.swapItem = function(model, direct) {
-    // direct = Up || Down
+BuilderDocument.prototype.swapItems = function(index1, index2) {
+    // Обмен местами элементов index1(выделенный индекс), index2(куда ставить)
+    try {
+    var doc = this,
+        app = this.app,
+        tree = app.treeView.control,
+        parent = tree.activeItem.parent;
+        
+    if (index2 < 0 || index2 == parent.items.length) { tree.active = true; return; }
+    
+    // Перемещение по дереву
+    if (parent.items[index1].type == "item") { // Первый элемент "item":
+        if (parent.items[index2].type == "item") {
+            // Второй элемент "item":
+            app.treeView.swapItems(parent, index1, index2);
+        } else {
+            // Второй элемент "node":
+            if (index2 < index1) { // move Up
+                var item = parent.add("item", parent.items[index1].text, index2);
+                item.model = parent.items[index1+1].model;
+                item.expanded = parent.items[index1+1].expanded;
+                parent.remove(parent.items[index1+1]);
+            } else {               // move Down
+                var item = parent.add("item", parent.items[index1].text, index2+1);
+                item.model = parent.items[index1].model;
+                item.expanded = parent.items[index1].expanded;
+                parent.remove(parent.items[index1]);
+            }
+        } 
+    } else { // Первый элемент "node":
+        if (parent.items[index2].type == "item") {
+            // Второй элемент "item":
+            if (index1 < 0 || index1 == parent.items.length) { tree.active = true; return; }
+            tree.activeItem = parent.items[index2];
+            this.swapItems(index2, index1);
+            tree.selectItem(tree.activeItem = parent.items[index2]);
+            return;
+        } else {
+            // Оба элемента "node":
+            if (index2 < index1) {  // move Up
+                var item = parent.add("node", parent.items[index2].text, index1+1);
+                app.treeView.copyBranch(parent.items[index2], item);
+                parent.remove(parent.items[index2]);
+                parent.items[index1].expanded = parent.items[index2].expanded = true;
+            } else {                // move Down
+                if (index1 < 0 || index1 == parent.items.length) { tree.active = true; return; }
+                tree.activeItem = parent.items[index2];
+                this.swapItems(index2, index1);
+                tree.selectItem(tree.activeItem = parent.items[index2]);
+                return;
+            }
+        }
+    }
+    tree.selectItem(tree.activeItem = parent.items[index2]);
+    
+    
+    /*
+    // TODO: Оптимизировать для быстрого обновления только изменённого контейнера:
+    // Сохраняем структуру диалога
+    var items = [],
+        code = [],
+        item = null,
+        count = parent.items.length;
+    
+    while(parent.items.length) {
+        item = parent.items[parent.items.length-1].model;
+        log(parent.items.length-1, "remove", item.id);
+        items.push(item.getSourceString(code));
+        doc.removeItem(item);
+    };
+    items = items.reverse();
+    code = code.reverse();
+    
+    var control = parent.model.view.control
+    each(items, function(item, index) { log(index, "add item:", item); control.add(item); eval(code[index]); });
+    doc.window.layout.layout(true);
+    
+    
+    
+    // Восстанавливаем выделение
+    var arrNames = activeControl.replace(/var = /,"").split("."), // arrNames[0] == <имя окна>
+        control = tree.items[0].model.view.control;
+    for (var i=1; i<arrNames.length; i++) control = control[arrNames[i]];
+    var model = doc.findController(doc.window.children[0]).model;
+
+    doc.activeControl = model;
+    doc.activeContainer = SUI.isContainer(model.view.control) ? model.view.control : model.view.control.parent;
+    */
+    } catch(e) { trace(e, "doc.swapItems") }
 };
 
 // Установка родительского диалога в документе
@@ -224,7 +312,7 @@ BuilderDocument.prototype.load = function() {
     
     body = body.replace(/new Window\s[(]/, "new Window(");
     var rcWin = body.slice(body.indexOf("new Window(")+12, body.indexOf('");')).replace(/\\/g, "");
-    
+
     // переустанавливаем родительское окно
     if (!doc.creatDialog(rcWin)) {
         // "Неудачная попытка открытия документа"

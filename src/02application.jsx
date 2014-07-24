@@ -364,9 +364,35 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
         removeItem:function(item) {
             if (item && item.parent) item.parent.remove(item);
         },
-        swapItems:function(direction) { // "Up" || "Down" Вызывается нажатием кнопок Up, Down 
+        swapItems:function(parent, index1, index2) { // parent - контейнер, index1, index2 - меняемые местами элементы
             // функция будет производит перемещение активного элемента
-            // ...
+            try {
+            var tree = this.control,
+                model = parent.items[index1].model;
+            parent.items[index1].model = parent.items[index2].model;
+            parent.items[index1].text = parent.items[index2].text;
+            parent.items[index2].model = model;
+            parent.items[index2].text = model.control.jsname;
+            // Переустановка фокуса:
+            //tree.active = true;
+            //tree.selectItem(tree.activeItem = parent.items[index2]);
+            } catch(e) { trace(e, "treeView.swapItems()"); }
+        },
+        copyBranch:function(src /* node */, dest /* node */) {
+            try {
+            var tree = this.control,
+                item = null;
+            dest.text = src.text;
+            dest.model = src.model;
+            for (var i=0, max = src.items.length; i<max; i++) {
+                if (src.items[i].type == "item") {
+                    item = dest.add("item", src.items[i].text);
+                    item.model = src.items[i].model;
+                } else {
+                    this.copyBranch(src.items[i], dest.add("node", src.items[i].text));
+                }
+            }
+            } catch(e) { trace(e, "treeView.copyBranch()"); }
         },
         control:{
             activeItem:null, // Соответствует doc.activeControl
@@ -412,11 +438,13 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
     bt.label = "Down"; bt.alignment = ['right','bottom']; bt.helpTip = LStr.uiApp[4]; bt.preferredSize = sz;
     // Обработка кликов по кнопкам:
     g.addEventListener ("click", function (e) {
-        var doc = app.activeDocument;
+        var doc = app.activeDocument,
+            index = tree.control.selection.index;
+        tree.control.active = true;
         if (doc && e.target.type == 'iconbutton') {
             if (e.target.label == 'Del' && doc.activeControl && doc.activeControl.view.item != "Window") return doc.removeItem(doc.activeControl);
-            if (e.target.label == 'Up') return doc.swapItem(doc.activeControl, 'Up');       // пока не реализовано
-            if (e.target.label == 'Down') return doc.swapItem(doc.activeControl, 'Down');   // пока не реализовано
+            if (e.target.label == 'Up') return doc.swapItems(index, index-1);       // пока не реализовано
+            if (e.target.label == 'Down') return doc.swapItems(index, index+1);   // пока не реализовано
         }
     });
     tree.control.addEventListener ("click", function (e) { // onChange для дерева
