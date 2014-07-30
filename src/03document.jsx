@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  03document.jsx
  *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
- *  @@@BUILDINFO@@@ 03document.jsx 1.65 Tue Jul 15 2014 16:12:05 GMT+0300
+ *  @@@BUILDINFO@@@ 03document.jsx 1.67 Tue Jul 15 2014 16:12:05 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -16,7 +16,7 @@ function BuilderDocument(appRef) {
     this.modified = false;              // сигнализирует о несохранённых изминениях
     this.activeControl = null;          // указатель на активную uiModel
     this.activeContainer = this.window; // указатель на текущий контейнер для добавления моделей (ScriptUI-объект);
-    this.reload = false;                // устанавливается в doc.swapItems() - сигнализирует о необходимости перезагрузки документа!
+    this._reload = false;                // устанавливается в doc.swapItems() - сигнализирует о необходимости перезагрузки документа!
 };
 
 // Наследуемся напрямую от MVCDocument
@@ -197,7 +197,6 @@ BuilderDocument.prototype.swapItems = function(index1, index2) {
         parent = tree.activeItem.parent;
         
     if (index2 < 0 || index2 == parent.items.length) { tree.active = true; return; }
-    doc.reload = true;
     
     // Перемещение по дереву
     if (parent.items[index1].type == "item") { // Первый элемент "item":
@@ -244,11 +243,11 @@ BuilderDocument.prototype.swapItems = function(index1, index2) {
     }
     tree.selectItem(tree.activeItem = parent.items[index2]);
     
+    // Перемещаем элементы в контейнере:
     var control1 = parent.items[index1].model.view.control,
         control2 = parent.items[index2].model.view.control,
         dim = ~~(control1.parent.orientation == "column"),  // ориентация
         sp = control1.parent.spacing;  // реальный отступ межу элементами
-    
     if (index1 < index2) {
         control1.location[dim] = control2.location[dim];
         control2.location[dim] += control1.size[dim] + sp;
@@ -256,44 +255,21 @@ BuilderDocument.prototype.swapItems = function(index1, index2) {
         control2.location[dim] = control1.location[dim];
         control1.location[dim] += control2.size[dim] + sp;
     }
-    
-    /*
-    // TODO: Оптимизировать для быстрого обновления только изменённого контейнера:
-    // Сохраняем структуру диалога
-    var items = [],
-        code = [],
-        item = null,
-        count = parent.items.length;
-    
-    while(parent.items.length) {
-        item = parent.items[parent.items.length-1].model;
-        log(parent.items.length-1, "remove", item.id);
-        items.push(item.getSourceString(code));
-        doc.removeItem(item);
-    };
-    items = items.reverse();
-    code = code.reverse();
-    
-    var control = parent.model.view.control
-    each(items, function(item, index) { log(index, "add item:", item); control.add(item); eval(code[index]); });
-    doc.window.layout.layout(true);
-    
-    // Восстанавливаем выделение
-    var arrNames = activeControl.replace(/var = /,"").split("."), // arrNames[0] == <имя окна>
-        control = tree.items[0].model.view.control;
-    for (var i=1; i<arrNames.length; i++) control = control[arrNames[i]];
-    var model = doc.findController(doc.window.children[0]).model;
 
-    doc.activeControl = model;
-    doc.activeContainer = SUI.isContainer(model.view.control) ? model.view.control : model.view.control.parent;
-    */
+    doc._reload = true; // поменяем цвет кнопки на красный
+    if (!doc.modified) doc.modified = true;
 };
 
 // Установка родительского диалога в документе
 BuilderDocument.prototype.creatDialog = function(rcWin) {
     var doc = this,
-        model = null;
-    if (doc.dialogControl) doc.removeItem(doc.dialogControl);
+        model = null,
+        tree = doc.app.treeView.control;
+    tree.activeNode = tree.activeItem = null;
+    if (doc.dialogControl) {
+        tree.activeItem = tree.items[0];
+        doc.removeItem(doc.dialogControl);
+    }
     if (!(model = doc.addItem(rcWin))) return null;
     doc.activeContainer = model.view.control;
     doc.activeContainer.alignment = ['left','top'];
@@ -310,7 +286,8 @@ BuilderDocument.prototype.creatDialog = function(rcWin) {
     app.markControl(model);
     return doc.dialogControl = model;
 };
-    
+
+// Загрузка документа (выполняется после его создания):
 BuilderDocument.prototype.load = function() {
     // документ был создан только-что с помощью addDocument() (см. MVC.DOM: MVCApplication.loadDocument())
     var doc = this,
@@ -318,8 +295,8 @@ BuilderDocument.prototype.load = function() {
         file = doc.file,
         body = "";
     file.open("r"); body = file.read(); file.close();
-    // Вычленяем ресурсную строку, представляющую диалог целиком
     
+    // Вычленяем ресурсную строку, представляющую диалог целиком
     body = body.replace(/new Window\s[(]/, "new Window(");
     var rcWin = body.slice(body.indexOf("new Window(")+12, body.indexOf('");')).replace(/\\/g, "");
 
@@ -399,4 +376,42 @@ BuilderDocument.prototype.load = function() {
     
     doc.modified = false;
     return true;
+};
+
+// Перезагрузка документа (используется временный файл)
+BuilderDocument.prototype.reload = function() {
+    // документ был создан только-что с помощью addDocument() (см. MVC.DOM: MVCApplication.loadDocument())
+    try {
+    var doc = this,
+        app = this.app,
+        tree = app.treeView.control,
+        activeControl = tree.activeItem.model.getVarString(), // Запоминаем выделенный элемент
+        file = doc.file,
+        name = doc.name.replace(/\*/, ""),
+        modified = doc.modified,
+        tmpfile = new File(Folder.temp +"/_tmp_" + $.hiresTimer + ".jsx");  // получаем по возможности случайное имя файла
+        
+    tmpfile.open("w"); tmpfile.close(); // теперь tmpfile.exists = true;
+    doc.file = tmpfile;
+    doc.save();
+    doc.load();
+    doc.file = file;
+    doc.name = name;
+    app.window.text = app.version + " " + app.name + " - " +doc.name;
+    tmpfile.remove();
+    doc.modified = modified;
+    // поменяем цвет кнопки на зелёный
+    doc._reload = false;
+
+    // Восстанавливаем выделение
+    var arrNames = activeControl.replace(/var = /,"").split("."), // arrNames[0] == <имя окна>
+        control = tree.items[0].model.view.control;
+    for (var i=1; i<arrNames.length; i++) control = control[arrNames[i]];
+    var model = doc.findController(control).model;
+
+    doc.activeControl = model;
+    doc.activeContainer = SUI.isContainer(model.view.control) ? model.view.control : model.view.control.parent;
+    app.treeView.selectItem(doc.activeControl);
+    
+    } catch(e) { trace(e) }
 };

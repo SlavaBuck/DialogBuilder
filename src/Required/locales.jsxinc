@@ -253,6 +253,7 @@ LStr.uiApp[45] = { ru:"Завершение настройки...", en:"Completi
 LStr.uiApp[46] = { ru:"// Файл создан с помощью ", en:"// File created with " };
 LStr.uiApp[47] = { ru:"Системное сообщение", en:"System alert" };
 LStr.uiApp[48] = { ru:"Документ был изменён. Сохранить изменения?", en:"The document has been changed. Save changes?" };
+LStr.uiApp[49] = { ru:"Перезагрузка/обновление документа", en:"Reload/refresh document" };
 
 LStr.uiErr = [];
 LStr.uiErr[0] = { ru:"Критичиская ошибка. Файл %1 не найден", en:"Critical error. File %1 not found" };

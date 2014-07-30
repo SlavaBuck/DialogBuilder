@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  02application.jsx
  *  DESCRIPTION: BuilderApplication: Основной класс приложения 
- *  @@@BUILDINFO@@@ 02application.jsx 1.65 Tue Jul 15 2014 16:11:42 GMT+0300
+ *  @@@BUILDINFO@@@ 02application.jsx 1.67 Tue Jul 15 2014 16:11:42 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -20,8 +20,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
         wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
-    version:"1.66",
-    caption:"1.66 Dialog Builder (build 0719, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    version:"1.67",
+    caption:"1.67 Dialog Builder (build 0731, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -82,7 +82,7 @@ BuilderApplication.prototype.Init = function() {
     app.pBar.hit(localize(app.LStr.uiApp[36]));
     app.buildCaption(w.pCaption);               // id:"Caption"
     app.pBar.hit(localize(app.LStr.uiApp[37]));
-    app.buildControlsBtns(w.pMain.LeftPnl, 2);  // id:"Controls"
+    app.buildControlsBtns(w.pMain.LeftPnl, 2);  // id:"Controls" (аргументом 2 регулируем кол-во столбцов с кнопками)
     app.pBar.hit(localize(app.LStr.uiApp[38]));
     app.buildTreeView(w.pMain.RightPnl);        // id:"Tree"
     app.buildDocsView(w.pMain.MainPnl);         // id:"Documents" - Общий View-контейнер для всех документов
@@ -352,10 +352,8 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
         addItem:function(item) { // Вызывается из doc.addItem()
             var tree = this.control, 
                 type = (item.control.type == 'Container') ? "node" : "item";
-            if (tree.activeNode == null) {
+            if (tree.activeNode)  tree.activeItem = tree.activeNode.add( type, item.control.jsname ); else {
                 tree.activeNode = tree.activeItem = tree.add( type, item.control.jsname );
-            } else {
-                tree.activeItem = tree.activeNode.add( type, item.control.jsname );
             }
             tree.activeItem.model = item;
             tree.selectItem(tree.activeItem);
@@ -429,24 +427,51 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
     });
     // Группа с кнопками управления контролами (под деревом элементов)
     var g = cont.add("group { margins:[1,4,1,4], spacing:5, alignment:['fill','bottom'] }" ),
-           st = "button", sz = [24,24],           
-           bt = g.add("iconbutton", undefined, img.btDel, {style:st, toggle:false});
+        st = "button", sz = [24,24],
+        hlpStr = localize (LStr.uiApp[49]),
+    bt = g.add("iconbutton", undefined, img.btDel, {style:st, toggle:false});
     bt.label = "Del"; bt.alignment = ['left','bottom']; bt.helpTip = LStr.uiApp[2]; bt.preferredSize = sz;
+    // группа для кнопки Reload:
+    app.grpReload = g.add("group { alignment:['left','center'], bt:IconButton { label:'Reload', helpTip:'"+hlpStr+"' } }");
+    app.grpReload.bt.preferredSize = sz; app.grpReload.bt.image = img.btReloadGrn;
+    // кнопки Up/Down
     bt = g.add("iconbutton", undefined, img.btUp, {style:st, toggle:false});
     bt.label = "Up"; bt.alignment = ['right','bottom']; bt.helpTip = LStr.uiApp[3]; bt.preferredSize = sz;
     bt = g.add("iconbutton", undefined, img.btDown, {style:st, toggle:false});
     bt.label = "Down"; bt.alignment = ['right','bottom']; bt.helpTip = LStr.uiApp[4]; bt.preferredSize = sz;
+    
+    // Установка красной иконки для кнопки
+    app.grpReload.setRed = function() {
+        this.remove(0);
+        app.getViewByID("Controls").control.enabled = false;
+        app.getViewByID("Tab").control.enabled = false;
+        var bt = this.add("iconbutton", undefined, img.btReloadRed, {style:st, toggle:false});
+        bt.label = "Reload"; bt.helpTip = hlpStr; bt.preferredSize = sz;
+        this.layout.layout(true);
+    };
+    // Установка синей иконки для кнопки
+    app.grpReload.setGreen = function() { 
+        this.remove(0);
+        app.getViewByID("Controls").control.enabled = true;
+        app.getViewByID("Tab").control.enabled = true;
+        var bt = this.add("iconbutton", undefined, img.btReloadGrn, {style:st, toggle:false});
+        bt.label = "Reload"; bt.helpTip = hlpStr; bt.preferredSize = sz;
+        this.layout.layout(true);
+    };
     // Обработка кликов по кнопкам:
     g.addEventListener ("click", function (e) {
+        tree.control.active = true;
+        if (!app.activeDocument || e.target.type != 'iconbutton') return;
         var doc = app.activeDocument,
             index = tree.control.selection.index;
-        tree.control.active = true;
-        if (doc && e.target.type == 'iconbutton') {
-            if (e.target.label == 'Del' && doc.activeControl && doc.activeControl.view.item != "Window") return doc.removeItem(doc.activeControl);
-            if (e.target.label == 'Up') return doc.swapItems(index, index-1);       // пока не реализовано
-            if (e.target.label == 'Down') return doc.swapItems(index, index+1);   // пока не реализовано
+        switch (e.target.label) {
+            case 'Del'   : if (doc.activeControl && doc.activeControl.view.item != "Window") { doc.removeItem(doc.activeControl); } break;
+            case 'Up'    : doc.swapItems(index, index-1);  break;
+            case 'Down'  : doc.swapItems(index, index+1);  break;
+            case 'Reload': doc.reload();                   break;
         }
     });
+
     tree.control.addEventListener ("click", function (e) { // onChange для дерева
         // При клике по дереву переустнавливаются все активные указатели как в самом дереве (this.activeNode & this.activeItem), так и в документе
         // (doc.activeContainer & doc.activeControl), что также приведёт к автоматической переустановке указателя приложения app.activeControl и
@@ -861,8 +886,8 @@ BuilderApplication.prototype.about = function() {
 // ========================================================= 
 BuilderApplication.prototype.CreateDocument = function() {
     var app = this,
-          uiControls = app.uiControls,
-          doc = new BuilderDocument(app);
+        uiControls = app.uiControls,
+        doc = new BuilderDocument(app);
     // doc.activeContainer меняется только по клику в документе или в дереве:
     doc.window.addEventListener ('click', function(e) {
         doc.activeControl = doc.findController(e.target).model;
@@ -893,7 +918,12 @@ BuilderApplication.prototype.CreateDocument = function() {
         }
         return newVal;
     });
-    
+    // Меняем цвет кнопки в поле treeView:
+    doc.watch ('_reload', function(key, oldVal, newVal) {
+        if (newVal != oldVal) newVal ? app.grpReload.setRed() : app.grpReload.setGreen();
+        return newVal;
+    });
+
     return doc;
 };
 
@@ -985,7 +1015,6 @@ BuilderApplication.prototype._updateFontField = function(newVal) {
 };
 // Функции выделения doc.activeControl:
 BuilderApplication.prototype.unmarkControl = function(model) {
-    try {
     var control = model.view.control,
         gfx = control.graphics,
         cBrush =  toRGBA(model.control.properties.graphics.backgroundColor),
@@ -995,11 +1024,9 @@ BuilderApplication.prototype.unmarkControl = function(model) {
     if (type == 'progressbar' || type == 'image') { control.enabled = !control.enabled; control.enabled = !control.enabled; return; }
     control._marked_ = false;
     control.notify ('onDraw');
-    } catch(e) { trace(e) }
 };
 
 BuilderApplication.prototype.markControl = function(model) {
-    try {
     var control = model.view.control,
         gfx = control.graphics,
         cBrush = this.options.highlightColor,
@@ -1009,7 +1036,6 @@ BuilderApplication.prototype.markControl = function(model) {
     if (type == 'progressbar' || type == 'image') { cont.enabled = !control.enabled; control.enabled = !control.enabled; return; }
     control._marked_ = true;
     control.notify ('onDraw');
-    } catch(e) { trace(e) }
 };
 
 BuilderApplication.prototype.evalDialog = function(rc) {

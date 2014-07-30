@@ -308,7 +308,7 @@ uiModel.prototype.updateGraphics = function(evalcode) {
 // ===========================
 // Методы отвечающие за генерацию кода элемента:
 // строит строку вида "var <name> = <win>.<parent>.<parent>.<name>..."
-uiModel.prototype._getVarString = function() {
+uiModel.prototype.getVarString = function() {
     var model = this,
         tree = this.doc.app.treeView.control,
         item = tree.findItem(model, 'model'),
@@ -318,7 +318,7 @@ uiModel.prototype._getVarString = function() {
 };
 
 // Строит строки инициализации графических свойств:
-uiModel.prototype._getGfxString = function() {
+uiModel.prototype.getGfxString = function() {
     var model = this,
         props = model.properties.graphics,
         model_prop = model.control.properties.graphics,
@@ -341,13 +341,13 @@ uiModel.prototype._getGfxString = function() {
 uiModel.prototype.getCode = function() {
     var model = this,
         code = [];
-    var gfxStr = model._getGfxString();
+    var gfxStr = model.getGfxString();
     if (gfxStr) code = code.concat(gfxStr);
     if (model.code.initcode) {
         code.push(model.code.initcode.replace(/<this>/g, model.control.jsname));
     };
     if (model.view.item == "Window") return (code.length ? code.join(";\r")+";\r" : "");
     
-    var retval = (code.length ? [model._getVarString()].concat(code).join(";\r")+";\r" : "");
+    var retval = (code.length ? [model.getVarString()].concat(code).join(";\r")+";\r" : "");
     return retval;
 }; // model.getCode()
