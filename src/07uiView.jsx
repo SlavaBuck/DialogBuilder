@@ -36,8 +36,9 @@ uiView.prototype.createControl = function (parent, rcView) {
 
 // ===========================
 // Инициализация обработчиков элемента управления (выполняется после его полной инициализации в диалоге)
-uiView.prototype.registerHandlers = function(control, rcView) {
+uiView.prototype.registerHandlers = function(control, rcView, jsname) {
     this.view = rcView;
+    if (jsname) this.jsname = jsname;
     if (this.control !== control) this.control = control;
     // Общие операции для нового и/или ранее добавленного в диалог элемента:
     var app = this.doc.app,
