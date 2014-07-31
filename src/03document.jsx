@@ -321,7 +321,7 @@ BuilderDocument.prototype.load = function() {
     } catch(e) { trace(e) }
     doc.window.layout.layout(true);
     //control.layout.resize(); // Не помогает ((
-    
+
     // Нужно из ресурсной строки вида stText25:StaticText {text:'stText25'},
     // убрать имя конструктора StaticText, а также убить все предшествующие табуляции и пробелы,
     // чтобы получить json-нотацию: stText25:{text:'stText25'}
@@ -339,39 +339,8 @@ BuilderDocument.prototype.load = function() {
         arrObj[0] += arrObj[1];
         arrObj.splice(1, 1);
     }
-    
-    // Создаём модели для всех элементов диалога (control)
-    var counts = 1; // Начинаем с 1, потому как с первой итерации пропускаем ресурсную запись самого окна
-    (function _creatItems(doc, control, evalcode) {
-        each(control.children, function(child) {
-            var type = (child.isSeparator ? 'separator' : child.type),
-                item = doc.app.hashControls[type],
-                view = new uiView(doc, item, type),
-                prop_str = arrObj[counts++];
-            // Создание модели
-            var model = new uiModel(view.registerHandlers(child, prop_str, prop_str.substring(0, prop_str.indexOf(":"))));
-            model.updateProperties(prop_str);
-            model.updateGraphics(evalcode);
-            
-            // Временное решение (обновление размера пока работает только для текстов):
-            if (type == 'statictext' && !model.properties.characters) {
-                var model_sz = model.control.properties.size,
-                    gfx_sz = model.view.control.graphics.measureString(model.control.properties.text);
-                if (model_sz[0] != gfx_sz[0]) model_sz[0] = gfx_sz[0];
-                if (model_sz[1] != gfx_sz[1]) model_sz[1] = gfx_sz[1];
-            }
-            if (SUI.isContainer(type)) {
-                var tree = doc.app.treeView.control,
-                    currentNode = tree.activeNode;
-                tree.activeNode = tree.activeItem;
-                _creatItems(doc, child);
-                tree.activeNode = currentNode;
-            }
-        })
-    }(doc, control, evalcode));
-    // Обновление для главного окна:
-    doc.dialogControl.updateProperties(arrObj[0]);
-    doc.dialogControl.updateGraphics(evalcode);
+
+    doc.appendItems(control, arrObj, evalcode);
     
     app.treeView.selectItem(doc.activeControl = doc.dialogControl);
     app.enabledTabs = true; // Включаем обновление панелей свойств
@@ -380,9 +349,50 @@ BuilderDocument.prototype.load = function() {
     return true;
 };
 
-
-BuilderDocument.prototype.appendItems = function(doc, control, evalcode) {
-    
+// doc - рабочий документ (куда вставляются элементы)
+// control - ссылка на ScriptUI элемент (для которого будут строиться модели и представления)
+// arrObj - массив из ресурсных строк добавляемого элемента
+// evalcode - код выполняемый для элемента
+BuilderDocument.prototype.appendItems = function(control, arrObj, evalcode) {
+    try {
+    var doc = this,
+        counts = 0;
+    // Создаём модели для всех элементов control
+    (function _creatItems(doc, control, evalcode) {
+        var type = (control.isSeparator ? 'separator' : control.type),
+            item = doc.app.hashControls[type],
+            tree = doc.app.treeView.control,
+            prop_str = arrObj[counts++],
+            jsname = prop_str.substring(0, prop_str.indexOf(":")),
+            model = null,
+            view = null;
+        // Создание модели
+        if (control === doc.dialogControl.view.control) {
+            model = doc.dialogControl;
+            tree.activeItem.text = model.control.jsname = jsname;
+            tree.activeNode = tree;
+        } else {
+            view = new uiView(doc, item, type),
+            model = new uiModel(view.registerHandlers(control, prop_str, jsname));
+        }
+        model.updateProperties(prop_str);
+        model.updateGraphics(evalcode);
+        
+        // Временное решение (обновление размера пока работает только для текстов):
+        if (type == 'statictext' && !model.properties.characters) {
+            var model_sz = model.control.properties.size,
+                gfx_sz = model.view.control.graphics.measureString(model.control.properties.text);
+            if (model_sz[0] != gfx_sz[0]) model_sz[0] = gfx_sz[0];
+            if (model_sz[1] != gfx_sz[1]) model_sz[1] = gfx_sz[1];
+        }
+        if (SUI.isContainer(type) && control.children.length) {
+            var currentNode = tree.activeNode;
+            tree.activeNode = tree.activeItem;
+            each(control.children, function(child) { _creatItems(doc, child, evalcode); });
+            tree.activeNode = currentNode;
+        }
+    }(doc, control, evalcode));
+    } catch(e) { trace(e) }
 }
 
 // Перезагрузка документа (используется временный файл)
