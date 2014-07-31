@@ -222,9 +222,17 @@ BuilderApplication.prototype.buildCaption = function(cont) {
     var btClose = g.add("iconbutton { label:'close', helpTip:'"+uiApp[8]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
         btClose.image = img.btClose;
     var btSettings = g.add("iconbutton { label:'settings', helpTip:'"+uiApp[10]+"', enabled:true, properties:{style:'"+stl+"', toggle:false }}");
-        btSettings.image = img.btSettings
+        btSettings.image = img.btSettings;
     var sp = g.add(SUI.Separator);
         SUI.SeparatorInit(sp, 'line', 2);
+    var btCut = g.add("iconbutton { label:'cut', helpTip:'"+uiApp[50]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+        btCut.image = img.btCut;
+    var btCopy = g.add("iconbutton { label:'copy', helpTip:'"+uiApp[51]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+        btCopy.image = img.btCopy;
+    var btPaste = g.add("iconbutton { label:'paste', helpTip:'"+uiApp[52]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+        btPaste.image = img.btPaste;
+    var sp = g.add(SUI.Separator);
+        SUI.SeparatorInit(sp, 'line', 2);    
     var btEval = g.add("iconbutton { label:'eval', helpTip:'"+uiApp[14]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
         btEval.image = img.btEval;
     var btCode = g.add("iconbutton { label:'code', helpTip:'"+uiApp[15]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
@@ -277,8 +285,8 @@ BuilderApplication.prototype.buildCaption = function(cont) {
 
     // Обработка кликов по кнопкам-меню:
     cont.addEventListener("click", function (e) {
-        var _enableButtons = function() { btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = true; }
-        var _disableButtons = function() { btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = false; }
+        var _enableButtons = function() { btCut.enabled = btCopy.enabled = btPaste.enabled = btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = true; }
+        var _disableButtons = function() { btCut.enabled = btCopy.enabled = btPaste.enabled = btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = false; }
         if (e.target.type == 'iconbutton') {
             switch (e.target.label) {
                 case "new":     app.addDocument(); _enableButtons();         break;
