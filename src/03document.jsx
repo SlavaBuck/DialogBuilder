@@ -270,7 +270,7 @@ BuilderDocument.prototype.creatDialog = function(rcWin) {
         tree.activeItem = tree.items[0];
         doc.removeItem(doc.dialogControl);
     }
-    if (!(model = doc.addItem(rcWin))) return null;
+    if (!(model = doc.addItem((rcWin)||doc.app.options.dialogtype+" { preferredSize:[80, 20], alignment:['left','top'] }" ))) return null;
     doc.activeContainer = model.view.control;
     doc.activeContainer.alignment = ['left','top'];
     // Инициализируем цвета:
@@ -309,10 +309,10 @@ BuilderDocument.prototype.load = function() {
     };
     app.enabledTabs = false; // Отключаем обновление панелей свойств
     app.unmarkControl(doc.dialogControl);
-    var control = doc.dialogControl.view.control;
-    
-    var dlgName = body.match(/var\s(\S+)\s*=\s*new Window\(/)[1];
-    var evalcode = "var " + dlgName + " = control;\r" + body.slice(body.indexOf('");')+3);
+    var control = doc.dialogControl.view.control,   // Контейнер окна/диалога (со всеми элементами)
+        dlgName = body.match(/var\s(\S+)\s*=\s*new Window\(/)[1],
+        evalcode = "var " + dlgName + " = control;\r" + body.slice(body.indexOf('");')+3);
+    // убираем строки с инициализацией и открытием окна:
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".show"));
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".onResizing"));
     // Выполняется код под диалогом
@@ -320,7 +320,7 @@ BuilderDocument.prototype.load = function() {
         eval(evalcode);
     } catch(e) { trace(e) }
     doc.window.layout.layout(true);
-    control.layout.resize(); // Не помогает ((
+    //control.layout.resize(); // Не помогает ((
     
     // Нужно из ресурсной строки вида stText25:StaticText {text:'stText25'},
     // убрать имя конструктора StaticText, а также убить все предшествующие табуляции и пробелы,
@@ -335,22 +335,21 @@ BuilderDocument.prototype.load = function() {
     arrObj[0] = dlgName+":"+arrObj[0].slice(arrObj[0].indexOf("{"));
     // Очень часто встречается практика переноса свойств окна на новую строку, это протеворечит
     // шаблону но попробуем обработать этот единственный допустимый не шаблонный случай:
-    if (app.uiProperties.hasOwnProperty(arrObj[1].split(":")[0])) {
+    if (arrObj.length > 1 && app.uiProperties.hasOwnProperty(arrObj[1].split(":")[0])) {
         arrObj[0] += arrObj[1];
         arrObj.splice(1, 1);
     }
-    //var tm = new _timer(); tm.start();
     
-    // Создаём модели для всех элементов диалога
+    // Создаём модели для всех элементов диалога (control)
     var counts = 1; // Начинаем с 1, потому как с первой итерации пропускаем ресурсную запись самого окна
-    (function _creatItems(doc, control) {
+    (function _creatItems(doc, control, evalcode) {
         each(control.children, function(child) {
             var type = (child.isSeparator ? 'separator' : child.type),
                 item = doc.app.hashControls[type],
                 view = new uiView(doc, item, type),
                 prop_str = arrObj[counts++];
             // Создание модели
-            var model = new uiModel(view.registerHandlers(child, prop_str));
+            var model = new uiModel(view.registerHandlers(child, prop_str, prop_str.substring(0, prop_str.indexOf(":"))));
             model.updateProperties(prop_str);
             model.updateGraphics(evalcode);
             
@@ -361,25 +360,34 @@ BuilderDocument.prototype.load = function() {
                 if (model_sz[0] != gfx_sz[0]) model_sz[0] = gfx_sz[0];
                 if (model_sz[1] != gfx_sz[1]) model_sz[1] = gfx_sz[1];
             }
-            if (SUI.isContainer(type)) _creatItems(doc, child);
+            if (SUI.isContainer(type)) {
+                var tree = doc.app.treeView.control,
+                    currentNode = tree.activeNode;
+                tree.activeNode = tree.activeItem;
+                _creatItems(doc, child);
+                tree.activeNode = currentNode;
+            }
         })
-    }(doc, control));
+    }(doc, control, evalcode));
     // Обновление для главного окна:
     doc.dialogControl.updateProperties(arrObj[0]);
     doc.dialogControl.updateGraphics(evalcode);
-    //tm.stop(); log("Время разбора:", tm, " Объектов:", doc.models.length);
     
-    app.treeView.refreshItems(doc);
+    app.treeView.selectItem(doc.activeControl = doc.dialogControl);
     app.enabledTabs = true; // Включаем обновление панелей свойств
-    doc.activeControl = doc.dialogControl;
-    app.treeView.control.items[0].expanded = true;
     
     doc.modified = false;
     return true;
 };
 
+
+BuilderDocument.prototype.appendItems = function(doc, control, evalcode) {
+    
+}
+
 // Перезагрузка документа (используется временный файл)
-BuilderDocument.prototype.reload = function() {
+// Если передан код диалога rcWin - перезагрузка происходит на основании кода (используется в app.paste())
+BuilderDocument.prototype.reload = function(rcWin) {
     // документ был создан только-что с помощью addDocument() (см. MVC.DOM: MVCApplication.loadDocument())
     try {
     var doc = this,
@@ -390,10 +398,15 @@ BuilderDocument.prototype.reload = function() {
         name = doc.name.replace(/\*/, ""),
         modified = doc.modified,
         tmpfile = new File(Folder.temp +"/_tmp_" + $.hiresTimer + ".jsx");  // получаем по возможности случайное имя файла
-        
-    tmpfile.open("w"); tmpfile.close(); // теперь tmpfile.exists = true;
     doc.file = tmpfile;
-    doc.save();
+    doc.file.open("w");  // теперь tmpfile.exists = true; - нужно для doc.save();
+    if (rcWin) {
+        doc.file.write(rcWin);
+        doc.file.close();
+    } else {
+        doc.file.close();
+        doc.save();
+    }
     doc.load();
     doc.file = file;
     doc.name = name;
