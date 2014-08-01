@@ -263,28 +263,23 @@ uiModel.prototype.getSourceString = function(code) {
 }
 
 // ===========================
-// Парсит ресурсную строку в формате <jsname>:{ ..., properties:{ .... }} и обновляет собственные флаги обнаруженных в ней свойств
+// Парсит ресурсную строку в формате <jsname>:Item { ..., properties:{ .... }} и обновляет собственные флаги обнаруженных в ней свойств
 uiModel.prototype.updateProperties = function(prop_str) {
     try {
-    var model = this,
-        index = prop_str.indexOf("}"),
-        jsname = prop_str.split(":")[0];
-    // Обновление jsname и связанного Объекта uiView:
-    model.control.jsname = model.view.jsname = jsname;
-    // Обновление свойств:
-    if (index != -1) prop_str = prop_str.substring(0, index);
-
-    prop_str += (new Array(prop_str.match(/[{]/g).length+1)).join("}");
-    var pObj = eval("({"+prop_str+"})");
-
-    // Обновление свойств properties:
-    if (pObj[jsname].properties) {
-        each(model.properties.properties, function(val, key, obj) { if (key in pObj[jsname].properties) obj[key] = true; });
-    }
-    // Обновление общих свойств:
-    delete pObj[jsname].properties;
-    delete pObj[jsname].graphics;
-    each(model.properties, function(val, key, obj) { if (key in pObj[jsname]) obj[key] = true; });
+        var model_prop = this.properties,
+            index = prop_str.indexOf("}");
+        // Получаем из ресурсной строки валидный объект (содержащий объявленные для элемента свойства):
+        if (index != -1) prop_str = prop_str.substring(0, index);
+        prop_str = prop_str.slice(prop_str.indexOf("{")) + (new Array(prop_str.match(/[{]/g).length+1)).join("}");
+        var pObj = eval("("+prop_str+")");
+        // Обновление свойств properties:
+        if (pObj.properties) {
+            each(model_prop.properties, function(val, key, obj) { if (key in pObj.properties) obj[key] = true; });
+        }
+        // Обновление общих свойств:
+        delete pObj.properties;
+        delete pObj.graphics;
+        each(model_prop, function(val, key, obj) { if (key in pObj) obj[key] = true; });
     } catch(e) { return false; }
     return true;
 };
@@ -292,7 +287,6 @@ uiModel.prototype.updateProperties = function(prop_str) {
 // ===========================
 // Парсит програмный код на предмет наличия инициализации для графических свойств
 uiModel.prototype.updateGraphics = function(evalcode) {
-    try {
     var model = this,
         index = evalcode.indexOf("var gfx = "+this.control.jsname+".graphics;");
     if (index == -1) return;
@@ -301,7 +295,6 @@ uiModel.prototype.updateGraphics = function(evalcode) {
     each(model.properties.graphics, function(val, key, obj) {
         if (evalcode.indexOf("gfx."+key+" = ") != -1) obj[key] = true;
     });
-    } catch(e) { return false; }
     return true;
 };
 

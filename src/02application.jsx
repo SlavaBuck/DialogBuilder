@@ -44,12 +44,12 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
         set:function(model) { 
             if (model) {
                 this.model = model; 
-                this.code = [];
-                this.srcControl = model.getSourceString(this.code); 
-                this.code = this.code.join(";\r");
+                this.evalcode = [];
+                this.rcControl = model.getSourceString(this.evalcode).replace(/\r/mg, "\n");
+                this.evalcode = this.evalcode.join(";\r");
             } else this.clear();
         },
-        clear:function() { this.model = this.code = this.srcControl = null; },
+        clear:function() { this.model = this.evalcode = this.rcControl = null; },
         isEmpty:function() { return this.model === null; }
     };
     // Настройка главного окна:
@@ -1164,7 +1164,7 @@ BuilderApplication.prototype.copy = function(model) {
         if (!model) return null;
     };
     app.clipBoard.set(model);
-    app.btPaste.helpTip = localize(uiApp[52]) + "\r" + app.clipBoard.srcControl;
+    app.btPaste.helpTip = localize(uiApp[52]) + "\r" + app.clipBoard.rcControl;
     return model;
 };
 
@@ -1179,24 +1179,51 @@ BuilderApplication.prototype.paste = function() {
     if (!doc) return;
     
     var model = clipBoard.model,
-        rcControl = clipBoard.srcControl,
-        evalcode = clipBoard.code;
+        rcControl = normalizeRcString(clipBoard.rcControl),
+        evalcode = clipBoard.evalcode,
+        jsname = model.control.jsname;
     
-    if (clipBoard.model.view.item == "Window") {
+    if (model.view.item == "Window") {
         if (doc.window.children[0].children.length == 0) return doc.reload("// str\r\r"+clipBoard.model.doc.getSourceString());
-        // иначе просто заменим 'dialog/palette' на 'panel'
-        rcControl = "panel " + rcControl.substr(rcControl.indexOf("{"));
+        // иначе просто заменим 'dialog/palette' на 'Panel'
+        rcControl = "panel " + rcControl.slice(rcControl.indexOf("{"));
     }
+    app.unmarkControl(doc.activeControl);
+
+    //генерация нового валидного jsname в контексте этого документа:
+    var item = model.view.item;
+    if (!doc._counters_.hasOwnProperty(item)) doc._counters_[item] = 0;      // Инициализация счётчика соответствующих элементов:
+    var newjsname = app.uiControls[item].jsname + (doc._counters_[item]); // Генерация js-имени элемента (и приращение счётчика)    
+    if (!app.uiControls.hasOwnProperty(item)) doc._counters_[item] += 1;
     
-    var control = doc.activeContainer.add(rcControl);
+    var control = doc.activeContainer[newjsname] = doc.activeContainer.add(rcControl);
     doc.window.layout.layout(true);
     
+   
     if (evalcode) {
-        //log(evalcode);
+        // Трансформируем ссылки старого окна в контекст нового окна
+        var pattern = evalcode.match(new RegExp("^\\s?var.+= (.+)\\."+jsname, "m")),
+            varstr = "";
+        if (pattern) pattern = pattern[1]; else {
+            pattern = "control";
+            varstr = "var "+jsname+" = __control__."+jsname+"\r";
+        }
+        var replaceExp = new RegExp(" = "+pattern, "mg")
+        evalcode = evalcode.replace(replaceExp," = __control__");
+        evalcode = "var __control__ = control.parent;\r__control__." + 
+                   jsname + " = __control__.children[__control__.children.length-1];\r" + varstr + evalcode;
     }
-    rcControl = rcControl.replace(/^\s+(\w+\d?:)(\w+\s?[{])/mg,"$1{");
-    rcControl = rcControl.replace(/^\s+[}]+.+[\r|\n]/mg,"").replace(/^\s+/mg,"");
+    doc.appendItems(newjsname, control, rcControl, evalcode);
+
+    // Выделяем вставленный контрол (если нужно - переключаем фркус)
+    var model = doc.findController(control).model;
+    app.treeView.selectItem(doc.activeControl = model);
+    doc.activeContainer = control.parent;
+
+    if (app.options.autofocus && SUI.isContainer(model.view.type)) {
+        app.treeView.control.activeNode = app.treeView.control.activeItem;
+        doc.activeContainer = model.view.control;
+    };
     
-    log("'"+rcControl+"'\r---\r'"+evalcode+"'");
-    doc.appendItems(model.control.jsname, control, rcControl, evalcode);
+    doc.modified = true;
 };

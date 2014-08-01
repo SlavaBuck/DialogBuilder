@@ -316,15 +316,10 @@ BuilderDocument.prototype.load = function() {
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".show"));
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".onResizing"));
 
-    // Нужно из ресурсной строки вида stText25:StaticText {text:'stText25'},
-    // убрать имя конструктора StaticText, а также убить все предшествующие табуляции и пробелы,
-    // чтобы получить json-нотацию: stText25:{text:'stText25'}
-    rcWin = rcWin.replace(/^\s+(\w+\d?:)(\w+\s?[{])/mg,"$1{");
-    // Теперь нужно прибить все пустые строки, и строки, содержащие только закрывающие скобки (с табуляцией и пробелами)
-    rcWin = rcWin.replace(/^\s+[}]+.+[\r|\n]/mg,"").replace(/^\s+/mg,"");
-    // Получаем массив строк, каждая строка должна определять единственный компонент диалога
-    //var arrObj = rcWin.split("\n");
-    log("'"+rcWin+"'\r---\r'"+evalcode+"'");
+    // Убиваем всё лишнее из ресурсной строки
+    rcWin = normalizeRcString(rcWin);
+
+    //log("'"+rcWin+"'\r---\r'"+evalcode+"'");
     doc.appendItems(dlgName, control, rcWin, evalcode);
     
     app.treeView.selectItem(doc.activeControl = doc.dialogControl);
@@ -343,31 +338,26 @@ BuilderDocument.prototype.appendItems = function(jsname, control, rcControl, eva
         app = doc.app,
         counts = 0,
         arrObj = rcControl.split("\n");
-    // Так как первая строка (содержащая "dialog..." слегка не шаблонная - подкоректируем 
-    // и дабавим в неё имя самого окна ("<имя>:dialog...):
-    //arrObj[0] = jsname+":"+arrObj[0].slice(arrObj[0].indexOf("{"));
-    arrObj[0] = jsname+":"+arrObj[0];
     // Очень часто встречается практика переноса свойств окна на новую строку, это протеворечит
     // шаблону но попробуем обработать этот единственный допустимый не шаблонный случай:
     if (arrObj.length > 1 && app.uiProperties.hasOwnProperty(arrObj[1].split(":")[0])) {
-        arrObj[0] += arrObj[1];
-        arrObj.splice(1, 1);
+        arrObj[0] += arrObj[1]; arrObj.splice(1, 1);
     }
-
-    if (evalcode) {
-        try {
-            eval(evalcode);     // Выполняется код инициализации элемента
-        } catch(e) { trace(e) }
-    }
+    // Так как первая строка (содержащая "dialog..." слегка не шаблонная - подкоректируем 
+    // и дабавим в неё имя самого окна ("<имя>:dialog...):
+    arrObj[0] = jsname+":"+arrObj[0];
+    
+    try { eval(evalcode); } catch(e) { trace(e,"eval dialog code") }    // Выполняется код инициализации элемента
     doc.window.layout.layout(true);
     app.enabledTabs = false; // Отключаем обновление панелей свойств
+    
     // Создаём модели для всех элементов control
     (function _creatItems(doc, control, evalcode) {
         var type = (control.isSeparator ? 'separator' : control.type),
             item = doc.app.hashControls[type],
             tree = doc.app.treeView.control,
             prop_str = arrObj[counts++],
-            jsname = prop_str.substring(0, prop_str.indexOf(":")),
+            jsname = prop_str.slice(0, prop_str.indexOf(":")),
             model = null,
             view = null;
         // Создание модели
@@ -398,7 +388,7 @@ BuilderDocument.prototype.appendItems = function(jsname, control, rcControl, eva
     }(doc, control, evalcode));
 
     app.enabledTabs = true; // Включаем обновление панелей свойств
-    } catch(e) { trace(e) }
+    } catch(e) { trace(e, counts) }
 }
 
 // Перезагрузка документа (используется временный файл)
@@ -444,3 +434,10 @@ BuilderDocument.prototype.reload = function(rcWin) {
     
     } catch(e) { trace(e) }
 };
+
+function normalizeRcString(str) {
+    // Нужно из ресурсной строки вида stText25:StaticText {text:'stText25'},
+    // убить все предшествующие табуляции и пробелы а также прибить все пустые строки
+    // и строки, содержащие только закрывающие скобки "}"
+    return str.replace(/^\s+/mg,"").replace(/^\s*?[}]+.*[\r|\n]?/mg,"");
+}
