@@ -37,7 +37,21 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     app.vname = app.name + " v" + app.version;
     app.activeControl = null;   // Ссылка на модель текущий (добавляемый) элемент в контейнер документа
     app.enabledTabs = true;     // Флаг, разрешающий обновление панелей свойств (используется в doc.load())
-
+    app.clipBoard = {           // 
+        model:null,             // Скопированный элемент, готовый к вставке
+        code:null, 
+        srcControl:null,
+        set:function(model) { 
+            if (model) {
+                this.model = model; 
+                this.code = [];
+                this.srcControl = model.getSourceString(this.code); 
+                this.code = this.code.join(";\r");
+            } else this.clear();
+        },
+        clear:function() { this.model = this.code = this.srcControl = null; },
+        isEmpty:function() { return this.model === null; }
+    };
     // Настройка главного окна:
     SUI.SeparatorInit(app.window.pMain.sp);
     var gfx = app.window.pMain.MainPnl.graphics;
@@ -230,6 +244,7 @@ BuilderApplication.prototype.buildCaption = function(cont) {
     var btCopy = g.add("iconbutton { label:'copy', helpTip:'"+uiApp[51]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
         btCopy.image = img.btCopy;
     var btPaste = g.add("iconbutton { label:'paste', helpTip:'"+uiApp[52]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+        app.btPaste = btPaste;
         btPaste.image = img.btPaste;
     var sp = g.add(SUI.Separator);
         SUI.SeparatorInit(sp, 'line', 2);    
@@ -296,6 +311,9 @@ BuilderApplication.prototype.buildCaption = function(cont) {
                 case "save":    app.saveDocument();     break;
                 case "saveAs":  app.saveAsDocument();   break;
                 case "settings":app.showSettings();     break;
+                case "cut":     app.cut();              break;
+                case "copy":    app.copy();             break;
+                case "paste":   app.paste();            break;
                 case "eval":    app.evalDialog();       break;
                 case "code":    app.showCode();         break;
                 case "about":   app.about();            break;
@@ -939,7 +957,7 @@ BuilderApplication.prototype.addDocument = function() {
     // Вызываем перекрытый родительский метод:
     var doc = BuilderApplication.prototype.__super__.addDocument.call(this);
     // Добавляем родительское окно в пустой документ:
-    if (doc) doc.creatDialog(doc.app.options.dialogtype + " { preferredSize:[80, 20], alignment:['left','top'] }");
+    if (doc) doc.creatDialog();
     doc.modified = false;
     return doc;
 };
@@ -1127,4 +1145,58 @@ BuilderApplication.prototype.closeDocument = function() {
         doc = app.activeDocument;
     if (doc.modified && confirm(localize(app.LStr.uiApp[48]), true, app.name)) doc.save();
     return BuilderApplication.prototype.__super__.closeDocument.call(this);
-}
+};
+
+// Функции копирования/вставки
+BuilderApplication.prototype.cut = function(model) {
+    var app = this,
+        model = app.copy(model);
+    if (model) {
+        if (model.view.item == "Window") app.activeDocument.creatDialog(); else app.activeDocument.removeItem(model);
+    }
+};
+
+BuilderApplication.prototype.copy = function(model) {
+    var app = this,
+        uiApp = app.LStr.uiApp;
+    if (!model) {
+        var model = app.activeControl ? (app.activeControl.hasOwnProperty("document") ? null : app.activeControl) : null;
+        if (!model) return null;
+    };
+    app.clipBoard.set(model);
+    app.btPaste.helpTip = localize(uiApp[52]) + "\r" + app.clipBoard.srcControl;
+    return model;
+};
+
+// Вставка диалога происходит в отдельную панель если диалог назначения уже содержит элементы, либо происходит
+// полное дублирование скопированного диалога. Обычные элементы (включая контейнеры) вставляются в активный
+// контейнер диалога назначения.
+BuilderApplication.prototype.paste = function() {
+    if (this.clipBoard.isEmpty()) return;
+    var app = this,
+        doc = app.activeDocument,
+        clipBoard = app.clipBoard;
+    if (!doc) return;
+    
+    var model = clipBoard.model,
+        rcControl = clipBoard.srcControl,
+        evalcode = clipBoard.code;
+    
+    if (clipBoard.model.view.item == "Window") {
+        if (doc.window.children[0].children.length == 0) return doc.reload("// str\r\r"+clipBoard.model.doc.getSourceString());
+        // иначе просто заменим 'dialog/palette' на 'panel'
+        rcControl = "panel " + rcControl.substr(rcControl.indexOf("{"));
+    }
+    
+    var control = doc.activeContainer.add(rcControl);
+    doc.window.layout.layout(true);
+    
+    if (evalcode) {
+        //log(evalcode);
+    }
+    rcControl = rcControl.replace(/^\s+(\w+\d?:)(\w+\s?[{])/mg,"$1{");
+    rcControl = rcControl.replace(/^\s+[}]+.+[\r|\n]/mg,"").replace(/^\s+/mg,"");
+    
+    log("'"+rcControl+"'\r---\r'"+evalcode+"'");
+    doc.appendItems(model.control.jsname, control, rcControl, evalcode);
+};
