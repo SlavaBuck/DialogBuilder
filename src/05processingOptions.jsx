@@ -1,11 +1,9 @@
 ﻿/**************************************************************************
 *  05processingOptions.jsx
 *  DESCRIPTION: 
-*  @@@BUILDINFO@@@ 05processingOptions.jsx 1.51 Sat Jun 21 2014 02:08:20 GMT+0300
+*  @@@BUILDINFO@@@ 05processingOptions.jsx 1.80 Sat Aug 02 2014 21:24:46 GMT+0300
 * 
 * NOTICE: Работа с настройками приложения: чтение, сохранение, создание, приминение.
-*       processingSettings() - 
-*
 *
 /**************************************************************************
 * © Вячеслав aka SlavaBuck, 27.03.2014.  slava.boyko#hotmail.com
@@ -60,7 +58,7 @@ BuilderApplication.prototype.loadOptions = function() { //
         try { 
             f.open("r"); str = f.read(); f.close();
             if (str.match(/<DBuilder options>/)) _loadOptions = eval("("+str+")");  
-        } catch(e) { log("loadOptions: " + e.description); return null; }
+        } catch(e) { trace(e, "loadOptions:"); return null; }
     } 
     return _loadOptions;
 };

@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  03document.jsx
  *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
- *  @@@BUILDINFO@@@ 03document.jsx 1.67 Tue Jul 15 2014 16:12:05 GMT+0300
+ *  @@@BUILDINFO@@@ 03document.jsx 1.80 Sat Aug 02 2014 21:24:24 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -23,13 +23,6 @@ function BuilderDocument(appRef) {
 inherit (BuilderDocument, MVCDocument);
                                      
 // Функции сохранения и открытия
-//~ // TODO: Оптимизировать для быстрого закрытия окна документа:
-//~ BuilderDocument.prototype.close = function() {
-//~     this.window.visible = false;
-//~     this.app.documentsView.control.layout.layout(true);
-//~     return true;
-//~ }
-
 BuilderDocument.prototype.save = function(file) {
     var doc = this,
         app = doc.app,
@@ -78,7 +71,7 @@ BuilderDocument.prototype.saveAs = function() {
             doc.file.open("w"); doc.file.write("test"); doc.file.close();
         }
         return doc.save();
-    } catch(e) { log(e.description); return false; }
+    } catch(e) { trace(e); return false; }
 };
 
 // Основные методы документа:
@@ -304,8 +297,7 @@ BuilderDocument.prototype.load = function() {
     if (!doc.creatDialog(rcWin)) {
         // "Неудачная попытка открытия документа"
         app.alert(localize(app.LStr.uiErr[7])+"\r\r"+rcWin, app.name +" v"+app.version, false);
-        doc.modified = false; // Чтобы избежать тупого запроса на сохранение
-        return false;
+        return doc.modified = false; // Чтобы избежать тупого запроса на сохранение
     };
     
     app.unmarkControl(doc.dialogControl);
@@ -319,11 +311,10 @@ BuilderDocument.prototype.load = function() {
     // Убиваем всё лишнее из ресурсной строки
     rcWin = normalizeRcString(rcWin);
 
-    //log("'"+rcWin+"'\r---\r'"+evalcode+"'");
+    //Формируем модели и представления для всех в control
     doc.appendItems(dlgName, control, rcWin, evalcode);
     
     app.treeView.selectItem(doc.activeControl = doc.dialogControl);
-    
     doc.modified = false;
     return true;
 };
@@ -394,7 +385,6 @@ BuilderDocument.prototype.appendItems = function(jsname, control, rcControl, eva
 // Перезагрузка документа (используется временный файл)
 // Если передан код диалога rcWin - перезагрузка происходит на основании кода (используется в app.paste())
 BuilderDocument.prototype.reload = function(rcWin) {
-    // документ был создан только-что с помощью addDocument() (см. MVC.DOM: MVCApplication.loadDocument())
     try {
     var doc = this,
         app = this.app,
@@ -419,7 +409,7 @@ BuilderDocument.prototype.reload = function(rcWin) {
     app.window.text = app.version + " " + app.name + " - " +doc.name;
     tmpfile.remove();
     doc.modified = modified;
-    // поменяем цвет кнопки на зелёный
+    // поменяем цвет кнопки app.btReload на зелёный
     doc._reload = false;
 
     // Восстанавливаем выделение

@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  02application.jsx
  *  DESCRIPTION: BuilderApplication: Основной класс приложения 
- *  @@@BUILDINFO@@@ 02application.jsx 1.67 Tue Jul 15 2014 16:11:42 GMT+0300
+ *  @@@BUILDINFO@@@ 02application.jsx 1.80 Sat Aug 02 2014 21:26:26 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -20,8 +20,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
         wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
-    version:"1.67",
-    caption:"1.67 Dialog Builder (build 0731, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    version:"1.80",
+    caption:"1.80 Dialog Builder (build 0802, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -70,7 +70,7 @@ BuilderApplication.prototype.Init = function() {
     this.appFolder = File.decode(File($.fileName).parent.absoluteURI +'/');
     this.resFolder = (this.appFolder.match(/Required/) ?  this.appFolder : this.appFolder + "Required/");
     $.localize = true;
-    
+
     // Настройка локальных ссылок
     var app = this,
         w = app.window,
@@ -392,20 +392,14 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
         },
         swapItems:function(parent, index1, index2) { // parent - контейнер, index1, index2 - меняемые местами элементы
             // функция будет производит перемещение активного элемента
-            try {
             var tree = this.control,
                 model = parent.items[index1].model;
             parent.items[index1].model = parent.items[index2].model;
             parent.items[index1].text = parent.items[index2].text;
             parent.items[index2].model = model;
             parent.items[index2].text = model.control.jsname;
-            // Переустановка фокуса:
-            //tree.active = true;
-            //tree.selectItem(tree.activeItem = parent.items[index2]);
-            } catch(e) { trace(e, "treeView.swapItems()"); }
         },
         copyBranch:function(src /* node */, dest /* node */) {
-            try {
             var tree = this.control,
                 item = null;
             dest.text = src.text;
@@ -418,7 +412,6 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
                     this.copyBranch(src.items[i], dest.add("node", src.items[i].text));
                 }
             }
-            } catch(e) { trace(e, "treeView.copyBranch()"); }
         },
         control:{
             activeItem:null, // Соответствует doc.activeControl
@@ -1221,10 +1214,14 @@ BuilderApplication.prototype.paste = function() {
     var model = doc.findController(control).model;
     app.treeView.selectItem(doc.activeControl = model);
     doc.activeContainer = control.parent;
-
-    if (app.options.autofocus && SUI.isContainer(model.view.type)) {
-        app.treeView.control.activeNode = app.treeView.control.activeItem;
-        doc.activeContainer = model.view.control;
+    
+    if (SUI.isContainer(model.view.type)) {
+        if (app.options.autofocus) {
+            app.treeView.control.activeNode = app.treeView.control.activeItem;
+            doc.activeContainer = model.view.control;
+        } else {
+            app.treeView.control.activeNode = app.treeView.control.activeItem.parent;
+        }
     };
     
     doc.modified = true;
