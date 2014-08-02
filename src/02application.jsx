@@ -466,6 +466,7 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
         this.remove(0);
         app.getViewByID("Controls").control.enabled = false;
         app.getViewByID("Tab").control.enabled = false;
+        app.getViewByID("Caption").control.enabled = false;
         var bt = this.add("iconbutton", undefined, img.btReloadRed, {style:st, toggle:false});
         bt.label = "Reload"; bt.helpTip = hlpStr; bt.preferredSize = sz;
         this.layout.layout(true);
@@ -475,6 +476,7 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
         this.remove(0);
         app.getViewByID("Controls").control.enabled = true;
         app.getViewByID("Tab").control.enabled = true;
+        app.getViewByID("Caption").control.enabled = true;
         var bt = this.add("iconbutton", undefined, img.btReloadGrn, {style:st, toggle:false});
         bt.label = "Reload"; bt.helpTip = hlpStr; bt.preferredSize = sz;
         this.layout.layout(true);
