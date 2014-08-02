@@ -345,6 +345,7 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
             tree.activeItem = tree.findItem (model, 'model');
             tree.selectItem(tree.activeItem); 
             tree.activeNode = (tree.activeItem.type == 'node') ? tree.activeItem : tree.activeItem.parent;
+            tree.active = true;
         },
         refreshItems:function(doc) { // Обновление текущего представление данными диалога текущего документа
             // Функция полного обновления дерева элементов, вызывается при смене активного документа (передаётся через doc так как вызов проис-
@@ -372,6 +373,7 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
             try {
             app.treeView.selectItem(doc.activeControl);
             if (tree.activeItem.type == "node") tree.activeNode = tree.activeItem; else tree.activeNode = tree.activeItem.parent;
+            tree.activeNode.expanded = true;
             doc.activeContainer = tree.activeNode.model.view.control;
             } catch(e) { trace(e, "refreshItems:" ) }
         },
@@ -1184,9 +1186,9 @@ BuilderApplication.prototype.paste = function() {
         jsname = model.control.jsname;
     
     if (model.view.item == "Window") {
-        if (doc.window.children[0].children.length == 0) return doc.reload("// str\r\r"+clipBoard.model.doc.getSourceString());
-        // иначе просто заменим 'dialog/palette' на 'Panel'
-        rcControl = "panel " + rcControl.slice(rcControl.indexOf("{"));
+        // Целое окно копируем либо в группу (если окно назначения пустое) либо в панель:
+        rcControl = (doc.window.children[0].children.length == 0 ? "group { orientation:'column', " : "panel {") + 
+                    rcControl.slice(rcControl.indexOf("{")+1);
     }
     app.unmarkControl(doc.activeControl);
 
