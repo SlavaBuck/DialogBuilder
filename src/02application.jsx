@@ -156,6 +156,34 @@ BuilderApplication.prototype.Init = function() {
     app.JsName.control.addEventListener("keyup", function (kb) {
         app.treeView.control.activeItem.text = this.text;
     });
+    
+    // Обработка нажатия клавиш (работает нормально только когда закрыт ESTK)
+    app.window.addEventListener ("keydown", function(kb) {
+        if (!kb.ctrlKey) return;
+        var doc = app.activeDocument,
+            keyName = kb.keyName;
+        if (!doc && keyName != "O") return;
+        // Ctrl + Shift + Key
+        if (kb.shiftKey) switch (keyName) {
+            case "S":   app.saveAsDocument();   break;
+            case "E":   app.openInESTK();       break;
+            default:    kb.preventDefault();
+        // Ctrl + Key
+        } else switch (keyName) {
+            case "N":   app.addDocument(); app._enableButtons();         break;
+            case "O":   if (app.openDocument()) app._enableButtons();    break; // возвращает activeDocument, если загрузка удачная
+            case "W":   if (!app.closeDocument()) app._disableButtons(); break; // возвращает activeDocument, null - если всё закрыто.
+            case "S":   app.saveDocument();     break;
+            case "K":   app.showSettings();     break;
+            case "X":   app.cut();              break;
+            case "C":   app.copy();             break;
+            case "V":   app.paste();            break;
+            case "R":   app.evalDialog();       break;
+            case "D":   app.showCode();         break;
+            case "H":   app.about();            break;
+            default:    kb.preventDefault();
+        }
+    });
     app.pBar.close();
 } // app.Init()
 
@@ -297,16 +325,19 @@ BuilderApplication.prototype.buildCaption = function(cont) {
         SUI.SeparatorInit(sp, 'line', 2);
     var btInfo = cont.add("iconbutton { label:'about', helpTip:'"+uiApp[11]+"', preferredSize:[32, 32], alignment:['right', 'fill'], properties:{style:'"+stl+"', toggle:false }}");
         btInfo.image = img.btInfo;          
-
+    
+    app._enableButtons  = function() { app._setCaptionButtonsTo(true); }
+    app._disableButtons = function() { app._setCaptionButtonsTo(false); }
+    app._setCaptionButtonsTo = function(bEnabled) { 
+        btCut.enabled = btCopy.enabled = btPaste.enabled = btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = bEnabled;
+    };
     // Обработка кликов по кнопкам-меню:
     cont.addEventListener("click", function (e) {
-        var _enableButtons = function() { btCut.enabled = btCopy.enabled = btPaste.enabled = btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = true; }
-        var _disableButtons = function() { btCut.enabled = btCopy.enabled = btPaste.enabled = btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = false; }
         if (e.target.type == 'iconbutton') {
             switch (e.target.label) {
-                case "new":     app.addDocument(); _enableButtons();         break;
-                case "open":    if (app.openDocument()) _enableButtons();    break; // возвращает activeDocument, если загрузка удачная
-                case "close":   if (!app.closeDocument()) _disableButtons(); break; // возвращает activeDocument, null - если всё закрыто.
+                case "new":     app.addDocument(); app._enableButtons();         break;
+                case "open":    if (app.openDocument()) app._enableButtons();    break; // возвращает activeDocument, если загрузка удачная
+                case "close":   if (!app.closeDocument()) app._disableButtons(); break; // возвращает activeDocument, null - если всё закрыто.
                 case "openIn":  app.openInESTK();       break;
                 case "save":    app.saveDocument();     break;
                 case "saveAs":  app.saveAsDocument();   break;
@@ -864,11 +895,41 @@ BuilderApplication.prototype.about = function() {
        var msg = { 
                     ru: tittle +
                         "Конструктор диалоговых окон для Adobe ESTK СS...\r\r" +
+                        "Клавиатурные сокращения:\r" +
+                        "------------------------\r"+
+                        "Ctr + N: Новый документ\r" +
+                        "Ctr + O: Открыть документ\r" +
+                        "Ctr + W: Закрыть документ\r" +
+                        "Ctr + S: Сохранить документ\r" +
+                        "Ctr + K: Открыть настройки\r" +
+                        "Ctr + X: Вырезать\r" +
+                        "Ctr + C: Скопировать\r" +
+                        "Ctr + V: Вставить\r" +
+                        "Ctr + R: Выполнить\r" +
+                        "Ctr + D: Показать код диалога\r" +
+                        "Ctr + H: О программе...\r" +
+                        "Ctr + Shift + S: Сохранить как...\r" +
+                        "Ctr + Shift + E: Открыть jsx-файл в редакторе...\r\r" +
                         "Лицензионное соглашение Creative Commons:\rCC Attribution Non-Commercial ShareAlike (CC BY-NC-SA).\r\r" + 
                         lic.ru + "\rhttp://creativecommons.org/licenses/by-nc-sa/3.0/)" +
                         "\r\rБиблиотеки:\r" + libs + "© Slava Boyko aka SlavaBuck | 2013-2014 | slava.boyko@hotmail.com",
                     en: tittle +
-                        "Designer of dialog boxes for Adobe ESTK CS...\r\r" + 
+                        "Designer of dialog boxes for Adobe ESTK CS...\r\r" +
+                        "Keyboard shortcuts:\r" +
+                        "------------------------\r"+
+                        "Ctr + N: New document\r" +
+                        "Ctr + O: Open document\r" +
+                        "Ctr + W: Close document\r" +
+                        "Ctr + S: Save document\r" +
+                        "Ctr + K: Open settings\r" +
+                        "Ctr + X: Cut\r" +
+                        "Ctr + C: Copy\r" +
+                        "Ctr + V: Paste\r" +
+                        "Ctr + R: Eval dialog\r" +
+                        "Ctr + D: Show code of dialog\r" +
+                        "Ctr + H: About...\r" +
+                        "Ctr + Shift + S: Save as...\r" +
+                        "Ctr + Shift + E: Open jsx-file in editor...\r\r" +
                         "Creative Commons License agriment:\rCC Attribution Non-Commercial ShareAlike (CC BY-NC-SA).\r\r" + 
                         lic.en + "\rhttp://creativecommons.org/licenses/by-nc-sa/3.0/" +
                         "\r\rLibraries used:\r" + libs + "© Slava Boyko aka SlavaBuck | 2013-2014 | slava.boyko@hotmail.com"
