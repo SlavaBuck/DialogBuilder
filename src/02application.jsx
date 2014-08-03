@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  02application.jsx
  *  DESCRIPTION: BuilderApplication: Основной класс приложения 
- *  @@@BUILDINFO@@@ 02application.jsx 1.82 Sat Aug 02 2014 21:26:26 GMT+0300
+ *  @@@BUILDINFO@@@ 02application.jsx 1.82 Sun Aug 03 2014 05:09:12 GMT+0300
  * 
  * NOTICE: 
  * 
