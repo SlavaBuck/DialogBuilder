@@ -21,7 +21,7 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
     version:"1.82",
-    caption:"1.82 Dialog Builder (build 0802, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    caption:"1.82 Dialog Builder (build 0803, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -377,6 +377,7 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
             tree.selectItem(tree.activeItem); 
             tree.activeNode = (tree.activeItem.type == 'node') ? tree.activeItem : tree.activeItem.parent;
             tree.active = true;
+            return tree.activeItem;
         },
         refreshItems:function(doc) { // Обновление текущего представление данными диалога текущего документа
             // Функция полного обновления дерева элементов, вызывается при смене активного документа (передаётся через doc так как вызов проис-
@@ -1270,12 +1271,18 @@ BuilderApplication.prototype.paste = function() {
         evalcode = "var __control__ = control.parent;\r__control__." + 
                    jsname + " = __control__.children[__control__.children.length-1];\r" + varstr + evalcode;
     }
-    doc.appendItems(newjsname, control, rcControl, evalcode);
+    doc.appendItems(jsname, control, rcControl, evalcode);
 
     // Выделяем вставленный контрол (если нужно - переключаем фркус)
     var model = doc.findController(control).model;
-    app.treeView.selectItem(doc.activeControl = model);
+    // Кооректировка jsname в полученной модели:
+    model.control.jsname = model.view.jsname = newjsname;
+    // Выделение и корректирование узла в дереве (так как он был создан со старым значением jsname)
+    app.treeView.selectItem(model).text = newjsname;
+    doc.activeControl = model;
     doc.activeContainer = control.parent;
+    // Кооректировка jsnameв полученной модели:
+    model.control.jsname = model.view.jsname = app.treeView.control.activeItem.text = newjsname;
     
     if (SUI.isContainer(model.view.type)) {
         if (app.options.autofocus) {
