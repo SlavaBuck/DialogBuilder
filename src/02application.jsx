@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  02application.jsx
  *  DESCRIPTION: BuilderApplication: Основной класс приложения 
- *  @@@BUILDINFO@@@ 02application.jsx 1.65 Tue Jul 15 2014 16:11:42 GMT+0300
+ *  @@@BUILDINFO@@@ 02application.jsx 1.82 Sun Aug 03 2014 05:09:12 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -20,8 +20,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
         wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
-    version:"1.65",
-    caption:"1.65 Dialog Builder (build 0715, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    version:"1.82",
+    caption:"1.82 Dialog Builder (build 0802, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
@@ -37,7 +37,21 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
     app.vname = app.name + " v" + app.version;
     app.activeControl = null;   // Ссылка на модель текущий (добавляемый) элемент в контейнер документа
     app.enabledTabs = true;     // Флаг, разрешающий обновление панелей свойств (используется в doc.load())
-
+    app.clipBoard = {           // 
+        model:null,             // Скопированный элемент, готовый к вставке
+        code:null, 
+        srcControl:null,
+        set:function(model) { 
+            if (model) {
+                this.model = model; 
+                this.evalcode = [];
+                this.rcControl = model.getSourceString(this.evalcode).replace(/\r/mg, "\n");
+                this.evalcode = this.evalcode.join(";\r");
+            } else this.clear();
+        },
+        clear:function() { this.model = this.evalcode = this.rcControl = null; },
+        isEmpty:function() { return this.model === null; }
+    };
     // Настройка главного окна:
     SUI.SeparatorInit(app.window.pMain.sp);
     var gfx = app.window.pMain.MainPnl.graphics;
@@ -56,7 +70,7 @@ BuilderApplication.prototype.Init = function() {
     this.appFolder = File.decode(File($.fileName).parent.absoluteURI +'/');
     this.resFolder = (this.appFolder.match(/Required/) ?  this.appFolder : this.appFolder + "Required/");
     $.localize = true;
-    
+
     // Настройка локальных ссылок
     var app = this,
         w = app.window,
@@ -82,7 +96,7 @@ BuilderApplication.prototype.Init = function() {
     app.pBar.hit(localize(app.LStr.uiApp[36]));
     app.buildCaption(w.pCaption);               // id:"Caption"
     app.pBar.hit(localize(app.LStr.uiApp[37]));
-    app.buildControlsBtns(w.pMain.LeftPnl, 2);  // id:"Controls"
+    app.buildControlsBtns(w.pMain.LeftPnl, 2);  // id:"Controls" (аргументом 2 регулируем кол-во столбцов с кнопками)
     app.pBar.hit(localize(app.LStr.uiApp[38]));
     app.buildTreeView(w.pMain.RightPnl);        // id:"Tree"
     app.buildDocsView(w.pMain.MainPnl);         // id:"Documents" - Общий View-контейнер для всех документов
@@ -141,6 +155,34 @@ BuilderApplication.prototype.Init = function() {
     // Обеспечивает  в реальном времени обновление текста в дереве при редактировании имени переменной в поле JsName
     app.JsName.control.addEventListener("keyup", function (kb) {
         app.treeView.control.activeItem.text = this.text;
+    });
+    
+    // Обработка нажатия клавиш (работает нормально только когда закрыт ESTK)
+    app.window.addEventListener ("keydown", function(kb) {
+        if (!kb.ctrlKey) return;
+        var doc = app.activeDocument,
+            keyName = kb.keyName;
+        if (!doc && keyName != "O") return;
+        // Ctrl + Shift + Key
+        if (kb.shiftKey) switch (keyName) {
+            case "S":   app.saveAsDocument();   break;
+            case "E":   app.openInESTK();       break;
+            default:    kb.preventDefault();
+        // Ctrl + Key
+        } else switch (keyName) {
+            case "N":   app.addDocument(); app._enableButtons();         break;
+            case "O":   if (app.openDocument()) app._enableButtons();    break; // возвращает activeDocument, если загрузка удачная
+            case "W":   if (!app.closeDocument()) app._disableButtons(); break; // возвращает activeDocument, null - если всё закрыто.
+            case "S":   app.saveDocument();     break;
+            case "K":   app.showSettings();     break;
+            case "X":   app.cut();              break;
+            case "C":   app.copy();             break;
+            case "V":   app.paste();            break;
+            case "R":   app.evalDialog();       break;
+            case "D":   app.showCode();         break;
+            case "H":   app.about();            break;
+            default:    kb.preventDefault();
+        }
     });
     app.pBar.close();
 } // app.Init()
@@ -222,9 +264,18 @@ BuilderApplication.prototype.buildCaption = function(cont) {
     var btClose = g.add("iconbutton { label:'close', helpTip:'"+uiApp[8]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
         btClose.image = img.btClose;
     var btSettings = g.add("iconbutton { label:'settings', helpTip:'"+uiApp[10]+"', enabled:true, properties:{style:'"+stl+"', toggle:false }}");
-        btSettings.image = img.btSettings
+        btSettings.image = img.btSettings;
     var sp = g.add(SUI.Separator);
         SUI.SeparatorInit(sp, 'line', 2);
+    var btCut = g.add("iconbutton { label:'cut', helpTip:'"+uiApp[50]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+        btCut.image = img.btCut;
+    var btCopy = g.add("iconbutton { label:'copy', helpTip:'"+uiApp[51]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+        btCopy.image = img.btCopy;
+    var btPaste = g.add("iconbutton { label:'paste', helpTip:'"+uiApp[52]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
+        app.btPaste = btPaste;
+        btPaste.image = img.btPaste;
+    var sp = g.add(SUI.Separator);
+        SUI.SeparatorInit(sp, 'line', 2);    
     var btEval = g.add("iconbutton { label:'eval', helpTip:'"+uiApp[14]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
         btEval.image = img.btEval;
     var btCode = g.add("iconbutton { label:'code', helpTip:'"+uiApp[15]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
@@ -274,20 +325,26 @@ BuilderApplication.prototype.buildCaption = function(cont) {
         SUI.SeparatorInit(sp, 'line', 2);
     var btInfo = cont.add("iconbutton { label:'about', helpTip:'"+uiApp[11]+"', preferredSize:[32, 32], alignment:['right', 'fill'], properties:{style:'"+stl+"', toggle:false }}");
         btInfo.image = img.btInfo;          
-
+    
+    app._enableButtons  = function() { app._setCaptionButtonsTo(true); }
+    app._disableButtons = function() { app._setCaptionButtonsTo(false); }
+    app._setCaptionButtonsTo = function(bEnabled) { 
+        btCut.enabled = btCopy.enabled = btPaste.enabled = btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = bEnabled;
+    };
     // Обработка кликов по кнопкам-меню:
     cont.addEventListener("click", function (e) {
-        var _enableButtons = function() { btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = true; }
-        var _disableButtons = function() { btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = false; }
         if (e.target.type == 'iconbutton') {
             switch (e.target.label) {
-                case "new":     app.addDocument(); _enableButtons();         break;
-                case "open":    if (app.openDocument()) _enableButtons();    break; // возвращает activeDocument, если загрузка удачная
-                case "close":   if (!app.closeDocument()) _disableButtons(); break; // возвращает activeDocument, null - если всё закрыто.
+                case "new":     app.addDocument(); app._enableButtons();         break;
+                case "open":    if (app.openDocument()) app._enableButtons();    break; // возвращает activeDocument, если загрузка удачная
+                case "close":   if (!app.closeDocument()) app._disableButtons(); break; // возвращает activeDocument, null - если всё закрыто.
                 case "openIn":  app.openInESTK();       break;
                 case "save":    app.saveDocument();     break;
                 case "saveAs":  app.saveAsDocument();   break;
                 case "settings":app.showSettings();     break;
+                case "cut":     app.cut();              break;
+                case "copy":    app.copy();             break;
+                case "paste":   app.paste();            break;
                 case "eval":    app.evalDialog();       break;
                 case "code":    app.showCode();         break;
                 case "about":   app.about();            break;
@@ -319,6 +376,7 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
             tree.activeItem = tree.findItem (model, 'model');
             tree.selectItem(tree.activeItem); 
             tree.activeNode = (tree.activeItem.type == 'node') ? tree.activeItem : tree.activeItem.parent;
+            tree.active = true;
         },
         refreshItems:function(doc) { // Обновление текущего представление данными диалога текущего документа
             // Функция полного обновления дерева элементов, вызывается при смене активного документа (передаётся через doc так как вызов проис-
@@ -346,16 +404,15 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
             try {
             app.treeView.selectItem(doc.activeControl);
             if (tree.activeItem.type == "node") tree.activeNode = tree.activeItem; else tree.activeNode = tree.activeItem.parent;
+            tree.activeNode.expanded = true;
             doc.activeContainer = tree.activeNode.model.view.control;
             } catch(e) { trace(e, "refreshItems:" ) }
         },
         addItem:function(item) { // Вызывается из doc.addItem()
             var tree = this.control, 
                 type = (item.control.type == 'Container') ? "node" : "item";
-            if (tree.activeNode == null) {
+            if (tree.activeNode)  tree.activeItem = tree.activeNode.add( type, item.control.jsname ); else {
                 tree.activeNode = tree.activeItem = tree.add( type, item.control.jsname );
-            } else {
-                tree.activeItem = tree.activeNode.add( type, item.control.jsname );
             }
             tree.activeItem.model = item;
             tree.selectItem(tree.activeItem);
@@ -364,9 +421,28 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
         removeItem:function(item) {
             if (item && item.parent) item.parent.remove(item);
         },
-        swapItems:function(direction) { // "Up" || "Down" Вызывается нажатием кнопок Up, Down 
+        swapItems:function(parent, index1, index2) { // parent - контейнер, index1, index2 - меняемые местами элементы
             // функция будет производит перемещение активного элемента
-            // ...
+            var tree = this.control,
+                model = parent.items[index1].model;
+            parent.items[index1].model = parent.items[index2].model;
+            parent.items[index1].text = parent.items[index2].text;
+            parent.items[index2].model = model;
+            parent.items[index2].text = model.control.jsname;
+        },
+        copyBranch:function(src /* node */, dest /* node */) {
+            var tree = this.control,
+                item = null;
+            dest.text = src.text;
+            dest.model = src.model;
+            for (var i=0, max = src.items.length; i<max; i++) {
+                if (src.items[i].type == "item") {
+                    item = dest.add("item", src.items[i].text);
+                    item.model = src.items[i].model;
+                } else {
+                    this.copyBranch(src.items[i], dest.add("node", src.items[i].text));
+                }
+            }
         },
         control:{
             activeItem:null, // Соответствует doc.activeControl
@@ -403,22 +479,53 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
     });
     // Группа с кнопками управления контролами (под деревом элементов)
     var g = cont.add("group { margins:[1,4,1,4], spacing:5, alignment:['fill','bottom'] }" ),
-           st = "button", sz = [24,24],           
-           bt = g.add("iconbutton", undefined, img.btDel, {style:st, toggle:false});
+        st = "button", sz = [24,24],
+        hlpStr = localize (LStr.uiApp[49]),
+    bt = g.add("iconbutton", undefined, img.btDel, {style:st, toggle:false});
     bt.label = "Del"; bt.alignment = ['left','bottom']; bt.helpTip = LStr.uiApp[2]; bt.preferredSize = sz;
+    // группа для кнопки Reload:
+    app.grpReload = g.add("group { alignment:['left','center'], bt:IconButton { label:'Reload', helpTip:'"+hlpStr+"' } }");
+    app.grpReload.bt.preferredSize = sz; app.grpReload.bt.image = img.btReloadGrn;
+    // кнопки Up/Down
     bt = g.add("iconbutton", undefined, img.btUp, {style:st, toggle:false});
     bt.label = "Up"; bt.alignment = ['right','bottom']; bt.helpTip = LStr.uiApp[3]; bt.preferredSize = sz;
     bt = g.add("iconbutton", undefined, img.btDown, {style:st, toggle:false});
     bt.label = "Down"; bt.alignment = ['right','bottom']; bt.helpTip = LStr.uiApp[4]; bt.preferredSize = sz;
+    
+    // Установка красной иконки для кнопки
+    app.grpReload.setRed = function() {
+        this.remove(0);
+        app.getViewByID("Controls").control.enabled = false;
+        app.getViewByID("Tab").control.enabled = false;
+        app.getViewByID("Caption").control.enabled = false;
+        var bt = this.add("iconbutton", undefined, img.btReloadRed, {style:st, toggle:false});
+        bt.label = "Reload"; bt.helpTip = hlpStr; bt.preferredSize = sz;
+        this.layout.layout(true);
+    };
+    // Установка синей иконки для кнопки
+    app.grpReload.setGreen = function() { 
+        this.remove(0);
+        app.getViewByID("Controls").control.enabled = true;
+        app.getViewByID("Tab").control.enabled = true;
+        app.getViewByID("Caption").control.enabled = true;
+        var bt = this.add("iconbutton", undefined, img.btReloadGrn, {style:st, toggle:false});
+        bt.label = "Reload"; bt.helpTip = hlpStr; bt.preferredSize = sz;
+        this.layout.layout(true);
+    };
     // Обработка кликов по кнопкам:
     g.addEventListener ("click", function (e) {
-        var doc = app.activeDocument;
-        if (doc && e.target.type == 'iconbutton') {
-            if (e.target.label == 'Del' && doc.activeControl && doc.activeControl.view.item != "Window") return doc.removeItem(doc.activeControl);
-            if (e.target.label == 'Up') return doc.swapItem(doc.activeControl, 'Up');       // пока не реализовано
-            if (e.target.label == 'Down') return doc.swapItem(doc.activeControl, 'Down');   // пока не реализовано
+        tree.control.active = true;
+        if (!app.activeDocument || e.target.type != 'iconbutton') return;
+        var doc = app.activeDocument,
+            index = tree.control.selection.index;
+        switch (e.target.label) {
+            case 'Del'   : if (doc.activeControl && doc.activeControl.view.item != "Window") { doc.removeItem(doc.activeControl); } break;
+            case 'Up'    : doc.swapItems(index, index-1);  break;
+            case 'Down'  : doc.swapItems(index, index+1);  break;
+            case 'Reload': doc.reload();                   break;
         }
     });
+
     tree.control.addEventListener ("click", function (e) { // onChange для дерева
         // При клике по дереву переустнавливаются все активные указатели как в самом дереве (this.activeNode & this.activeItem), так и в документе
         // (doc.activeContainer & doc.activeControl), что также приведёт к автоматической переустановке указателя приложения app.activeControl и
@@ -788,11 +895,41 @@ BuilderApplication.prototype.about = function() {
        var msg = { 
                     ru: tittle +
                         "Конструктор диалоговых окон для Adobe ESTK СS...\r\r" +
+                        "Клавиатурные сокращения:\r" +
+                        "------------------------\r"+
+                        "Ctr + N: Новый документ\r" +
+                        "Ctr + O: Открыть документ\r" +
+                        "Ctr + W: Закрыть документ\r" +
+                        "Ctr + S: Сохранить документ\r" +
+                        "Ctr + K: Открыть настройки\r" +
+                        "Ctr + X: Вырезать\r" +
+                        "Ctr + C: Скопировать\r" +
+                        "Ctr + V: Вставить\r" +
+                        "Ctr + R: Выполнить\r" +
+                        "Ctr + D: Показать код диалога\r" +
+                        "Ctr + H: О программе...\r" +
+                        "Ctr + Shift + S: Сохранить как...\r" +
+                        "Ctr + Shift + E: Открыть jsx-файл в редакторе...\r\r" +
                         "Лицензионное соглашение Creative Commons:\rCC Attribution Non-Commercial ShareAlike (CC BY-NC-SA).\r\r" + 
                         lic.ru + "\rhttp://creativecommons.org/licenses/by-nc-sa/3.0/)" +
                         "\r\rБиблиотеки:\r" + libs + "© Slava Boyko aka SlavaBuck | 2013-2014 | slava.boyko@hotmail.com",
                     en: tittle +
-                        "Designer of dialog boxes for Adobe ESTK CS...\r\r" + 
+                        "Designer of dialog boxes for Adobe ESTK CS...\r\r" +
+                        "Keyboard shortcuts:\r" +
+                        "------------------------\r"+
+                        "Ctr + N: New document\r" +
+                        "Ctr + O: Open document\r" +
+                        "Ctr + W: Close document\r" +
+                        "Ctr + S: Save document\r" +
+                        "Ctr + K: Open settings\r" +
+                        "Ctr + X: Cut\r" +
+                        "Ctr + C: Copy\r" +
+                        "Ctr + V: Paste\r" +
+                        "Ctr + R: Eval dialog\r" +
+                        "Ctr + D: Show code of dialog\r" +
+                        "Ctr + H: About...\r" +
+                        "Ctr + Shift + S: Save as...\r" +
+                        "Ctr + Shift + E: Open jsx-file in editor...\r\r" +
                         "Creative Commons License agriment:\rCC Attribution Non-Commercial ShareAlike (CC BY-NC-SA).\r\r" + 
                         lic.en + "\rhttp://creativecommons.org/licenses/by-nc-sa/3.0/" +
                         "\r\rLibraries used:\r" + libs + "© Slava Boyko aka SlavaBuck | 2013-2014 | slava.boyko@hotmail.com"
@@ -833,8 +970,8 @@ BuilderApplication.prototype.about = function() {
 // ========================================================= 
 BuilderApplication.prototype.CreateDocument = function() {
     var app = this,
-          uiControls = app.uiControls,
-          doc = new BuilderDocument(app);
+        uiControls = app.uiControls,
+        doc = new BuilderDocument(app);
     // doc.activeContainer меняется только по клику в документе или в дереве:
     doc.window.addEventListener ('click', function(e) {
         doc.activeControl = doc.findController(e.target).model;
@@ -865,7 +1002,12 @@ BuilderApplication.prototype.CreateDocument = function() {
         }
         return newVal;
     });
-    
+    // Меняем цвет кнопки в поле treeView:
+    doc.watch ('_reload', function(key, oldVal, newVal) {
+        if (newVal != oldVal) newVal ? app.grpReload.setRed() : app.grpReload.setGreen();
+        return newVal;
+    });
+
     return doc;
 };
 
@@ -873,7 +1015,7 @@ BuilderApplication.prototype.addDocument = function() {
     // Вызываем перекрытый родительский метод:
     var doc = BuilderApplication.prototype.__super__.addDocument.call(this);
     // Добавляем родительское окно в пустой документ:
-    if (doc) doc.creatDialog(doc.app.options.dialogtype + " { preferredSize:[80, 20], alignment:['left','top'] }");
+    if (doc) doc.creatDialog();
     doc.modified = false;
     return doc;
 };
@@ -957,7 +1099,6 @@ BuilderApplication.prototype._updateFontField = function(newVal) {
 };
 // Функции выделения doc.activeControl:
 BuilderApplication.prototype.unmarkControl = function(model) {
-    try {
     var control = model.view.control,
         gfx = control.graphics,
         cBrush =  toRGBA(model.control.properties.graphics.backgroundColor),
@@ -967,11 +1108,9 @@ BuilderApplication.prototype.unmarkControl = function(model) {
     if (type == 'progressbar' || type == 'image') { control.enabled = !control.enabled; control.enabled = !control.enabled; return; }
     control._marked_ = false;
     control.notify ('onDraw');
-    } catch(e) { trace(e) }
 };
 
 BuilderApplication.prototype.markControl = function(model) {
-    try {
     var control = model.view.control,
         gfx = control.graphics,
         cBrush = this.options.highlightColor,
@@ -981,7 +1120,6 @@ BuilderApplication.prototype.markControl = function(model) {
     if (type == 'progressbar' || type == 'image') { cont.enabled = !control.enabled; control.enabled = !control.enabled; return; }
     control._marked_ = true;
     control.notify ('onDraw');
-    } catch(e) { trace(e) }
 };
 
 BuilderApplication.prototype.evalDialog = function(rc) {
@@ -1016,7 +1154,9 @@ BuilderApplication.prototype.alert = function(msg, caption) {
 
 BuilderApplication.prototype.showModelCode = function(model) {
     if(!model) return;
-    log(model.control.toSource() +"\r----\r" + model.view.control.toSource());
+    //log(model.control.toSource() +"\r----\r" + model.view.control.toSource());
+    //log(model.toSourceString()+"\r"+model.getCode());
+    //log(model.getSourceString());
 };
 
 BuilderApplication.prototype.showCode = function(doc) {
@@ -1063,4 +1203,88 @@ BuilderApplication.prototype.closeDocument = function() {
         doc = app.activeDocument;
     if (doc.modified && confirm(localize(app.LStr.uiApp[48]), true, app.name)) doc.save();
     return BuilderApplication.prototype.__super__.closeDocument.call(this);
-}
+};
+
+// Функции копирования/вставки
+BuilderApplication.prototype.cut = function(model) {
+    var app = this,
+        model = app.copy(model);
+    if (model) {
+        if (model.view.item == "Window") app.activeDocument.creatDialog(); else app.activeDocument.removeItem(model);
+    }
+};
+
+BuilderApplication.prototype.copy = function(model) {
+    var app = this,
+        uiApp = app.LStr.uiApp;
+    if (!model) {
+        var model = app.activeControl ? (app.activeControl.hasOwnProperty("document") ? null : app.activeControl) : null;
+        if (!model) return null;
+    };
+    app.clipBoard.set(model);
+    app.btPaste.helpTip = localize(uiApp[52]) + "\r" + app.clipBoard.rcControl;
+    return model;
+};
+
+// Вставка диалога происходит в отдельную панель если диалог назначения уже содержит элементы, либо происходит
+// полное дублирование скопированного диалога. Обычные элементы (включая контейнеры) вставляются в активный
+// контейнер диалога назначения.
+BuilderApplication.prototype.paste = function() {
+    if (this.clipBoard.isEmpty()) return;
+    var app = this,
+        doc = app.activeDocument,
+        clipBoard = app.clipBoard;
+    if (!doc) return;
+    
+    var model = clipBoard.model,
+        rcControl = normalizeRcString(clipBoard.rcControl),
+        evalcode = clipBoard.evalcode,
+        jsname = model.control.jsname;
+    
+    if (model.view.item == "Window") {
+        // Целое окно копируем либо в группу (если окно назначения пустое) либо в панель:
+        rcControl = (doc.window.children[0].children.length == 0 ? "group { orientation:'column', " : "panel {") + 
+                    rcControl.slice(rcControl.indexOf("{")+1);
+    }
+    app.unmarkControl(doc.activeControl);
+
+    //генерация нового валидного jsname в контексте этого документа:
+    var item = model.view.item;
+    if (!doc._counters_.hasOwnProperty(item)) doc._counters_[item] = 0;      // Инициализация счётчика соответствующих элементов:
+    var newjsname = app.uiControls[item].jsname + (doc._counters_[item]); // Генерация js-имени элемента (и приращение счётчика)    
+    if (!app.uiControls.hasOwnProperty(item)) doc._counters_[item] += 1;
+    
+    var control = doc.activeContainer[newjsname] = doc.activeContainer.add(rcControl);
+    doc.window.layout.layout(true);
+    
+    if (evalcode) {
+        // Трансформируем ссылки старого окна в контекст нового окна
+        var pattern = evalcode.match(new RegExp("^\\s?var.+= (.+)\\."+jsname, "m")),
+            varstr = "";
+        if (pattern) pattern = pattern[1]; else {
+            pattern = "control";
+            varstr = "var "+jsname+" = __control__."+jsname+"\r";
+        }
+        var replaceExp = new RegExp(" = "+pattern, "mg")
+        evalcode = evalcode.replace(replaceExp," = __control__");
+        evalcode = "var __control__ = control.parent;\r__control__." + 
+                   jsname + " = __control__.children[__control__.children.length-1];\r" + varstr + evalcode;
+    }
+    doc.appendItems(newjsname, control, rcControl, evalcode);
+
+    // Выделяем вставленный контрол (если нужно - переключаем фркус)
+    var model = doc.findController(control).model;
+    app.treeView.selectItem(doc.activeControl = model);
+    doc.activeContainer = control.parent;
+    
+    if (SUI.isContainer(model.view.type)) {
+        if (app.options.autofocus) {
+            app.treeView.control.activeNode = app.treeView.control.activeItem;
+            doc.activeContainer = model.view.control;
+        } else {
+            app.treeView.control.activeNode = app.treeView.control.activeItem.parent;
+        }
+    };
+    
+    doc.modified = true;
+};

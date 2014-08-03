@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  08customControllers.jsx
  *  DESCRIPTION: custom Controllers: Класс документа (представляет редактируемый диалог)
- *  @@@BUILDINFO@@@ 08customControllers.jsx 1.51 Thu Jul 03 2014 22:25:16 GMT+0300
+ *  @@@BUILDINFO@@@ 08customControllers.jsx 1.80 Sat Aug 02 2014 21:23:33 GMT+0300
  * 
  * NOTICE:
  *         Данные функции заменяют стандартный механизм _updateView из библиотеки MVC 
@@ -149,5 +149,5 @@ function _updViewAlign(newVal, oldVal, key) {
             app._getField('bounds2').control.text = model_pro.bounds[2] = control.bounds[2];
             app._getField('bounds3').control.text = model_pro.bounds[3] = control.bounds[3];
         } // if (prop == 'margins' || prop == 'spacing')
-    } catch(e) { log("_updViewAlign:", e.description, prop + '['+key+'] =', newVal, ", model_obj =", model_obj+ ", newVal =", newVal ) }
+    } catch(e) { trace(e, "_updViewAlign:", prop + '['+key+'] =', newVal, ", model_obj =", model_obj+ ", newVal =", newVal ) }
 };

@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  07uiView.jsx
  *  DESCRIPTION: uiView: Класс представления для класса ui-модели (представляет элемент управления в диалоге)
- *  @@@BUILDINFO@@@ 07uiView.jsx 1.65 Tue Jul 15 2014 16:13:15 GMT+0300
+ *  @@@BUILDINFO@@@ 07uiView.jsx 1.80 Sat Aug 02 2014 21:23:53 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -36,8 +36,9 @@ uiView.prototype.createControl = function (parent, rcView) {
 
 // ===========================
 // Инициализация обработчиков элемента управления (выполняется после его полной инициализации в диалоге)
-uiView.prototype.registerHandlers = function(control, rcView) {
+uiView.prototype.registerHandlers = function(control, rcView, jsname) {
     this.view = rcView;
+    if (jsname) this.jsname = jsname;
     if (this.control !== control) this.control = control;
     // Общие операции для нового и/или ранее добавленного в диалог элемента:
     var app = this.doc.app,

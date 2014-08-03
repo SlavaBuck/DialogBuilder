@@ -1,7 +1,7 @@
 ﻿/* *************************************************************************
  *  00main.jsx
  *  DESCRIPTION: Файл сборки приложения DialogBuilder
- *  @@@BUILDINFO@@@ 00main.jsx 1.65 Tue Jul 15 2014 16:34:05 GMT+0300
+ *  @@@BUILDINFO@@@ 00main.jsx 1.80 Sat Aug 02 2014 21:23:03 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -11,8 +11,8 @@
 //#targetengine "session"
 //#targetengine "DialogBuilder"
 
-// startmode - если true(1) - Главное окно имеет тип palette, в противном случае dialog
-(function main(startmode) {
+// debugmode - если true (отладочный запуск) - Главное окно имеет тип palette, в противном случае dialog
+(function main(debugmode) {
     #include "01globals.jsx"
     #include "02application.jsx"
     #include "03document.jsx"
@@ -22,7 +22,8 @@
     #include "07uiView.jsx"
     #include "08customControllers.jsx"
     
-    var app = new BuilderApplication((startmode ? "dialog" : "palette" ));
+    trace.echo = debugmode; // Вывод отладочной информации в консль только для отладочных запусков
+    var app = new BuilderApplication((debugmode ? "palette" : "dialog" ));
     app.run();
     
-}((typeof startmode == 'undefined' ? 1 : startmode)));
+}((typeof debugmode == 'undefined' ? 0 : debugmode)));

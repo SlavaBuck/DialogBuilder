@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  03document.jsx
  *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
- *  @@@BUILDINFO@@@ 03document.jsx 1.65 Tue Jul 15 2014 16:12:05 GMT+0300
+ *  @@@BUILDINFO@@@ 03document.jsx 1.80 Sat Aug 02 2014 21:24:24 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -16,23 +16,18 @@ function BuilderDocument(appRef) {
     this.modified = false;              // сигнализирует о несохранённых изминениях
     this.activeControl = null;          // указатель на активную uiModel
     this.activeContainer = this.window; // указатель на текущий контейнер для добавления моделей (ScriptUI-объект);
+    this._reload = false;                // устанавливается в doc.swapItems() - сигнализирует о необходимости перезагрузки документа!
 };
 
 // Наследуемся напрямую от MVCDocument
 inherit (BuilderDocument, MVCDocument);
                                      
 // Функции сохранения и открытия
-//~ // TODO: Оптимизировать для быстрого закрытия окна документа:
-//~ BuilderDocument.prototype.close = function() {
-//~     this.window.visible = false;
-//~     this.app.documentsView.control.layout.layout(true);
-//~     return true;
-//~ }
-
-BuilderDocument.prototype.save = function() {
+BuilderDocument.prototype.save = function(file) {
     var doc = this,
         app = doc.app,
         LStr = app.LStr;
+    if (file) doc.file = file;
     if (!doc.file || !doc.file.exists ) {
        var msg = localize(LStr.uiApp[24]) + (doc.name[0] == '*' ? doc.name.slice(1) : doc.name);
        doc.file = File.saveDialog(msg, app.filters); 
@@ -68,15 +63,15 @@ BuilderDocument.prototype.saveAs = function() {
         if (!doc.file) return false;
         if (doc.file.exists) {
             if (confirm(localize(LStr.uiErr[1]), true, doc.app.name) ) { 
-              return doc.save(); //doc.file = null; 
+                return doc.save(); //doc.file = null;
             } else {
-              doc.file = null; return false;
+                doc.file = null; return false;
             }
         } else {
             doc.file.open("w"); doc.file.write("test"); doc.file.close();
         }
         return doc.save();
-    } catch(e) { log(e.description); return false; }
+    } catch(e) { trace(e); return false; }
 };
 
 // Основные методы документа:
@@ -89,7 +84,7 @@ BuilderDocument.prototype.addItem = function (rcString) {
         CPROPS = COLORSTYLES.CS,
         dlgs = "dialog,palette,window";
     // Добываем type добавляемого ScriptUI объекта в нижнем регистре!
-    var type = (rcString.indexOf("{") != -1 ? rcString.substr(0, rcString.indexOf("{")) : rcString).replace(/\s/g,"").toLowerCase();
+    var type = rcString.match(/^\w+/)[0].toLowerCase();
     var item = app.hashControls[type];
     
     // танцы с добавлением tabbedpanel и tab:
@@ -167,34 +162,17 @@ BuilderDocument.prototype.removeItem = function(model) {
 };
 
 BuilderDocument.prototype.getSourceString = function() {
-    var tree = this.app.treeView.control,
-           dlg = tree.items[0].model,
-           str = '', code = [];
-    str = (function _buildString(str, tr, node, code) {
-        var str = node.model.toSourceString(tr).slice(0, -1)+", \r\t"+tr;
-        var str1 = node.model.getCode();
-        if (str1) code.push(str1);
-        for (var i=0; i<node.items.length; i++) {
-            if (node.items[i].type == 'node') {
-                str += _buildString(str, tr+"\t", node.items[i], code).slice(0, -2) + "}, \r"+tr+"\t"; 
-            } else {
-                str += node.items[i].model.toSourceString(tr)+", \r"+tr+"\t";
-                str1 = node.items[i].model.getCode();
-                if (str1) code.push(str1);
-            }
-        }
-        return str.slice(0, -4) + "}\r";
-    }('', '', tree.items[0], code));
-    str = "var "+ tree.items[0].model.control.jsname + " = new Window(\""+ str.slice(str.indexOf(":")+1, -1) +"\");";
-    str = str.replace(/{,/g,"{").replace(/\r}, /g,"},").replace(/, }/g,",}").replace(/,}/g,"}").replace(/\r/g," \\\r");
-    str = str.replace(/:Separator {}/g, ":Panel { isSeparator:true }"); // временное решение для сепараторов
-    code.splice(0, 1);
-    // fix Замена имени окна на правильное в нижней скриптовой строке "<window>.show()"
-    // TODO: перенести в обработчик смены jsName:
-    var initcode = dlg.code.initcode.replace(/\w+\.show\(/, dlg.control.jsname + ".show(");
-    str += (dlg.code.initgfx ?  "\r" + dlg.code.initgfx : "") + "\r" + code.join("\r") +"\r" + dlg.code.initresizing + initcode;
-    //str += "\r"+ tree.items[0].model.control.jsname + ".show();";
-    return str;
+    var code = [],
+        winModel = this.app.treeView.control.items[0].model,
+        winName = winModel.control.jsname,
+        str = winModel.getSourceString(code);
+    // Добавляем косые вконце строк
+    str = "var " + winName + " = new Window (\"" + str.replace(/\r/mg, " \\\r") + "\");\r";
+    // Специальная обработка для Window
+    if (winModel.properties.properties.resizeable) code.push(winName + ".onResizing = " + winName+ ".onResize = function() { this.layout.resize () };");
+    code.push(winName + ".show();");
+    
+    return str + code.join("\r");
 };
 
 // Обеспечивается корректная очистка коллекций моделей в родительском приложении:
@@ -204,16 +182,88 @@ BuilderDocument.prototype.removeModel = function(model) {
     return this.__super__.removeModel.call(this, model);
 };
 
-BuilderDocument.prototype.swapItem = function(model, direct) {
-    // direct = Up || Down
+BuilderDocument.prototype.swapItems = function(index1, index2) {
+    // Обмен местами элементов index1(выделенный индекс), index2(куда ставить)
+    var doc = this,
+        app = this.app,
+        tree = app.treeView.control,
+        parent = tree.activeItem.parent;
+        
+    if (index2 < 0 || index2 == parent.items.length) { tree.active = true; return; }
+    
+    // Перемещение по дереву
+    if (parent.items[index1].type == "item") { // Первый элемент "item":
+        if (parent.items[index2].type == "item") {
+            // Второй элемент "item":
+            app.treeView.swapItems(parent, index1, index2);
+        } else {
+            // Второй элемент "node":
+            if (index2 < index1) { // move Up
+                var item = parent.add("item", parent.items[index1].text, index2);
+                item.model = parent.items[index1+1].model;
+                item.expanded = parent.items[index1+1].expanded;
+                parent.remove(parent.items[index1+1]);
+            } else {               // move Down
+                var item = parent.add("item", parent.items[index1].text, index2+1);
+                item.model = parent.items[index1].model;
+                item.expanded = parent.items[index1].expanded;
+                parent.remove(parent.items[index1]);
+            }
+        } 
+    } else { // Первый элемент "node":
+        if (parent.items[index2].type == "item") {
+            // Второй элемент "item":
+            if (index1 < 0 || index1 == parent.items.length) { tree.active = true; return; }
+            tree.activeItem = parent.items[index2];
+            this.swapItems(index2, index1);
+            tree.selectItem(tree.activeItem = parent.items[index2]);
+            return;
+        } else {
+            // Оба элемента "node":
+            if (index2 < index1) {  // move Up
+                var item = parent.add("node", parent.items[index2].text, index1+1);
+                app.treeView.copyBranch(parent.items[index2], item);
+                parent.remove(parent.items[index2]);
+                parent.items[index1].expanded = parent.items[index2].expanded = true;
+            } else {                // move Down
+                if (index1 < 0 || index1 == parent.items.length) { tree.active = true; return; }
+                tree.activeItem = parent.items[index2];
+                this.swapItems(index2, index1);
+                tree.selectItem(tree.activeItem = parent.items[index2]);
+                return;
+            }
+        }
+    }
+    tree.selectItem(tree.activeItem = parent.items[index2]);
+    
+    // Перемещаем элементы в контейнере:
+    var control1 = parent.items[index1].model.view.control,
+        control2 = parent.items[index2].model.view.control,
+        dim = ~~(control1.parent.orientation == "column"),  // ориентация
+        sp = control1.parent.spacing;  // реальный отступ межу элементами
+    if (index1 < index2) {
+        control1.location[dim] = control2.location[dim];
+        control2.location[dim] += control1.size[dim] + sp;
+    } else {
+        control2.location[dim] = control1.location[dim];
+        control1.location[dim] += control2.size[dim] + sp;
+    }
+
+    doc._reload = true; // поменяем цвет кнопки на красный
+    if (!doc.modified) doc.modified = true;
 };
 
 // Установка родительского диалога в документе
 BuilderDocument.prototype.creatDialog = function(rcWin) {
     var doc = this,
-        model = null;
-    if (doc.dialogControl) doc.removeItem(doc.dialogControl);
-    if (!(model = doc.addItem(rcWin))) return null;
+        model = null,
+        tree = doc.app.treeView.control;
+    tree.activeNode = tree.activeItem = null;
+    if (doc.dialogControl) {
+        tree.activeItem = tree.items[0];
+        doc.removeItem(doc.dialogControl);
+    }
+    if (!(model = doc.addItem((rcWin)||doc.app.options.dialogtype+" { preferredSize:[80, 20], alignment:['left','top'] }" ))) return null;
     doc.activeContainer = model.view.control;
     doc.activeContainer.alignment = ['left','top'];
     // Инициализируем цвета:
@@ -229,7 +279,8 @@ BuilderDocument.prototype.creatDialog = function(rcWin) {
     app.markControl(model);
     return doc.dialogControl = model;
 };
-    
+
+// Загрузка документа (выполняется после его создания):
 BuilderDocument.prototype.load = function() {
     // документ был создан только-что с помощью addDocument() (см. MVC.DOM: MVCApplication.loadDocument())
     var doc = this,
@@ -237,85 +288,146 @@ BuilderDocument.prototype.load = function() {
         file = doc.file,
         body = "";
     file.open("r"); body = file.read(); file.close();
-    // Вычленяем ресурсную строку, представляющую диалог целиком
     
+    // Вычленяем ресурсную строку, представляющую диалог целиком
     body = body.replace(/new Window\s[(]/, "new Window(");
     var rcWin = body.slice(body.indexOf("new Window(")+12, body.indexOf('");')).replace(/\\/g, "");
-    
+
     // переустанавливаем родительское окно
     if (!doc.creatDialog(rcWin)) {
         // "Неудачная попытка открытия документа"
         app.alert(localize(app.LStr.uiErr[7])+"\r\r"+rcWin, app.name +" v"+app.version, false);
-        doc.modified = false; // Чтобы избежать тупого запроса на сохранение
-        return false;
+        return doc.modified = false; // Чтобы избежать тупого запроса на сохранение
     };
-    app.enabledTabs = false; // Отключаем обновление панелей свойств
-    app.unmarkControl(doc.dialogControl);
-    var control = doc.dialogControl.view.control;
     
-    var dlgName = body.slice(body.indexOf("var")+3, body.indexOf("new Window(")).replace(/[\s|=]/g, "");
-    var evalcode = "var " + dlgName + " = control;\r" + body.slice(body.indexOf('");')+3);
+    app.unmarkControl(doc.dialogControl);
+    var control = doc.dialogControl.view.control,   // Контейнер окна/диалога (со всеми элементами)
+        dlgName = body.match(/var\s(\S+)\s*=\s*new Window\(/)[1],
+        evalcode = "var " + dlgName + " = control;\r" + body.slice(body.indexOf('");')+3);
+    // убираем строки с инициализацией и открытием окна:
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".show"));
     evalcode = evalcode.slice(0, evalcode.indexOf(dlgName+".onResizing"));
-    // Выполняется код под диалогом
-    try {
-        eval(evalcode);
-    } catch(e) { trace(e) }
-    doc.window.layout.layout(true);
-    control.layout.resize(); // Не помогает ((
+
+    // Убиваем всё лишнее из ресурсной строки
+    rcWin = normalizeRcString(rcWin);
+
+    //Формируем модели и представления для всех в control
+    doc.appendItems(dlgName, control, rcWin, evalcode);
     
-    // Нужно из ресурсной строки вида stText25:StaticText {text:'stText25'},
-    // убрать имя конструктора StaticText, а также убить все предшествующие табуляции и пробелы,
-    // чтобы получить json-нотацию: stText25:{text:'stText25'}
-    var rcObj = rcWin.replace(/^\s+(\w+\d?:)(\w+\s?[{])/mg,"$1{");
-    // Теперь нужно прибить все пустые строки, и строки, содержащие только закрывающие скобки (с табуляцией и пробелами)
-    rcObj = rcObj.replace(/^\s+[}]+.+[\r|\n]/mg,"").replace(/^\s+/mg,"");
-    // Получаем массив строк, каждая строка должна определять единственный компонент диалога
-    var arrObj = rcObj.split("\n");
-    // Так как первая строка (содержащая "dialog..." слегка не шаблонная - подкоректируем 
-    // и дабавим в неё имя самого окна ("<имя>:dialog...):
-    arrObj[0] = dlgName+":"+arrObj[0].slice(arrObj[0].indexOf("{"));
-    // Очень часто встречается практика переноса свойств окна на новую строку, это протеворечит
-    // шаблону но попробуем обработать этот единственный допустимый не шаблонный случай:
-    if (app.uiProperties.hasOwnProperty(arrObj[1].split(":")[0])) {
-        arrObj[0] += arrObj[1];
-        arrObj.splice(1, 1);
-    }
-    //var tm = new _timer(); tm.start();
-    
-    // Создаём модели для всех элементов диалога
-    var counts = 1; // Начинаем с 1, потому как с первой итерации пропускаем ресурсную запись самого окна
-    (function _creatItems(doc, control) {
-        each(control.children, function(child) {
-            var type = (child.isSeparator ? 'separator' : child.type),
-                item = doc.app.hashControls[type],
-                view = new uiView(doc, item, type),
-                prop_str = arrObj[counts++];
-            // Создание модели
-            var model = new uiModel(view.registerHandlers(child, prop_str));
-            model.updateProperties(prop_str);
-            model.updateGraphics(evalcode);
-            
-            // Временное решение (обновление размера пока работает только для текстов):
-            if (type == 'statictext' && !model.properties.characters) {
-                var model_sz = model.control.properties.size,
-                    gfx_sz = model.view.control.graphics.measureString(model.control.properties.text);
-                if (model_sz[0] != gfx_sz[0]) model_sz[0] = gfx_sz[0];
-                if (model_sz[1] != gfx_sz[1]) model_sz[1] = gfx_sz[1];
-            }
-            if (SUI.isContainer(type)) _creatItems(doc, child);
-        })
-    }(doc, control));
-    // Обновление для главного окна:
-    doc.dialogControl.updateProperties(arrObj[0]);
-    doc.dialogControl.updateGraphics(evalcode);
-    //tm.stop(); log("Время разбора:", tm, " Объектов:", doc.models.length);
-    
-    app.treeView.refreshItems(doc);
-    app.enabledTabs = true; // Включаем обновление панелей свойств
-    doc.activeControl = doc.dialogControl;
-    app.treeView.control.items[0].expanded = true;
-    
+    app.treeView.selectItem(doc.activeControl = doc.dialogControl);
     doc.modified = false;
     return true;
 };
+
+// doc - рабочий документ (куда вставляются элементы)
+// control - ссылка на ScriptUI элемент (для которого будут строиться модели и представления)
+// rcControl - полная ресурсная строка добавляемого элемента (включая jsname:<Item> {...})
+// evalcode - код выполняемый для элемента
+BuilderDocument.prototype.appendItems = function(jsname, control, rcControl, evalcode) {
+    try {
+    var doc = this,
+        app = doc.app,
+        counts = 0,
+        arrObj = rcControl.split("\n");
+    // Очень часто встречается практика переноса свойств окна на новую строку, это протеворечит
+    // шаблону но попробуем обработать этот единственный допустимый не шаблонный случай:
+    if (arrObj.length > 1 && app.uiProperties.hasOwnProperty(arrObj[1].split(":")[0])) {
+        arrObj[0] += arrObj[1]; arrObj.splice(1, 1);
+    }
+    // Так как первая строка (содержащая "dialog..." слегка не шаблонная - подкоректируем 
+    // и дабавим в неё имя самого окна ("<имя>:dialog...):
+    arrObj[0] = jsname+":"+arrObj[0];
+    
+    try { eval(evalcode); } catch(e) { trace(e,"eval dialog code") }    // Выполняется код инициализации элемента
+    doc.window.layout.layout(true);
+    app.enabledTabs = false; // Отключаем обновление панелей свойств
+    
+    // Создаём модели для всех элементов control
+    (function _creatItems(doc, control, evalcode) {
+        var type = (control.isSeparator ? 'separator' : control.type),
+            item = doc.app.hashControls[type],
+            tree = doc.app.treeView.control,
+            prop_str = arrObj[counts++],
+            jsname = prop_str.slice(0, prop_str.indexOf(":")),
+            model = null,
+            view = null;
+        // Создание модели
+        if (control === doc.dialogControl.view.control) {
+            model = doc.dialogControl;
+            tree.activeItem.text = model.control.jsname = jsname;
+            tree.activeNode = tree;
+        } else {
+            view = new uiView(doc, item, type),
+            model = new uiModel(view.registerHandlers(control, prop_str, jsname));
+        }
+        model.updateProperties(prop_str);
+        model.updateGraphics(evalcode);
+        
+        // Временное решение (обновление размера пока работает только для текстов):
+        if (type == 'statictext' && !model.properties.characters) {
+            var model_sz = model.control.properties.size,
+                gfx_sz = model.view.control.graphics.measureString(model.control.properties.text);
+            if (model_sz[0] != gfx_sz[0]) model_sz[0] = gfx_sz[0];
+            if (model_sz[1] != gfx_sz[1]) model_sz[1] = gfx_sz[1];
+        }
+        if (SUI.isContainer(type) && control.children.length) {
+            var currentNode = tree.activeNode;
+            tree.activeNode = tree.activeItem;
+            each(control.children, function(child) { _creatItems(doc, child, evalcode); });
+            tree.activeNode = currentNode;
+        }
+    }(doc, control, evalcode));
+
+    app.enabledTabs = true; // Включаем обновление панелей свойств
+    } catch(e) { trace(e, counts) }
+}
+
+// Перезагрузка документа (используется временный файл)
+// Если передан код диалога rcWin - перезагрузка происходит на основании кода (используется в app.paste())
+BuilderDocument.prototype.reload = function(rcWin) {
+    try {
+    var doc = this,
+        app = this.app,
+        tree = app.treeView.control,
+        activeControl = tree.activeItem.model.getVarString(), // Запоминаем выделенный элемент
+        file = doc.file,
+        name = doc.name.replace(/\*/, ""),
+        modified = doc.modified,
+        tmpfile = new File(Folder.temp +"/_tmp_" + $.hiresTimer + ".jsx");  // получаем по возможности случайное имя файла
+    doc.file = tmpfile;
+    doc.file.open("w");  // теперь tmpfile.exists = true; - нужно для doc.save();
+    if (rcWin) {
+        doc.file.write(rcWin);
+        doc.file.close();
+    } else {
+        doc.file.close();
+        doc.save();
+    }
+    doc.load();
+    doc.file = file;
+    doc.name = name;
+    app.window.text = app.version + " " + app.name + " - " +doc.name;
+    tmpfile.remove();
+    doc.modified = modified;
+    // поменяем цвет кнопки app.btReload на зелёный
+    doc._reload = false;
+
+    // Восстанавливаем выделение
+    var arrNames = activeControl.replace(/var = /,"").split("."), // arrNames[0] == <имя окна>
+        control = tree.items[0].model.view.control;
+    for (var i=1; i<arrNames.length; i++) control = control[arrNames[i]];
+    var model = doc.findController(control).model;
+
+    doc.activeControl = model;
+    doc.activeContainer = SUI.isContainer(model.view.control) ? model.view.control : model.view.control.parent;
+    app.treeView.selectItem(doc.activeControl);
+    
+    } catch(e) { trace(e) }
+};
+
+function normalizeRcString(str) {
+    // Нужно из ресурсной строки вида stText25:StaticText {text:'stText25'},
+    // убить все предшествующие табуляции и пробелы а также прибить все пустые строки
+    // и строки, содержащие только закрывающие скобки "}"
+    return str.replace(/^\s+/mg,"").replace(/^\s*?[}]+.*[\r|\n]?/mg,"");
+}

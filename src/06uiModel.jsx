@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  06uiModel.jsx
  *  DESCRIPTION: uiModel: Класс ui-модели (представляет данные элемента управления в диалоге)
- *  @@@BUILDINFO@@@ 06uiModel.jsx 1.65 Tue Jul 15 2014 16:12:23 GMT+0300
+ *  @@@BUILDINFO@@@ 06uiModel.jsx 1.80 Sat Aug 02 2014 21:24:10 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -96,10 +96,11 @@ uiModel.prototype._updCodeProperty = function() {
         case 'Separator':
             // Пока до конца не решён вопрос с использованием библиотеки SimpleUI (как собственно и с её архитектурной) будем временно использовать
             // костыль с предварительным парсингом представлений из данной библиотеки и последующей специальной инициализацией.
-            code.initcode = "if (<parent>.orientation == 'column') { <this>.maximumSize[1] = 1; <this>.alignment = ['fill', 'top']; } else { <this>.maximumSize[0] = 1; <this>.alignment = ['left', 'fill']; };";
+            code.initcode = "if (<this>.parent.orientation == 'column') { <this>.maximumSize[1] = 1; <this>.alignment = ['fill', 'top']; } else { <this>.maximumSize[0] = 1; <this>.alignment = ['left', 'fill']; };";
             break;
+
         case 'Window':
-            code.initcode = model.control.jsname +".show();"
+            //code.initcode = model.control.jsname +".show();"
             break;          
         default:
     };
@@ -181,9 +182,11 @@ uiModel.prototype.toSourceString = function(tr) {
     var app = this.doc.app,
         model = this.control,
         props = this.properties,
-        control = this.view.control,
-        label = (model.label == "Tab" ? "Panel" : model.label).replace(/Tabbed/, ""),
-        str = ((tr)||'') + model.jsname+":"+ label+" {",
+        control = this.view.control;
+    if (model.label == "Separator") return model.jsname+":Panel { isSeparator:true }";
+
+    var label = (model.label == "Tab" ? "Panel" : model.label).replace(/Tabbed/, "");
+        str = model.jsname+":"+ label+" {",
         ptr = "properties:{" + _toSource(props.properties, control.properties, model.properties.properties, "prop"),
         sstr = _toSource(props, control, model.properties, "main");
     if ( model.label == "TabbedPanel" || model.label == "Tab" ) str += "type:'"+model.label.toLowerCase()+"'"+(sstr.length == 0 ? "": ", ");
@@ -234,85 +237,49 @@ uiModel.prototype.toSourceString = function(tr) {
     } // function _toSource()
 }; // model.toSourceString()
 
-// ===========================
-// Метод формирует и возвращает строку, содержащую JavaScript код для дополнительной инициализации элемента
-uiModel.prototype.getCode = function() {
-    var doc = this.doc,
-        model = this.control,
-        props = this.properties,
-        control = this.view.control,
-        code = this.code,
-        ctrl = control,
-        dlg = doc.window.children[0],
-        names = [],
-        CPROPS = COLORSTYLES.CS;
-    // Для начала найдём главное родительское окно (у него свойства parent всегда = null
-    if (ctrl === dlg) code.varname = model.jsname; else {
-       while ( ctrl !== dlg) { 
-           names.push(doc.findController(ctrl).model.control.jsname);
-           ctrl =  ctrl.parent; 
-       };
-       code.varname =  "var " + model.jsname + " = " + doc.findController(dlg).model.control.jsname + "." +names.reverse().join(".");
-    }
-    code.gfxname = "var gfx = " + model.jsname +".graphics";
-    var font = "", colors = [], strs = [];
-    for (var p in props.graphics) if (props.graphics.hasOwnProperty(p) && props.graphics[p]) {
-        if (p in CPROPS) {
-           if (p.match(/foreground/i)) colors.push( "gfx."+p+" = "+"gfx.newPen(gfx.PenType.SOLID_COLOR, "+toRGBA(model.properties.graphics[p]).toSource()+", 1)");
-           else colors.push( "gfx."+p+" = "+"gfx.newBrush(gfx.BrushType.SOLID_COLOR, "+toRGBA(model.properties.graphics[p]).toSource()+")");
-        } else if ( p == "font" ) { 
-           font = "gfx.font = ScriptUI.newFont(\""+model.properties.graphics.font+"\")"; 
-        } else {
-           strs.push("gfx."+[p]+" = " + model.properties.graphics[p]);
+// ========================
+// В отличии от toSourceString возвращает полную ScriptUI строку (включая код элементов внутри контейнеров)
+uiModel.prototype.getSourceString = function(code) {
+    var model = this,
+        app = model.doc.app,
+        tree = app.treeView.control,
+        item = tree.findItem(model, 'model'),
+        code = (code)||[];  // инициализирующий код элементов
+    var str = (function _buildString(tr, node, code) {
+        var str = tr + node.model.toSourceString();
+        var codeStr = node.model.getCode();
+        if (codeStr) code.push(codeStr);
+        if (node.type == 'node') {
+            str = str.slice(0, -1);
+            if (str.charAt(str.length-1) != "{") str +=",";
+            each(node.items, function(item) { str += "\r" + _buildString(tr+'\t', item, code)+"," });
         }
-    }
-    var gfxstr = [];
-    if (font || colors.length || strs.length) {
-       gfxstr.push(code.gfxname);
-       if (font) gfxstr.push(font);
-       if (colors.length) for (var i=0; i<colors.length; i++) gfxstr.push(colors[i]);
-       if (strs.length) for (var i=0; i<strs.length; i++) gfxstr.push(strs[i]);
-    }; 
-    var retval = (control === dlg ? "" : code.varname + ";\r" );
-    // формируем общую строку кода инициализации:
-    if (gfxstr.length) code.initgfx = retval += gfxstr.join(";\r")+";\r"; else code.initgfx = "";
-    if (code.initcode) retval += code.initcode + "\r";
-    // временное решение для сепараторов:
-    if (control.isSeparator) {
-       var parent = doc.findController(control.parent).model;
-       parent.getCode();
-       parent = (parent.code.varname.indexOf("=") ? parent.code.varname.slice(parent.code.varname.indexOf("=")+1) : parent.code.varname);
-       if (parent[0] == " ") parent = parent.slice(1);
-       retval = retval.replace(/<parent>/, parent).replace(/<this>/g, model.jsname);
-    };
-    // временное решение для dialog:
-    code.initresizing = (props.properties.resizeable ? model.jsname + ".onResizing = " + model.jsname + ".onResize = function() { this.layout.resize () };\r" : "");
-    return (code.initcode || gfxstr.length) ? retval : "";
-}; // model.getCode()
+        if (str.charAt(str.length-1) != "{") str = str.slice(0, -1);
+        return  str + "}";
+    }('', item, code));
+    // Заменяем <jsname:TypeOfControl {...}> на <typeofcontrol {...}>
+    str = model.view.type + str.slice(str.indexOf(" {"));
+    return str;
+}
 
 // ===========================
-// Парсит ресурсную строку в формате <jsname>:{ ..., properties:{ .... }} и обновляет собственные флаги обнаруженных в ней свойств
+// Парсит ресурсную строку в формате <jsname>:Item { ..., properties:{ .... }} и обновляет собственные флаги обнаруженных в ней свойств
 uiModel.prototype.updateProperties = function(prop_str) {
     try {
-    var model = this,
-        index = prop_str.indexOf("}"),
-        jsname = prop_str.split(":")[0];
-    // Обновление jsname и связанного Объекта uiView:
-    model.control.jsname = model.view.jsname = jsname;
-    // Обновление свойств:
-    if (index != -1) prop_str = prop_str.substring(0, index);
-
-    prop_str += (new Array(prop_str.match(/[{]/g).length+1)).join("}");
-    var pObj = eval("({"+prop_str+"})");
-
-    // Обновление свойств properties:
-    if (pObj[jsname].properties) {
-        each(model.properties.properties, function(val, key, obj) { if (key in pObj[jsname].properties) obj[key] = true; });
-    }
-    // Обновление общих свойств:
-    delete pObj[jsname].properties;
-    delete pObj[jsname].graphics;
-    each(model.properties, function(val, key, obj) { if (key in pObj[jsname]) obj[key] = true; });
+        var model_prop = this.properties,
+            index = prop_str.indexOf("}");
+        // Получаем из ресурсной строки валидный объект (содержащий объявленные для элемента свойства):
+        if (index != -1) prop_str = prop_str.substring(0, index);
+        prop_str = prop_str.slice(prop_str.indexOf("{")) + (new Array(prop_str.match(/[{]/g).length+1)).join("}");
+        var pObj = eval("("+prop_str+")");
+        // Обновление свойств properties:
+        if (pObj.properties) {
+            each(model_prop.properties, function(val, key, obj) { if (key in pObj.properties) obj[key] = true; });
+        }
+        // Обновление общих свойств:
+        delete pObj.properties;
+        delete pObj.graphics;
+        each(model_prop, function(val, key, obj) { if (key in pObj) obj[key] = true; });
     } catch(e) { return false; }
     return true;
 };
@@ -320,7 +287,6 @@ uiModel.prototype.updateProperties = function(prop_str) {
 // ===========================
 // Парсит програмный код на предмет наличия инициализации для графических свойств
 uiModel.prototype.updateGraphics = function(evalcode) {
-    try {
     var model = this,
         index = evalcode.indexOf("var gfx = "+this.control.jsname+".graphics;");
     if (index == -1) return;
@@ -329,6 +295,52 @@ uiModel.prototype.updateGraphics = function(evalcode) {
     each(model.properties.graphics, function(val, key, obj) {
         if (evalcode.indexOf("gfx."+key+" = ") != -1) obj[key] = true;
     });
-    } catch(e) { return false; }
     return true;
 };
+
+// ===========================
+// Методы отвечающие за генерацию кода элемента:
+// строит строку вида "var <name> = <win>.<parent>.<parent>.<name>..."
+uiModel.prototype.getVarString = function() {
+    var model = this,
+        tree = this.doc.app.treeView.control,
+        item = tree.findItem(model, 'model'),
+        names = [model.control.jsname];
+    while (item.parent !== tree) { item = item.parent; names.push(item.text); }
+    return "var " + names[0] + " = " + names.reverse().join(".");
+};
+
+// Строит строки инициализации графических свойств:
+uiModel.prototype.getGfxString = function() {
+    var model = this,
+        props = model.properties.graphics,
+        model_prop = model.control.properties.graphics,
+        gfx = model.view.control.graphics,
+        colors = ["var gfx = " + model.control.jsname +".graphics"],
+        CPROPS = COLORSTYLES.CS;
+    for (var p in props) if (CPROPS.hasOwnProperty(p) && props[p] === true) {
+        if (p.match(/foreground/i)) colors.push( "gfx."+p+" = "+"gfx.newPen(gfx.PenType.SOLID_COLOR, "+toRGBA(model_prop[p]).toSource()+", 1)");
+        else colors.push( "gfx."+p+" = "+"gfx.newBrush(gfx.BrushType.SOLID_COLOR, "+toRGBA(model_prop[p]).toSource()+")");
+    }
+    if (props.font === true) colors.push("gfx.font = ScriptUI.newFont(\""+model_prop.font+"\")");
+    // Если свойства не отмечены - возвращаем пустую строку
+    return colors.length == 1 ? "" : colors;
+}
+    
+        
+
+// ===========================
+// Метод формирует и возвращает строку, содержащую JavaScript код для дополнительной инициализации элемента
+uiModel.prototype.getCode = function() {
+    var model = this,
+        code = [];
+    var gfxStr = model.getGfxString();
+    if (gfxStr) code = code.concat(gfxStr);
+    if (model.code.initcode) {
+        code.push(model.code.initcode.replace(/<this>/g, model.control.jsname));
+    };
+    if (model.view.item == "Window") return (code.length ? code.join(";\r")+";\r" : "");
+    
+    var retval = (code.length ? [model.getVarString()].concat(code).join(";\r")+";\r" : "");
+    return retval;
+}; // model.getCode()
