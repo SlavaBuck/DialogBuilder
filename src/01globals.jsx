@@ -24,10 +24,10 @@ var COLORSTYLES = {
         disabledForegroundColor:0x6D6D6D
     },
     CC: {
-        backgroundColor:0xD6D6D6,
-        foregroundColor:0x000000,
-        disabledBackgroundColor:0xD9D9D9,
-        disabledForegroundColor:0x6D6D6D
+        backgroundColor:0x494949,
+        foregroundColor:0xE0E0E0,
+        disabledBackgroundColor:0x494949,
+        disabledForegroundColor:0x8A8A8A
     }
 };
 
