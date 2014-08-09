@@ -408,7 +408,7 @@ BuilderApplication.prototype.evalDialog = function(rc) {
 };
 
 BuilderApplication.prototype.openInESTK = function(doc) {
-    var doc = (doc)||this.app.activeDocument;
+    var doc = (doc)||this.activeDocument;
     try {
         if (doc && doc.save()) return doc.file.execute(); else return false;
     } catch(e) { trace(e); return false; }
