@@ -1,4 +1,4 @@
-// <DBuilder options> Dialog Builder v1.80 options file (don't delete this string!!!) 
+// <DBuilder options> Dialog Builder v1.83 options file (don't delete this string!!!) 
 {
 	locale:"",
 	autofocus:false,
@@ -23,7 +23,7 @@
 		
 	},
 	usercolors:{
-		highlightColor:0xF0B8F0
+		highlightColor:0xF0B8F0,
 	},
 	userfonts:[]
 }

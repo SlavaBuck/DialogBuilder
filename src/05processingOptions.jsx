@@ -35,12 +35,21 @@ BuilderApplication.prototype.applyOptions = function() {
     // Применяем графическую тему
     var gfx = app.window.graphics,
         opt = app.options;
+        
+    each(COLORSTYLES.CS, function(val, key) {
+        gfx[key] = key.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(parseInt(opt[key])), 1) : 
+                                              gfx.newBrush(_BSOLID, toRGBA(parseInt(opt[key])));   });
+//~     gfx.foregroundColor = gfx.newPen(_PSOLID, toRGBA(opt.foregroundColor), 1);
+//~     gfx.backgroundColor = gfx.newBrush(_BSOLID, toRGBA(opt.backgroundColor));    
+//~     gfx.disabledForegroundColor = gfx.newPen(_PSOLID, toRGBA(opt.disabledForegroundColor), 1);
+//~     gfx.disabledBackgroundColor = gfx.newBrush(_BSOLID, toRGBA(opt.disabledBackgroundColor));
 
-    gfx.foregroundColor = gfx.newPen(_PSOLID, toRGBA(opt.foregroundColor), 1);
-    gfx.backgroundColor = gfx.newBrush(_BSOLID, toRGBA(opt.backgroundColor));    
-    gfx.disabledForegroundColor = gfx.newPen(_PSOLID, toRGBA(opt.disabledForegroundColor), 1);
-    gfx.disabledBackgroundColor = gfx.newBrush(_BSOLID, toRGBA(opt.disabledBackgroundColor));
-
+    var docView = app.getViewByID("Documents");
+    if (docView) {
+        var gfx = docView.control.graphics,
+            doccolor = toRGBA(parseInt(DOCVIEWCOLOR[app.options.doccolors]));
+        gfx.backgroundColor = gfx.disabledBackgroundColor = gfx.newBrush(_BSOLID, doccolor);
+    }
     if (opt.font) gfx.font = ScriptUI.newFont(opt.font);
     opt.highlightColor = toRGBA(parseInt(parseColor(opt.highlightColor)), 0.5)
  };

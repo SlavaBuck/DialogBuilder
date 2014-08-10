@@ -16,6 +16,18 @@ var UILANGUAGES = [
     {text:'Russian', value:"ru" }
 ];
 
+// true если запущено под Adobe InDesign СС (в противном случае - false, в том числе и под ESTK CC);
+const CC_FLAG = (function isCC() {
+    if ($.global.app && $.global.app.name == "Adobe InDesign")
+        return parseInt($.global.app.version.charAt(0)) > 8;
+    // Определяем косвенно - по наличию папки 'AppData/Adobe/InDesign/Version X.X'
+    var indFolder = Folder(Folder.appData + "/Adobe/InDesign"),
+        indFile = indFolder.getFiles("Version ?.*")[0],
+        indVersion = parseInt(File.decode(indFile.name).split(" ")[1]);
+    return indVersion > 8;
+}());
+
+// Цветовые наборы по умолчанию для соответствующих платформ
 var COLORSTYLES = {
     CS: {
         backgroundColor:0xF0F0F0,
@@ -30,6 +42,25 @@ var COLORSTYLES = {
         disabledForegroundColor:0x8A8A8A
     }
 };
+
+/* Цвета для платформы CC
+Для EditText:
+        backgroundColor:0xA2A2A2,
+        foregroundColor:0x000000,
+        disabledBackgroundColor:0x888888,
+        disabledForegroundColor:0x333333
+Для ListBox:
+        backgroundColor:0x494949,
+        foregroundColor:0xE0E0E0,
+        disabledBackgroundColor:0x494949,
+        disabledForegroundColor:0x333333
+*/
+
+// цвет рабочей области документов:
+var DOCVIEWCOLOR = {
+    CS:0x808080, // 50% серого
+    CC:0x202020  // почти чёрный
+}
 
 var DEFOPTIONS = {
     locale:'',             // - язык интерфейса по умолчанию '' - локаль системы (Примеры: "ru" || "en" ...)

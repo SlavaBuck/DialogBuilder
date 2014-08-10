@@ -15,12 +15,14 @@
 BuilderApplication.prototype.initMainWindow = function() {
     var app = this,
         w = app.window,
+        CLRS = COLORSTYLES[app.options.appcolor],
         LStr = app.LStr.uiApp;
     // Настройка главного окна:
     SUI.SeparatorInit(w.pMain.sp);
-    var gfx = w.pMain.MainPnl.graphics;
-    gfx.disabledBackgroundColor = gfx.backgroundColor = gfx.newBrush(0, [0.5, 0.5, 0.5, 1]); // цвет области документов - серый 50%
-    
+    var gfx = w.graphics;
+    each(CLRS, function(key) {
+        gfx[key] = key.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(parseInt(CLRS[key])), 1) : 
+                                              gfx.newBrush(_BSOLID, toRGBA(parseInt(CLRS[key])));   });
     // Формирование представлений для главного окна и контейнера документов (docView)
     app.progressBar.hit(localize(LStr[36]));
     app.buildCaption(w.pCaption);               // id:"Caption"
@@ -578,12 +580,13 @@ BuilderApplication.prototype.buildDocsView = function(cont) {
     var app = this,
         LStr = app.LStr;
     // Родительский View для документов основан на TabbedPanel, каждый Tab которого будет представлять родительский View самого документа
-    app.views.add(new MVC.View("Documents", cont.add("tabbedpanel { alignment:['fill','fill'] }")));
+    var docView = app.addView({ id:"Documents", parent:cont, view:"tabbedpanel { alignment:['fill','fill'] }" });
+    var gfx = docView.control.graphics,
+        doccolor = toRGBA(parseInt(DOCVIEWCOLOR[app.options.doccolors]));
+    gfx.backgroundColor = gfx.disabledBackgroundColor = gfx.newBrush(_BSOLID, doccolor);
+    
     // Панелька содержащая подпись 'Имя элемента' и поле редактирования JsName
     var pPnl = cont.add("group { margins:[5,1,5,1], spacing:5, alignChildren:'left', alignment:['fill','bottom'], st:StaticText {text:'"+LStr.uiApp[12]+"'} }");
-    var gfx = pPnl.graphics;
-    gfx.backgroundColor = gfx.newBrush(_BSOLID, toRGBA(app.options.backgroundColor)); // [0.94, 0.94, 0.94, 1]
-    gfx.disabledBackgroundColor = gfx.newBrush(_BSOLID, toRGBA(app.options.doc.disabledBackgroundColor));
     // Собственно само поле редактирования JsName
     app.JsName = app.addView({ id:"JsName", parent:pPnl, view:"edittext { enabled:false, alignment:['fill','bottom'] }" });
     
