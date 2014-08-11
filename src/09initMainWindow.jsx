@@ -649,7 +649,7 @@ BuilderApplication.prototype.buldStatusBar = function(cont) {
           LStr = app.LStr.uiApp;
     var g = cont.add("group { alignment:['fill','bottom'], spacing:5 }" );
     var st = g.add("statictext { text:'© Slava Boyko aka SlavaBuck | 2013-2014 | slava.boyko@hotmail.com', alignment:['left','center'] }");
-    st.graphics.foregroundColor = st.graphics.newPen (st.graphics.PenType.SOLID_COLOR, [0, 0, 0.54509803921569, 1], 1); // DarkBlue
+    st.graphics.foregroundColor = st.graphics.newPen(_PSOLID, toRGBA(CC_FLAG ? COLORS.SlateGray : COLORS.DarkBlue), 1);
     var sp = cont.add(SUI.Separator);
            SUI.SeparatorInit(sp, 'line', 2);
     var btClose = cont.add("button { text:'"+LStr[18]+"', alignment:['right','center'] }");

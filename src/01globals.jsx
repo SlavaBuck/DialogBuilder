@@ -16,16 +16,25 @@ var UILANGUAGES = [
     {text:'Russian', value:"ru" }
 ];
 
+// Список целевых платформ
+var UITARGETS = [
+    {text:'Auto', value:""},
+    {text:'CS - Adobe Creative Suite', value:"CS" },
+    {text:'CC - Adobe Creative Cloud', value:"CC" }
+];
+
 // true если запущено под Adobe InDesign СС (в противном случае - false, в том числе и под ESTK CC);
 const CC_FLAG = (function isCC() {
-    if ($.global.app && $.global.app.name == "Adobe InDesign")
-        return parseInt($.global.app.version.charAt(0)) > 8;
-    // Определяем косвенно - по наличию папки 'AppData/Adobe/InDesign/Version X.X'
-    var indFolder = Folder(Folder.appData + "/Adobe/InDesign"),
-        indFile = indFolder.getFiles("Version ?.*")[0],
-        indVersion = parseInt(File.decode(indFile.name).split(" ")[1]);
-    return indVersion > 8;
+    if ($.global.app && $.global.app.name.match(/Adobe InDesign/)) return parseInt($.global.app.version.charAt(0)) > 8;
+    return false;
+//~     // Определяем косвенно - по наличию папки 'AppData/Adobe/InDesign/Version X.X'
+//~     var indFolder = Folder(Folder.appData + "/Adobe/InDesign"),
+//~         indFile = indFolder.getFiles("Version ?.*")[0],
+//~         indVersion = parseInt(File.decode(indFile.name).split(" ")[1]);
+//~     return indVersion > 8;
 }());
+
+var CURRENTTARGET = CC_FLAG ? "CC" : "CS";
 
 // Цветовые наборы по умолчанию для соответствующих платформ
 var COLORSTYLES = {
@@ -63,14 +72,15 @@ var DOCVIEWCOLOR = {
 }
 
 var DEFOPTIONS = {
-    locale:'',             // - язык интерфейса по умолчанию '' - локаль системы (Примеры: "ru" || "en" ...)
+    locale:'',             // язык интерфейса (по умолчанию '' - текущая локаль системы). Примеры: "ru" || "en" ...
+    target:'',             // целевая платформа 'CS' || 'CC' || '' (Auto - определяется флагом CC_FLAG)
     autofocus:false,       // авто-переключение фокуса на добавляемый контейнер
     dialogtype:'dialog',   // тип окна по умолчанию для создаваемого документа (dialog || palette || window)
-    appcolors:'CS',        // цветовой набор оформления главного окна по умолчанию
+    appcolors:'',          // цветовой набор оформления главного окна по умолчанию
     doccolors:'',          // doccolors = appcolors 
     jsname:'full',         // способ наименования эл.управления Возможные значения 'user' - задаются настройками из jsnames:{}
-                                // 'full' или 'small' - предустановленные способы наименования см. JSNAMES
-    highlightColor:0xF0B8F0     // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5]
+                           // 'full' или 'small' - предустановленные способы наименования см. JSNAMES
+    highlightColor:0xF0B8F0,   // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5]
 };
 var w = new Window('window');
 
@@ -149,6 +159,3 @@ var JSNAMES = {
         Progressbar:"pb"
     }
 };
-
-
-

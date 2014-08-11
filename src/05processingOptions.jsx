@@ -35,15 +35,9 @@ BuilderApplication.prototype.applyOptions = function() {
     // Применяем графическую тему
     var gfx = app.window.graphics,
         opt = app.options;
-        
     each(COLORSTYLES.CS, function(val, key) {
         gfx[key] = key.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(parseInt(opt[key])), 1) : 
                                               gfx.newBrush(_BSOLID, toRGBA(parseInt(opt[key])));   });
-//~     gfx.foregroundColor = gfx.newPen(_PSOLID, toRGBA(opt.foregroundColor), 1);
-//~     gfx.backgroundColor = gfx.newBrush(_BSOLID, toRGBA(opt.backgroundColor));    
-//~     gfx.disabledForegroundColor = gfx.newPen(_PSOLID, toRGBA(opt.disabledForegroundColor), 1);
-//~     gfx.disabledBackgroundColor = gfx.newBrush(_BSOLID, toRGBA(opt.disabledBackgroundColor));
-
     var docView = app.getViewByID("Documents");
     if (docView) {
         var gfx = docView.control.graphics,
@@ -79,15 +73,20 @@ BuilderApplication.prototype.loadOptions = function() { //
 //
 BuilderApplication.prototype.prepareOptions = function() {
     var app = this,
-           options = app.options;
+        options = app.options;
     // ----------------------------------------
     // группа общих настроек приложения:
-    if (!options.locale) options.locale = DEFOPTIONS.locale;     // Языковые настройки (по умолчанию = '' - системная локаль)    
-    if (!options.appcolors || (options.appcolors != 'CS' && options.appcolors !='CC')) options.appcolors = DEFOPTIONS.appcolors;
-    if (!options.doccolors || (options.doccolors != 'CS' && options.doccolors !='CC')) options.doccolors = options.appcolors;
+    if (!options.locale) options.locale = DEFOPTIONS.locale;     // Языковые настройки (по умолчанию = '' - системная локаль)
     if (!options.doc) options.doc = {};
-    _setColors(options.appcolors, options);
-    _setColors(options.doccolors, options.doc);
+    if (!options.target) {
+        options.doccolors = options.appcolors = CURRENTTARGET;
+        each(COLORSTYLES[CURRENTTARGET], function(val, key) { options[key] = options.doc[key] = parseInt(parseColor(val)); });
+    } else {
+        if (!options.appcolors || (options.appcolors != 'CS' && options.appcolors !='CC')) options.appcolors = CURRENTTARGET;
+        if (!options.doccolors || (options.doccolors != 'CS' && options.doccolors !='CC')) options.doccolors = options.appcolors;
+        _setColors(options.appcolors, options);
+        _setColors(options.doccolors, options.doc);
+    }
     // highlightColor инициализируется в формате RGBA
     if (!options.highlightColor) options.highlightColor = DEFOPTIONS.highlightColor; else {
         options.highlightColor = toRGBA(parseInt(parseColor(options.highlightColor)), 0.5);
@@ -399,6 +398,9 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
 								g0:Group {  \
 									st0:StaticText {text:'"+localize(uiSet[2])+":', alignment:['left', 'center'], characters:22},  \
 									dd0:DropDownList {alignment:['fill', 'center'] }},  \
+								g4:Group {  \
+									st0:StaticText {text:'"+localize(uiSet[20])+":', alignment:['left', 'center'], characters:22},  \
+									dd0:DropDownList {alignment:['fill', 'center'] }},  \
 								g1:Group {  \
 									st1:StaticText {text:'"+localize(uiSet[3])+":', alignment:['left', 'center'], characters:22},  \
 									dd1:DropDownList {alignment:['fill', 'center'], properties:{items:['dialog', 'palette', 'window']}}},  \
@@ -416,22 +418,35 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
         SUI.SeparatorInit(panel.sp1, "line");
         SUI.SeparatorInit(panel.sp2, "line");
         var langList = MVC.View({ id:"_settings_langList", control:panel.g0.dd0 }),
+            targetPlatform = MVC.View({ id:"_settings_targetPlatform", control:panel.g4.dd0 }),
             dlgTypeList = MVC.View({ id:"_settings_dlgTypeList", control:panel.g1.dd1 }),
             chAutoFocus = MVC.View({ id:"_settings_chAutoFocus", control:panel.g2.ch0 }),
             ddhighlightColor = MVC.View({ id:"_settings_highlightColor", control:panel.g3.dd });
         var list = langList.control,
             index = 0;
+        // инициализация списка языков
         each(UILANGUAGES, function(obj, i) {
             var item = list.add("item", obj.text);
             item.value = obj.value;
             if (app.currentSettings.options.locale == obj.value) index = i;
         });
         list.selection = list.items[index];
+        // инициализация списка платформ
+        list = targetPlatform.control;
+        each(UITARGETS, function(obj, i) {
+            var item = list.add("item", obj.text);
+            item.value = obj.value;
+            if (app.currentSettings.options.target == obj.value) index = i;
+        });
+        list.selection = list.items[index];
+        
         app.views.add(langList);
+        app.views.add(targetPlatform);
         app.views.add(dlgTypeList);
         app.views.add(chAutoFocus);
         app.views.add(ddhighlightColor);
         app.addController({ binding:"currentSettings.options.highlightColor:_settings_highlightColor.selection.value", bind:false });
+        app.addController({ binding:"currentSettings.options.target:_settings_targetPlatform.selection.value", bind:false });
         app.addController({ binding:"currentSettings.options.locale:_settings_langList.selection.value", bind:false });
         app.addController({ binding:"currentSettings.options.dialogtype:_settings_dlgTypeList.selection.text", bind:false });
         var ctrl = app.addController({ binding:"currentSettings.options.autofocus:_settings_chAutoFocus.value", bind:false });
