@@ -23,9 +23,9 @@
     #include "08customControllers.jsx"
     #include "09initMainWindow.jsx"
     try {
-    trace.echo = debugmode; // Вывод отладочной информации в консль только для отладочных запусков
-    MVC.fastmode = true;    // Включение быстрого режима обработки коллекций
-    var app = new BuilderApplication((debugmode ? "palette" : "dialog" ));
-    app.run();
+        trace.echo = debugmode; // Вывод отладочной информации в консль только для отладочных запусков
+        MVC.fastmode = true;    // Включение быстрого режима обработки коллекций
+        var app = new BuilderApplication((debugmode ? "palette" : "dialog" ));
+        app.run();
     } catch(e) { trace(e) };
 }((typeof debugmode == 'undefined' ? 0 : debugmode)));

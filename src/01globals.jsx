@@ -34,7 +34,14 @@ const CC_FLAG = (function isCC() {
 //~     return indVersion > 8;
 }());
 
-var CURRENTTARGET = CC_FLAG ? "CC" : "CS";
+// Current Platform:
+var CP = CC_FLAG ? {
+        target:"CC",
+        CLICK:"mousedown"
+    } : {
+        target:"CS",
+        CLICK:"click"
+    };
 
 // Цветовые наборы по умолчанию для соответствующих платформ
 var COLORSTYLES = {

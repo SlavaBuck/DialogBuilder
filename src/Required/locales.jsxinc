@@ -306,5 +306,5 @@ LStr.uiSet[16] = { ru:"Шрифт по умолчанию", en:"Font by default"
 LStr.uiSet[17] = { ru:"Шрифт, используемый при создании нового элемента", en:"Font for new instance of this element" };
 LStr.uiSet[18] = { ru:"Размер", en:"Size" };
 LStr.uiSet[19] = { ru:"Ввести другое имя шрифта?", en:"Enter ather name of font?" };
-LStr.uiSet[20] = { ru:"Целевая платформа", en:"Target platform" }
+LStr.uiSet[20] = { ru:"Целевая платформа", en:"Target platform" };
 LStr;

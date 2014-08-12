@@ -79,10 +79,10 @@ BuilderApplication.prototype.prepareOptions = function() {
     if (!options.locale) options.locale = DEFOPTIONS.locale;     // Языковые настройки (по умолчанию = '' - системная локаль)
     if (!options.doc) options.doc = {};
     if (!options.target) {
-        options.doccolors = options.appcolors = CURRENTTARGET;
-        each(COLORSTYLES[CURRENTTARGET], function(val, key) { options[key] = options.doc[key] = parseInt(parseColor(val)); });
+        options.doccolors = options.appcolors = CP.target;
+        each(COLORSTYLES[CP.target], function(val, key) { options[key] = options.doc[key] = parseInt(parseColor(val)); });
     } else {
-        if (!options.appcolors || (options.appcolors != 'CS' && options.appcolors !='CC')) options.appcolors = CURRENTTARGET;
+        if (!options.appcolors || (options.appcolors != 'CS' && options.appcolors !='CC')) options.appcolors = CP.target;
         if (!options.doccolors || (options.doccolors != 'CS' && options.doccolors !='CC')) options.doccolors = options.appcolors;
         _setColors(options.appcolors, options);
         _setColors(options.doccolors, options.doc);

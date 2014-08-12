@@ -617,12 +617,12 @@ BuilderApplication.prototype._initColorListView = function() {
         var model = (newVal)||null;
         if (!model) return this.unbind();
         var control = this.control,
-               val = model.control.properties.graphics[control.__key]; // (control.__key = foregroundColor || backgroundColor || ....) устанавливается при создании данного View
+            val = model.control.properties.graphics[control.__key]; // (control.__key = foregroundColor || backgroundColor || ....) устанавливается при создании данного View
         control.model = model;
         control.enabled = true;
         delete control.onChange;
-        //if (control.hasOwnProperty(val)) control.selection = control[val].item;
-        control.selection = control._colors[val].item;
+        //if (val in control._colors) control.selection = control[val].item;
+        control.selection = control._colors[val].item; /* проблемы под СС!!! */ } 
         control.onChange = _changeColorField;
     };
     

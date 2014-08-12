@@ -250,7 +250,7 @@ BuilderApplication.prototype.CreateDocument = function() {
         uiControls = app.uiControls,
         doc = new BuilderDocument(app);
     // doc.activeContainer меняется только по клику в документе или в дереве:
-    doc.window.addEventListener ('click', function(e) {
+    doc.window.addEventListener (CP.CLICK, function(e) {
         doc.activeControl = doc.findController(e.target).model;
         if (e.target !== this) {
             if (SUI.isContainer(e.target)) {
@@ -265,9 +265,11 @@ BuilderApplication.prototype.CreateDocument = function() {
 
     // Каждое переключение активного контрола документа также переключает активный контрол в приложении
     doc.watch ('activeControl', function(key, oldVal, newVal) {
+        try {
         if (oldVal) app.unmarkControl(oldVal);
         if (newVal) app.markControl(newVal);
         doc.app.activeControl = (newVal) ? doc.app.getModelByID(newVal.id) : null;
+        } catch(e) { trace(e) }
         return newVal;
     });
     // Добавляем звёздочку в таб документа при его модификации // звёздочка убивается автоматом в doc.save()

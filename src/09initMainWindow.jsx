@@ -129,7 +129,7 @@ BuilderApplication.prototype.buildCaption = function(cont) {
         btCut.enabled = btCopy.enabled = btPaste.enabled = btClose.enabled = btSave.enabled = btSaveAs.enabled = btCode.enabled = btEval.enabled = btOpenIn.enabled = bEnabled;
     };
     // Обработка кликов по кнопкам-меню:
-    cont.addEventListener("click", function (e) {
+    cont.addEventListener(CP.CLICK, function (e) {
         if (e.target.type == 'iconbutton') {
             switch (e.target.label) {
                 case "new":     app.addDocument(); app._enableButtons();         break;
@@ -311,7 +311,7 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
     };
 
     // Обработка кликов по кнопкам:
-    g.addEventListener ("click", function (e) {
+    g.addEventListener (CP.CLICK, function (e) {
         tree.control.active = true;
         if (!app.activeDocument || e.target.type != 'iconbutton') return;
         var doc = app.activeDocument,
@@ -325,7 +325,8 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
     });
 
     // onChange для дерева
-    tree.control.addEventListener ("click", function (e) { 
+    var handler = CC_FLAG ? "change" : "click";
+    tree.control.addEventListener(handler, function (e) {
         // При клике по дереву переустнавливаются все активные указатели как в самом дереве (this.activeNode & this.activeItem), так и в документе
         // (doc.activeContainer & doc.activeControl), что также приведёт к автоматической переустановке указателя приложения app.activeControl и
         // переустановки всех полей редактирования свойств.
@@ -340,7 +341,6 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
             //if (e.detail == 2) this.activeItem.model.getCode();
         }              
     });
-    
     return app.treeView = tree;
 };
 
@@ -386,7 +386,7 @@ BuilderApplication.prototype.buildControlsBtns = function(cont, columns) {
         }
     }
     // Обработка кликов по контролам:
-    cont.addEventListener ("click", function (e) {
+    cont.addEventListener (CP.CLICK, function (e) {
         if (e.target.type == 'iconbutton' && app.activeDocument) app.activeDocument.addItem(e.target.label);
     });
     // Формирование объекта View
@@ -591,7 +591,7 @@ BuilderApplication.prototype.buildDocsView = function(cont) {
     app.JsName = app.addView({ id:"JsName", parent:pPnl, view:"edittext { enabled:false, alignment:['fill','bottom'] }" });
     
     // Обеспечивает  в реальном времени обновление текста в дереве при редактировании имени переменной в поле JsName
-    app.JsName.control.addEventListener("keyup", function (kb) {
+    app.JsName.control.addEventListener("keyup", function (kb) { // под СС ??
         app.treeView.control.activeItem.text = this.text;
     });
 
@@ -649,7 +649,7 @@ BuilderApplication.prototype.buldStatusBar = function(cont) {
           LStr = app.LStr.uiApp;
     var g = cont.add("group { alignment:['fill','bottom'], spacing:5 }" );
     var st = g.add("statictext { text:'© Slava Boyko aka SlavaBuck | 2013-2014 | slava.boyko@hotmail.com', alignment:['left','center'] }");
-    st.graphics.foregroundColor = st.graphics.newPen(_PSOLID, toRGBA(CC_FLAG ? COLORS.SlateGray : COLORS.DarkBlue), 1);
+    st.graphics.foregroundColor = st.graphics.newPen(_PSOLID, toRGBA(CC_FLAG ? COLORS.LightSteelBlue : COLORS.DarkBlue), 1);
     var sp = cont.add(SUI.Separator);
            SUI.SeparatorInit(sp, 'line', 2);
     var btClose = cont.add("button { text:'"+LStr[18]+"', alignment:['right','center'] }");
