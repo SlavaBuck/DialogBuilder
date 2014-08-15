@@ -93,6 +93,7 @@ BuilderDocument.prototype.addItem = function (rcString) {
     
     var rcControl = rcString;
     if (app.hashUserControls.hasOwnProperty(type)) {
+        // Специальная обработка для UserControls (подмена ресурсной строки):
         rcControl = app.hashUserControls[type].toString();
     } else {
         rcControl = (type == 'separator' ? SUI.Separator.toString() : (item == "Window" ? 'panel' : type) + rcString.slice(type.length));
@@ -164,6 +165,7 @@ BuilderDocument.prototype.removeItem = function(model) {
 };
 
 BuilderDocument.prototype.getSourceString = function() {
+    this.presentUserControl = this.isUserControlPresent();
     var code = [],
         winModel = this.app.treeView.control.items[0].model,
         winName = winModel.control.jsname,
@@ -171,10 +173,21 @@ BuilderDocument.prototype.getSourceString = function() {
     // Добавляем косые вконце строк
     str = "var " + winName + " = new Window (\"" + str.replace(/\r/mg, " \\\r") + "\");\r";
     // Специальная обработка для Window
-    if (winModel.properties.properties.resizeable) code.push(winName + ".onResizing = " + winName+ ".onResize = function() { this.layout.resize () };");
+    if (this.presentUserControl) code.push("SUI.initWindow("+winName+");"); else {
+        if (winModel.properties.properties.resizeable) code.push(winName + ".onResizing = " + winName +
+                                                                 ".onResize = function() { this.layout.resize () };");
+    };
+
     code.push(winName + ".show();");
-    
     return str + code.join("\r");
+};
+
+// Возвращает true, если в структуре документа есть элементы из группы UserControls
+BuilderDocument.prototype.isUserControlPresent = function() {
+    var present = false,
+        models = this.models;
+    for (var i=0, max = models.length; i<max; i++) if (models[i].control.type.match(/User/)) { present = true; break; }
+    return present;
 };
 
 // Обеспечивается корректная очистка коллекций моделей в родительском приложении:

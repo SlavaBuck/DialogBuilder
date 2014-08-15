@@ -454,6 +454,7 @@ BuilderApplication.prototype.showModelCode = function(model) {
     //log(model.control.toSource() +"\r----\r" + model.view.control.toSource());
     //log(model.toSourceString()+"\r"+model.getCode());
     //log(model.getSourceString());
+    //log('present:', model.doc.isUserControlPresent());
 };
 
 BuilderApplication.prototype.showCode = function(doc) {
