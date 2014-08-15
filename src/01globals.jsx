@@ -141,7 +141,9 @@ var JSNAMES = {
         TreeView:"treeView",
         Image:"imgImage",
         Scrollbar:"scrBar",
-        Progressbar:"pBar"
+        Progressbar:"pBar",
+        WebLink:"url",
+        UnitBox:"uBox"
     },
     small: {
         Window:"w",
@@ -162,6 +164,8 @@ var JSNAMES = {
         TreeView:"tree",
         Image:"img",
         Scrollbar:"scr",
-        Progressbar:"pb"
+        Progressbar:"pb",
+        WebLink:"url",
+        UnitBox:"box"
     }
 };

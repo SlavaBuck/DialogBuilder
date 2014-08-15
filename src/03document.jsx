@@ -79,10 +79,7 @@ BuilderDocument.prototype.saveAs = function() {
 BuilderDocument.prototype.addItem = function (rcString) {
     if(!rcString) return null;
     var doc = this,
-        app = doc.app,
-        uiControls = app.uiControls,
-        CPROPS = COLORSTYLES.CS,
-        dlgs = "dialog,palette,window";
+        app = doc.app;
     // Добываем type добавляемого ScriptUI объекта в нижнем регистре!
     var type = rcString.match(/^\w+/)[0].toLowerCase();
     var item = app.hashControls[type];
@@ -94,10 +91,15 @@ BuilderDocument.prototype.addItem = function (rcString) {
 
     if (doc.activeControl) app.unmarkControl(doc.activeControl);
     
-    var rcString = (type == 'separator' ? SUI.Separator.toString() : (item == "Window" ? 'panel' : type) + rcString.slice(type.length));
+    var rcControl = rcString;
+    if (app.hashUserControls.hasOwnProperty(type)) {
+        rcControl = app.hashUserControls[type].toString();
+    } else {
+        rcControl = (type == 'separator' ? SUI.Separator.toString() : (item == "Window" ? 'panel' : type) + rcString.slice(type.length));
+    }
     
     try {
-        var model = new uiModel(new uiView(doc, item, type).createControl(doc.activeContainer, rcString));
+        var model = new uiModel(new uiView(doc, item, type).createControl(doc.activeContainer, rcControl));
     } catch(e) { trace(e); return null; }
 
     // если установлен autofocus и добавлен контейнер - переустанавливаем фокус на него:

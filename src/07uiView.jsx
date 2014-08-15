@@ -111,6 +111,8 @@ uiView.prototype.initControl = function () {
 
     // Специальная обработка для Separator-ов
     if (control.isSeparator) SUI.initSeparator(control);
+    if (control.isWebLink) SUI.initWebLink(control);
+    if (control.isUnitBox) SUI.initUnitBox(control);
 
     // Обновляем размеры окна документа
     doc.window.layout.layout(true);

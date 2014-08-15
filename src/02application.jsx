@@ -181,9 +181,13 @@ BuilderApplication.prototype.initResources = function() {
     app.progressBar.hit(localize({ ru:"Загрузка ресурсов...", en:"Loading resources..."}));
     app.loadResources();
     app.initJsNames();
-    // hashControls содержит соответствие типов hashControls["tabbedpanel"] = "TabbedPanel", ...
-    app.hashControls = {};
-    each(app.uiControls, function(ctrl, key) { app.hashControls[key.toLowerCase()] = ctrl.label; });
+    
+    app.hashControls = {};      // hashControls содержит соответствие типов hashControls["tabbedpanel"] = "TabbedPanel", ...
+    app.hashUserControls = {};  // Коллекция пользовательских элементов с ресурсными строками
+    each(app.uiControls, function(ctrl, key) {
+        app.hashControls[key.toLowerCase()] = ctrl.label;
+        if (ctrl.type.match(/User/)) app.hashUserControls[key.toLowerCase()] = SUI[ctrl.label];
+    });
     app.hashControls['dialog'] = app.hashControls['palette'] = app.hashControls['window'] = "Window";
 };
 
