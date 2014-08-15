@@ -185,7 +185,7 @@ BuilderApplication.prototype.buildTreeView = function(cont) {
                        _item = null;
                 item.model = model;
                 for (var i=0; i<cont.children.length; i++) {
-                    if (SUI.isContainer(cont.children[i]) && !cont.children[i].isSeparator) _buildTree(item, doc, cont.children[i]); else {
+                    if (SUI.isContainer(cont.children[i]) && !cont.children[i].isSeparator && !cont.children[i].isUnitBox) _buildTree(item, doc, cont.children[i]); else {
                         model = doc.findController(cont.children[i]).model;
                         _item = item.add("item", model.control.jsname);
                         _item.model = model;

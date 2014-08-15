@@ -551,7 +551,12 @@ BuilderApplication.prototype.paste = function() {
     if (!doc._counters_.hasOwnProperty(item)) doc._counters_[item] = 0;      // Инициализация счётчика соответствующих элементов:
     var newjsname = app.uiControls[item].jsname + (doc._counters_[item]); // Генерация js-имени элемента (и приращение счётчика)    
     if (!app.uiControls.hasOwnProperty(item)) doc._counters_[item] += 1;
-    
+
+    /// Блок коррекции ресурсной строки:
+    rcControl = rcControl.replace(/separator/, "panel");
+    rcControl = rcControl.replace(/unitbox/, "group");
+    rcControl = rcControl.replace(/weblink/, "statictext");
+    ///
     var control = doc.activeContainer[newjsname] = doc.activeContainer.add(rcControl);
     doc.window.layout.layout(true);
     

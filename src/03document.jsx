@@ -359,8 +359,11 @@ BuilderDocument.prototype.appendItems = function(jsname, control, rcControl, eva
     
     // Создаём модели для всех элементов control
     (function _creatItems(doc, control, evalcode) {
-        var type = (control.isSeparator ? 'separator' : control.type),
-            item = doc.app.hashControls[type],
+        var type = control.type;
+        if (control.isSeparator) type = 'separator';
+        if (control.isWebLink) type = 'weblink';
+        if (control.isUnitBox) type = 'unitbox';
+        var item = doc.app.hashControls[type],
             tree = doc.app.treeView.control,
             prop_str = arrObj[counts++],
             jsname = prop_str.slice(0, prop_str.indexOf(":")),
@@ -372,7 +375,12 @@ BuilderDocument.prototype.appendItems = function(jsname, control, rcControl, eva
             tree.activeItem.text = model.control.jsname = jsname;
             tree.activeNode = tree;
         } else {
-            view = new uiView(doc, item, type),
+            view = new uiView(doc, item, type);
+            switch (type) {
+                case 'separator': SUI.initSeparator(control); break;
+                case 'weblink': SUI.initWebLink(control); delete control.onClick; break;
+                case 'unitbox': SUI.initUnitBox(control); break;
+            }
             model = new uiModel(view.registerHandlers(control, prop_str, jsname));
         }
         model.updateProperties(prop_str);
@@ -392,7 +400,7 @@ BuilderDocument.prototype.appendItems = function(jsname, control, rcControl, eva
             tree.activeNode = currentNode;
         }
     }(doc, control, evalcode));
-
+    doc.window.layout.layout(true);
     app.enabledTabs = true; // Включаем обновление панелей свойств
     } catch(e) { trace(e, counts) }
 }

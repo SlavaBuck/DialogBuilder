@@ -243,7 +243,7 @@ var uiControls = {
                                             graphics:{ "foregroundColor":false, "font":false, "disabledForegroundColor":false }
                        }                  },
     "WebLink": { label:"WebLink", type:"UserControl", jsname:"url", description:LStr.uiCtrl[19], icon:"weblink", defaults:{ "size":[0, 15] },
-                          properties:{"text":false, "weblink":false, "label":false, "helpTip":false, // Text & Labels
+                          properties:{"text":true, "weblink":false, "label":false, "helpTip":false, // Text & Labels
                                             "alignment":false, "indent":false, "justify":false, // Alignment porperies
                                             "bounds":false, "size":false, "preferredSize":false, "maximumSize":false, "minimumSize":false, "location":false, "characters":false, // Measurements
                                             "active":false, "enabled":false, "shortcutKey":false, "visible":false, // Initial properties
