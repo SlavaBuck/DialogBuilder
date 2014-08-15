@@ -253,14 +253,18 @@ BuilderApplication.prototype.CreateDocument = function() {
     var app = this,
         uiControls = app.uiControls,
         doc = new BuilderDocument(app);
-    // doc.activeContainer меняется только по клику в документе или в дереве:
+    
     doc.window.addEventListener (CP.CLICK, function(e) {
-        doc.activeControl = doc.findController(e.target).model;
+        // Корректировка для составных пользовательских элементов:
+        var target = (e.target.parent.isUnitBox) ? e.target.parent : e.target;
+        // Переустановка doc.activeControl, doc.activeContainer и выделение элемента в дереве:
+        doc.activeControl = doc.findController(target).model;
         if (e.target !== this) {
-            if (SUI.isContainer(e.target)) {
-                doc.activeContainer = e.target; 
+            if (SUI.isContainer(target) && !target.isUnitBox) {
+                // doc.activeContainer меняется только по клику в документе или в дереве:
+                doc.activeContainer = target; 
             } else {
-                if (e.target !== doc.window) doc.activeContainer = e.target.parent; 
+                if (target !== doc.window) doc.activeContainer = target.parent; 
                     else doc.activeContainer = doc.window;
             }
             app.treeView.selectItem(doc.activeControl);
@@ -382,30 +386,39 @@ BuilderApplication.prototype._updateFontField = function(newVal) {
 };
 
 // Функции выделения doc.activeControl:
-BuilderApplication.prototype.unmarkControl = function(model) {
-    var control = model.view.control,
-        gfx = control.graphics,
-        cBrush =  toRGBA(model.control.properties.graphics.backgroundColor),
-        type = model.view.type;
-    if (type == 'listbox') return gfx.backgroundColor = gfx.newBrush(_BSOLID, [1, 1, 1, 1]);
-    if (SUI.isContainer(type) ||  type == 'separator') return gfx.backgroundColor = gfx.newBrush(_BSOLID, cBrush);
-    if (type == 'progressbar' || type == 'image') { control.enabled = !control.enabled; control.enabled = !control.enabled; return; }
-    control._marked_ = false;
-    control.notify ('onDraw');
-};
-
 BuilderApplication.prototype.markControl = function(model) {
+    var cBrush = this.options.highlightColor;
+    model.view.control._marked_ = true;
+    if (model.view.type == 'unitbox') return this.remarkUnitBox(model, cBrush);
+    this.remarkControl(model, cBrush);
+};
+
+BuilderApplication.prototype.unmarkControl = function(model) {
+    var cBrush = toRGBA(model.control.properties.graphics.backgroundColor);    
+    model.view.control._marked_ = false;
+    if (model.view.type == 'unitbox') return this.remarkUnitBox(model, cBrush);
+    this.remarkControl(model, cBrush);
+};
+
+BuilderApplication.prototype.remarkControl = function(model, cBrush) {
     var control = model.view.control,
         gfx = control.graphics,
-        cBrush = this.options.highlightColor,
-        type = model.view.type;
+        type = model.view.type,
+        userControls = {'separator':0, 'unitbox':0};
     if (type == 'listbox') return gfx.backgroundColor = gfx.newBrush(_BSOLID, [cBrush[0], cBrush[1], cBrush[2], 1]);
-    if (SUI.isContainer(type) || type == 'separator') return gfx.backgroundColor = gfx.newBrush(_BSOLID, cBrush);
-    if (type == 'progressbar' || type == 'image') { cont.enabled = !control.enabled; control.enabled = !control.enabled; return; }
-    control._marked_ = true;
+    if (SUI.isContainer(type) || type in userControls) return gfx.backgroundColor = gfx.newBrush(_BSOLID, cBrush);
+    if (type == 'progressbar' || type == 'image') { control.enabled = !(control.enabled = !control.enabled); return; }
     control.notify ('onDraw');
 };
 
+BuilderApplication.prototype.remarkUnitBox = function(model, cBrush) {
+    var control = model.view.control,
+        gfx = control.graphics,
+        et_gfx = control.edit.graphics;
+    gfx.backgroundColor = et_gfx.backgroundColor = gfx.newBrush(_BSOLID, cBrush);
+};
+
+//////////
 BuilderApplication.prototype.evalDialog = function(rc) {
     var app = this,
         rc = (rc)||this.activeDocument.getSourceString();
