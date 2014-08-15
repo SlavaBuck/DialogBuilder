@@ -13,5 +13,5 @@
 // #include "contrib/DBuilder.jsx"
 
 // src
-var debugmode = 0;
+var debugmode = 1;
 #include "src/00main.jsx"

@@ -25,8 +25,7 @@ var UITARGETS = [
 
 // true если запущено под Adobe InDesign СС (в противном случае - false, в том числе и под ESTK CC);
 const CC_FLAG = (function isCC() {
-    if ($.global.app && $.global.app.name.match(/Adobe InDesign/)) return parseInt($.global.app.version.charAt(0)) > 8;
-    return false;
+    return ($.global.app && $.global.app.name.match(/Adobe InDesign/)) ? parseInt($.global.app.version) > 8 : false;
 //~     // Определяем косвенно - по наличию папки 'AppData/Adobe/InDesign/Version X.X'
 //~     var indFolder = Folder(Folder.appData + "/Adobe/InDesign"),
 //~         indFile = indFolder.getFiles("Version ?.*")[0],

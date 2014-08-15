@@ -18,7 +18,7 @@ BuilderApplication.prototype.initMainWindow = function() {
         CLRS = COLORSTYLES[app.options.appcolor],
         LStr = app.LStr.uiApp;
     // Настройка главного окна:
-    SUI.SeparatorInit(w.pMain.sp);
+    SUI.initSeparator(w.pMain.sp, true);
     var gfx = w.graphics;
     each(CLRS, function(key) {
         gfx[key] = key.match(/foreground/i) ? gfx.newPen(_PSOLID, toRGBA(parseInt(CLRS[key])), 1) : 
@@ -62,8 +62,7 @@ BuilderApplication.prototype.buildCaption = function(cont) {
         btClose.image = img.btClose;
     var btSettings = g.add("iconbutton { label:'settings', helpTip:'"+uiApp[10]+"', enabled:true, properties:{style:'"+stl+"', toggle:false }}");
         btSettings.image = img.btSettings;
-    var sp = g.add(SUI.Separator);
-        SUI.SeparatorInit(sp, 'line', 2);
+        g.addSeparator();
     var btCut = g.add("iconbutton { label:'cut', helpTip:'"+uiApp[50]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
         btCut.image = img.btCut;
     var btCopy = g.add("iconbutton { label:'copy', helpTip:'"+uiApp[51]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
@@ -71,16 +70,14 @@ BuilderApplication.prototype.buildCaption = function(cont) {
     var btPaste = g.add("iconbutton { label:'paste', helpTip:'"+uiApp[52]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
         app.btPaste = btPaste;
         btPaste.image = img.btPaste;
-    var sp = g.add(SUI.Separator);
-        SUI.SeparatorInit(sp, 'line', 2);    
+        g.addSeparator();
     var btEval = g.add("iconbutton { label:'eval', helpTip:'"+uiApp[14]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
         btEval.image = img.btEval;
     var btCode = g.add("iconbutton { label:'code', helpTip:'"+uiApp[15]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
         btCode.image = img.btCode;
     var btOpenIn = g.add("iconbutton { label:'openIn', helpTip:'"+uiApp[17]+"', enabled:false, properties:{style:'"+stl+"', toggle:false }}");
         btOpenIn.image = img.btOpenIn;
-        sp = g.add(SUI.Separator);
-        SUI.SeparatorInit(sp, 'line', 2);
+        g.addSeparator();
     var grp = g.add("group { margins:[2,0,2,0], spacing:1, alignment:['left', 'fill'], alignChildren:['left', 'center'], orientation:'column', \
                              st:StaticText { text:'"+uiApp[20]+"' }, g:Group { spacing:1 }}");
         grp.st.graphics.font = ScriptUI.newFont("dialog:8.5");
@@ -91,8 +88,7 @@ BuilderApplication.prototype.buildCaption = function(cont) {
     app.btITALIC.image = img.bITALIC;
     app.fontStyle = new MVC.View("fontStyle", grp.g);
     app.views.add(app.fontStyle);
-    sp = g.add(SUI.Separator);
-    SUI.SeparatorInit(sp, 'line', 2);
+    g.addSeparator();
         // Группа управления стилем шрифта
         grp = g.add("Group {  margins:[2,0,2,0], spacing:0, alignChildren:['left', 'center'], orientation:'column',   \
                         g1:Group { spacing:2, \
@@ -118,8 +114,7 @@ BuilderApplication.prototype.buildCaption = function(cont) {
     app.views.add(app.fontColor); app._editors.add(app.fontColor); 
     app._ceditors.add(app.fontColor);
 
-        sp = cont.add(SUI.Separator);
-        SUI.SeparatorInit(sp, 'line', 2);
+    cont.addSeparator();
     var btInfo = cont.add("iconbutton { label:'about', helpTip:'"+uiApp[11]+"', preferredSize:[32, 32], alignment:['right', 'fill'], properties:{style:'"+stl+"', toggle:false }}");
         btInfo.image = img.btInfo;          
     
@@ -374,9 +369,8 @@ BuilderApplication.prototype.buildControlsBtns = function(cont, columns) {
         grp = null, sp = null, bt = null;
     for (prop in btns) {
         if (!btns.hasOwnProperty(prop)) continue;
-        sp = cont.add(SUI.Separator); 
-        SUI.SeparatorInit(sp, 'line', 5);
-        SUI.SeparatorInit(sp.line, 'line', 2);sp.line.visible = true;
+        sp = cont.addSeparator(false, 5); 
+        SUI.initSeparator(sp.line); sp.line.visible = true;
         // в пределах группы группируем по колонкам
         for (i in btns[prop]) {
             if (! (i%columns)) grp = cont.add(grpRes);
@@ -650,8 +644,7 @@ BuilderApplication.prototype.buldStatusBar = function(cont) {
     var g = cont.add("group { alignment:['fill','bottom'], spacing:5 }" );
     var st = g.add("statictext { text:'© Slava Boyko aka SlavaBuck | 2013-2014 | slava.boyko@hotmail.com', alignment:['left','center'] }");
     st.graphics.foregroundColor = st.graphics.newPen(_PSOLID, toRGBA(CC_FLAG ? COLORS.LightSteelBlue : COLORS.DarkBlue), 1);
-    var sp = cont.add(SUI.Separator);
-           SUI.SeparatorInit(sp, 'line', 2);
+    cont.addSeparator();
     var btClose = cont.add("button { text:'"+LStr[18]+"', alignment:['right','center'] }");
     
     btClose.onClick = function() { app.window.close(); }
@@ -663,19 +656,19 @@ BuilderApplication.prototype.buldStatusBar = function(cont) {
 // Строим окно About
 BuilderApplication.prototype.about = function() {
     var app = this,
-           img = app.resources.images;
+        img = app.resources.images;
     //var w = new Window ("palette { preferredSize:[640,480], alignChildren:'stack', margins:0, properties:{ borderless: true } }"); //, properties:{ borderless: true } }");
     var sz1 = [80, 300],                // картинка
-           sz2 = [370, sz1[1]-140];   // текст с описанием
+        sz2 = [370, sz1[1]-140];   // текст с описанием
     var w = new Window ("dialog { margins:0, properties:{ borderless: true }, \
                                            pPnl:Panel { margins:[0,0,1,1], orientation:'row', \
                                                 gImg:Group { preferredSize:["+sz1[0]+","+sz1[1]+"], \
                                                     gPic:Group { preferredSize:["+(sz1[0]-36)+","+68+"], margins:[0,6,0,6], spacing:1, alignment:['center', 'top'], alignChildren:['center', 'bottom'], orientation:'column' } }, \
                                                 gMain:Group { margins:10, spacing:10, orientation:'column', \
                                                     gCaption:Group { orientation:'row', margins:[0,0,0,0], spacing:4, alignment:['fill', 'fill'], alignChildren:['left','bottom'] }, \
-                                                    sp1:"+SUI.Separator + " \
+                                                    sp1:"+SUI.Separator + ", \
                                                     about:Group { margins:0, spacing:2, orientation:'column' },\
-                                                    sp2:"+SUI.Separator + " \
+                                                    sp2:"+SUI.Separator + ", \
                                                     btOk:Button { alignment:['right','bottom'], text:'Ok' } \
                                                 } } }");
        var lic = { 
@@ -734,7 +727,9 @@ BuilderApplication.prototype.about = function() {
     };
     //w.pPnl.img.add("image",undefined, dir + "About2.png");
     //w.pPnl.gImg.image = img.pAbout;
-    var gfx = w.pPnl.gImg.graphics;
+    var gfx = w.graphics;
+    gfx.backgroundColor = gfx.newBrush(_BSOLID, toRGBA(COLORSTYLES.CS.backgroundColor));
+    gfx = w.pPnl.gImg.graphics;
     gfx.backgroundColor =  gfx.newBrush(_BSOLID, [0.3843, 0.2039, 0.2235, 1]);
     gfx = w.pPnl.gImg.gPic.graphics;
     gfx.backgroundColor =  gfx.newBrush(_BSOLID, [1, 0, 0, 1]);
@@ -749,19 +744,18 @@ BuilderApplication.prototype.about = function() {
     txt1 = w.pPnl.gMain.gCaption.add("statictext { text:'"+app.name+"'}");
     txt2 = w.pPnl.gMain.gCaption.add("statictext { text:'v"+app.version+"', alignment:['left','top']}");
     txt1.graphics.font = ScriptUI.newFont ("Helvetica", "Bold", 20);
+    txt1.graphics.foregroundColor = txt1.graphics.newPen (_PSOLID, toRGBA(COLORS.Black), 1);
     txt2.graphics.font = ScriptUI.newFont ("Verdana", "Bold", 14); 
-    txt2.graphics.foregroundColor = txt2.graphics.newPen (_PSOLID, [0.4392, 0.5019, 0.5647, 1], 1); //  SlateGray // DimGray[0.4117, 0.4117, 0.4117, 1]
+    txt2.graphics.foregroundColor = txt2.graphics.newPen (_PSOLID, toRGBA(COLORS.SlateGray), 1);
     w.pPnl.gMain.btOk.onClick = function() { w.close(); }
     var c = 0.1,
     txt = w.pPnl.gMain.about.add("statictext { preferredSize:["+sz2[0]+","+sz2[1]+"], properties:{ multiline:true, scrolling:true } }");
     txt.text = localize(msg); 
     txt.graphics.foregroundColor = w.graphics.newPen (_PSOLID, [c,c,c,1], 1);
     
-    txt = w.pPnl.gMain.about.add("statictext { alignment:['left','bottom'] }");
-    txt.text = "slavabuck.wordpress.com";
-    SUI.addWebLink(txt, "http://slavabuck.wordpress.com/");
-    SUI.SeparatorInit(w.pPnl.gMain.sp1,'line');
-    SUI.SeparatorInit(w.pPnl.gMain.sp2,'line');
+    var wlink = w.pPnl.gMain.about.addWebLink("http://slavabuck.wordpress.com/").alignment = ['left','bottom'];
+    SUI.initSeparator(w.pPnl.gMain.sp1);
+    SUI.initSeparator(w.pPnl.gMain.sp2);
     
     w.show();
 };

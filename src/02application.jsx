@@ -29,7 +29,7 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \
                                            LeftPnl:Panel { margins:[0,0,0,0], spacing:2, alignment:['left','fill'], alignChildren:['Left','top'], orientation:'column' }, \
                                            MainPnl:Panel { preferredSize:[450,300], margins:[0,0,0,0], spacing:2, alignment:['fill','fill'], orientation:'column', properties:{borderStyle:'sunken'} }, \
-                                           sp:"+SUI.Separator+"\
+                                           sp:"+SUI.Separator+", \
                                            RightPnl:Panel { margins:[0,0,0,0], spacing:2, alignment:['right','fill'], orientation:'column' } }, \
                       pBottom:Panel { margins:[0,2,0,4], spacing:0, alignment:['fill','bottom'], orientation:'column', properties:{borderStyle:'etched'}, \
                                               pTabs:Group { margins:[4,0,4,0], spacing:4, alignment:['fill','top'], orientation:'row', alignChildren:['fill','fill'] } }, \
@@ -172,7 +172,7 @@ BuilderApplication.prototype.initResources = function() {
     app.appFolder = File.decode(File($.fileName).parent.absoluteURI +'/');
     app.resFolder = (app.appFolder.match(/Required/) ?  app.appFolder : app.appFolder + "Required/");
     // Инициализация прогрессБара
-    app.progressBar = SUI.ProgressBar(title);
+    app.progressBar = SUI.FloatingProgressBar(title);
     app.progressBar.reset(title, 22);
     app.progressBar.hit(localize({ ru:"Загрузка настроек...", en:"Loading settings..."}));
     // Загрузка и приминение настроек
@@ -422,12 +422,12 @@ BuilderApplication.prototype.alert = function(msg, caption) {
     var size = [370, 260];
     var w = new Window ("dialog { text:'"+caption+"', spacing:5, margins:[5,5,5,5], spacing:5, properties:{resizeable:true }, \
                                                     msg:StaticText { preferredSize:["+size[0]+","+size[1]+"], alignment:['fill','fill'], properties:{ multiline:true, scrolling:true } }, \
-                                                    sp:"+SUI.Separator + " \
+                                                    sp:"+SUI.Separator + ", \
                                                     grp:Group { alignment:['fill','bottom'],  \
                                                         btOk:Button { alignment:['right','bottom'], text:'Ok', helpTip:'"+localize({ ru:'Закрыть', en:'Close'})+"' } \
                                                    }               }");
     w.msg.text = msg;                                                   
-    SUI.SeparatorInit(w.sp, 'line');
+    SUI.initSeparator(w.sp);
     w.onResizing = w.onResize = function() { w.layout.resize(); }
     w.show();
 };
@@ -448,12 +448,12 @@ BuilderApplication.prototype.showCode = function(doc) {
     var w = new Window ("dialog { text:'"+localize(LStr.uiApp[14])+"', spacing:5, margins:[5,5,5,5], spacing:5, properties:{resizeable:true }, \
                                                     txt:StaticText { text:'"+localize({ru:"Код диалога:", en:"Code of Dialog:"})+"', alignment:['left','top'] }, \
                                                     code:EditText { preferredSize:["+size[0]+","+size[1]+"], alignment:['fill','fill'], properties:{ multiline:true, scrolling:true, readonly:false } }, \
-                                                    sp:"+SUI.Separator + " \
+                                                    sp:"+SUI.Separator + ", \
                                                     grp:Group { alignment:['fill','bottom'],  \
                                                         btView:Button { alignment:['left','bottom'], text:'eval', helpTip:'"+localize({ ru:'Выполнить', en:'Run dialog'})+"' }, \
                                                         btOk:Button { alignment:['right','bottom'], text:'Ok', helpTip:'"+localize({ ru:'Закрыть', en:'Close'})+"' } \
                                                    }               }");
-    SUI.SeparatorInit(w.sp, 'line');
+    SUI.initSeparator(w.sp);
     w.code.text = doc.getSourceString();
     w.grp.btOk.onClick = function() { w.close(); }
     w.grp.btView.onClick = function() { app.evalDialog(w.code.text) }

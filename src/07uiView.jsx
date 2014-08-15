@@ -110,7 +110,7 @@ uiView.prototype.initControl = function () {
     if (type == 'group' || type == 'image') { if (!control.preferredSize[0] && !control.preferredSize[1]) control.preferredSize = [8, 15] }
 
     // Специальная обработка для Separator-ов
-    if (control.isSeparator) SUI.SeparatorInit(control, 'line');
+    if (control.isSeparator) SUI.initSeparator(control);
 
     // Обновляем размеры окна документа
     doc.window.layout.layout(true);

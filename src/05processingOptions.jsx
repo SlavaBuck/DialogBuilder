@@ -201,8 +201,8 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
         }}}");
     var w = app.settingsWindow;
     // сокращения:
-    SUI.SeparatorInit(w.gStatus.sp, "line");
-    SUI.SeparatorInit(w.gStatus.gBtns.sp, "line");
+    SUI.initSeparator(w.gStatus.sp);
+    SUI.initSeparator(w.gStatus.gBtns.sp, "line");
     
     var gRight = w.gMain.gRight;
     // список настроек:
@@ -412,11 +412,11 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
 								sp1:"+SUI.Separator+",  \
 								g3:Group { st:StaticText {text:'"+localize(uiSet[10])+":', alignment:['left', 'center'], characters:22},  \
 									dd:DropDownList {alignment:['fill', 'center']}}, \
-								sp2:"+SUI.Separator+",  \
+								sp2:"+SUI.Separator+"  \
             }");
-        SUI.SeparatorInit(panel.sp0, "line");
-        SUI.SeparatorInit(panel.sp1, "line");
-        SUI.SeparatorInit(panel.sp2, "line");
+        SUI.initSeparator(panel.sp0);
+        SUI.initSeparator(panel.sp1);
+        SUI.initSeparator(panel.sp2);
         var langList = MVC.View({ id:"_settings_langList", control:panel.g0.dd0 }),
             targetPlatform = MVC.View({ id:"_settings_targetPlatform", control:panel.g4.dd0 }),
             dlgTypeList = MVC.View({ id:"_settings_dlgTypeList", control:panel.g1.dd1 }),
@@ -515,8 +515,8 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
             app.views.add({ id:"_settings_"+owner_str, control:panel.grp.std.dd });
             app.addController({ binding:"currentSettings.options."+owner_str+":_settings_"+owner_str+".selection.text", bind:false })
             
-            var sp = panel.grp.add(SUI.Separator);
-            SUI.SeparatorInit(sp, "line");
+            panel.grp.addSeparator();
+
             // Добавляются 4xDropDownList для каждого типа свойства (foregroundColor, backgroundColor, ...)
             var count = 0;
             each(hTips, function(str) {
@@ -530,8 +530,7 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
                 app.settingColorFields.add(gGrp.dd);
             });
             // Добавляется DropDownList для управления свойством font
-            sp = panel.grp.add(SUI.Separator);
-            SUI.SeparatorInit(sp, "line");
+            panel.grp.addSeparator();
             panel.userFont = panel.grp.add(grp);
             panel.userFont.st.text = localize(uiSet[16])+":";
             panel.userFont.st.helpTip = panel.userFont.dd.helpTip = localize(uiSet[17]);
@@ -566,8 +565,7 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
         });
         app.addController({ binding:"currentSettings.options.jsname:_settings_jsname.selection.text" });
         
-        var sp = jsnames.add(SUI.Separator);
-        SUI.SeparatorInit(sp, "line");
+        jsnames.addSeparator();
         var grp = "group { st:StaticText {alignment:['left', 'center'], characters:19},  \
                            et:EditText {alignment:['fill', 'top']}}";
         jsnames.gNames = jsnames.add("group {alignment:['fill', 'top'], orientation:'column' , alignChildren:['fill', 'top'], spacing:0, margins:[20,0,0,0]}");
@@ -583,8 +581,7 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
             app.gNamesFields.add(g.et);
             counts++;
             if (counts == blocks[n]) {
-                var sp = jsnames.gNames.add(SUI.Separator);
-                SUI.SeparatorInit(sp, "line");
+                jsnames.gNames.addSeparator();
                 n++;
             };
         });
@@ -717,10 +714,10 @@ BuilderApplication.prototype.buildSettingsWindow = function() {
                             stRightList:StaticText {text:'"+localize(uiSet[14])+":', alignment:['left', 'center']},  \
                             sp2:"+SUI.Separator+"},  \
                     lbuserFonts:ListBox {preferredSize:[150, 250], alignment:['left', 'fill']}}}");
-        SUI.SeparatorInit(w.g0.g3.sp0, "line");
-        SUI.SeparatorInit(w.g1.g4.sp1, "line");
-        SUI.SeparatorInit(w.g2.g5.sp2, "line");
-        SUI.SeparatorInit(w.g1.gBtnsEx.sp3, "line");
+        SUI.initSeparator(w.g0.g3.sp0);
+        SUI.initSeparator(w.g1.g4.sp1);
+        SUI.initSeparator(w.g2.g5.sp2);
+        SUI.initSeparator(w.g1.gBtnsEx.sp3);
         
         w.g0.enabled = w.g1.gBtnsEx.enabled = false;
         var list = w.g2.lbuserFonts,
