@@ -49,8 +49,9 @@ uiModel.prototype.initDefaults = function() {
 uiModel.prototype.registerComponents = function() {
     var doc = this.doc,
         app = this.doc.app;
-    if (doc.getModelByID(this.id)) throw Error("Invalid model.id: "+this.id+" alredy present in doc.models collection");
-    if (doc.getViewByID(this.id)) throw Error("Invalid model.view.id: "+this.id+" alredy present in doc.views collection");
+    // Нужно только для отладочной версии!
+    //if (doc.getModelByID(this.id)) throw Error("Invalid model.id: "+this.id+" alredy present in doc.models collection");
+    //if (doc.getViewByID(this.id)) throw Error("Invalid model.view.id: "+this.id+" alredy present in doc.views collection");
     this.control.jsname = this.view.jsname;
     //this.control.id = this.id;
     doc.views.add(this.view);
