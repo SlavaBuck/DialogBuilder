@@ -47,6 +47,16 @@ BuilderDocument.prototype.save = function(file) {
     try {
         doc.file.open("w");
         var str = localize(LStr.uiApp[46]) + doc.app.name + " v"+doc.app.version + "\r\r";
+        // включаем библиотеку SimpleUI:
+        if (doc.presentUserControl) {
+            var libfile = File(app.resFolder+"SimpleUI.jsxbin");
+                if (libfile.exists) {
+                libfile.open("r");
+                //libfile.encoding = "BINARY";
+                str += "// " + SUI.name+ " v"+SUI.version + "\reval('"+libfile.read().replace(/\n/mg,"")+"');\r\r";
+                libfile.close();
+            }
+        }
         doc.file.write(str + doc.getSourceString());
         doc.file.close();
     } catch(e) { trace(e); return false; }
@@ -186,7 +196,10 @@ BuilderDocument.prototype.getSourceString = function() {
 BuilderDocument.prototype.isUserControlPresent = function() {
     var present = false,
         models = this.models;
-    for (var i=0, max = models.length; i<max; i++) if (models[i].control.type.match(/User/)) { present = true; break; }
+    for (var i=0, max = models.length; i<max; i++)
+        if (models[i].control.type.match(/User/) || (models[i].control.label == "Separator" && models[i].control.properties.dragged)) { 
+            present = true; break; 
+    }; //for
     return present;
 };
 

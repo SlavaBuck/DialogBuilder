@@ -430,12 +430,12 @@ BuilderApplication.prototype.buildTabs = function(cont) {
             // 550, 110 - внешние видимые размеры панели;
             // 487, 226 - опытно определены для Additional settings panel
             // к размерам Additional settings panel прибавляем высоты одной стандартной группы image:
-            scrl = SUI.addScrollablePanel(g, 0, 0, 550, 110, false, 226 + oy, 20); // oy - высота image:
-            scrl.margins = [5,10,0,0];
+            scrl = SUI.addScrollablePanel(g, 0, 0, 550, 100, false, 210 + oy, 20); // oy - высота image:
+            extend (scrl, { margins:[5, 0, 0, 0], spacing:0, alignChildren:['left','center'], orientation:'column' } );
         } else {
             if ((counts)*oy+counts*5 > hgt) {
-                scrl = SUI.addScrollablePanel(g, 0, 0, 485, hgt+10, false, (counts+1)*oy+counts, 20);
-                extend (scrl, { margins:0, spacing:0, alignChildren:['left','center'], orientation:'column' } ); 
+                scrl = SUI.addScrollablePanel(g, 0, 0, 485, hgt-4, false, (counts)*oy+counts, 20);
+                extend (scrl, { margins:[5, 0, 0, 0], spacing:0, alignChildren:['left','center'], orientation:'column' } );
             } else {
                 scrl = g; scrl.orientation = 'column'; scrl.margins = [15,10,0,0];
             }
@@ -502,7 +502,7 @@ BuilderApplication.prototype.buildTabs = function(cont) {
                         g.parent.parent.orientation = 'column';
                         view = app.buildImageSettings(g.parent.parent.add("group { preferredSize:[500,200] }")); // создание view:imageSettings
                         // получаем подгруппу с дополнительными полями настройки Image
-                        view.control.text += ' (not implemented in this version)';
+                        view.control.text += view.control.helpTip = ' (not implemented in this version)';
                         view.control.enabled = false;
                         //this._editors.add(view);
                     }

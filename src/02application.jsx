@@ -256,7 +256,9 @@ BuilderApplication.prototype.CreateDocument = function() {
     
     doc.window.addEventListener (CP.CLICK, function(e) {
         // Корректировка для составных пользовательских элементов:
-        var target = (e.target.parent.isUnitBox) ? e.target.parent : e.target;
+        var target = e.target;
+        if (e.target.parent.isUnitBox) target = target.parent;
+        if (e.target.parent.isSeparator) target = target.parent;
         // Переустановка doc.activeControl, doc.activeContainer и выделение элемента в дереве:
         doc.activeControl = doc.findController(target).model;
         if (e.target !== this) {

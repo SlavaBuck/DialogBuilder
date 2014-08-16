@@ -7,7 +7,7 @@
 *       - /contrib - последняя стабильная версия
 *       - /src        - исходники
 /**************************************************************************
-* © Вячеслав aka SlavaBuck, 08.02.2013.  slava.boyko#hotmail.com
+* © Вячеслав aka SlavaBuck, 08.02.2013. slava.boyko#hotmail.com
 */
 // Contrib
 // #include "contrib/DBuilder.jsx"
