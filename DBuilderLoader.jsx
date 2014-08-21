@@ -4,13 +4,13 @@
 *  @@@BUILDINFO@@@ DBuilderLoader.jsx 1.80 Sun May 25 2014 19:20:06 GMT+0300
 * 
 * NOTICE: Только для разработки...
-*       - /contrib - последняя стабильная версия
+*       - /DBuilder   - последняя стабильная сборка
 *       - /src        - исходники
 /**************************************************************************
 * © Вячеслав aka SlavaBuck, 08.02.2013. slava.boyko#hotmail.com
 */
 // Contrib
-// #include "contrib/DBuilder.jsx"
+// #include "DBuilder/DBuilder.jsx"
 
 // src
 var debugmode = 1;

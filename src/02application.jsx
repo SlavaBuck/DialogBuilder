@@ -9,7 +9,7 @@
  * © Вячеслав aka SlavaBuck, 10.02.2014.  slava.boyko#hotmail.com
  */
 // #includepath нужно настроить на папку с библиотеками
-#includepath "../../Include/"
+#includepath "../../Includes/"
 #include "MVC.DOM.jsx"
 #include "SimpleUI.jsx"
 #include "PNGLib.jsx"
