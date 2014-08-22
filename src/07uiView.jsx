@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  07uiView.jsx
  *  DESCRIPTION: uiView: Класс представления для класса ui-модели (представляет элемент управления в диалоге)
- *  @@@BUILDINFO@@@ 07uiView.jsx 1.80 Sat Aug 02 2014 21:23:53 GMT+0300
+ *  @@@BUILDINFO@@@ 07uiView.jsx 1.90 Fri Aug 22 2014 18:22:33 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -110,7 +110,9 @@ uiView.prototype.initControl = function () {
     if (type == 'group' || type == 'image') { if (!control.preferredSize[0] && !control.preferredSize[1]) control.preferredSize = [8, 15] }
 
     // Специальная обработка для Separator-ов
-    if (control.isSeparator) SUI.SeparatorInit(control, 'line');
+    if (control.isSeparator) SUI.initSeparator(control);
+    if (control.isWebLink) { SUI.initWebLink(control); delete control.onClick; }
+    if (control.isUnitBox) SUI.initUnitBox(control);
 
     // Обновляем размеры окна документа
     doc.window.layout.layout(true);

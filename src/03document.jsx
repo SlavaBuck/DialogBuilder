@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  03document.jsx
  *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
- *  @@@BUILDINFO@@@ 03document.jsx 1.82 Sun Aug 03 2014 14:52:20 GMT+0300
+ *  @@@BUILDINFO@@@ 03document.jsx 1.90 Fri Aug 22 2014 18:22:23 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -47,6 +47,18 @@ BuilderDocument.prototype.save = function(file) {
     try {
         doc.file.open("w");
         var str = localize(LStr.uiApp[46]) + doc.app.name + " v"+doc.app.version + "\r\r";
+        // включаем библиотеку SimpleUI:
+        if (doc.presentUserControl) {
+            /*
+            var libfile = File(app.resFolder+"SimpleUI.jsxbin");
+                if (libfile.exists) {
+                libfile.open("r");
+                //libfile.encoding = "BINARY";
+                str += "// " + SUI.name+ " v"+SUI.version + "\reval('"+libfile.read().replace(/\n/mg,"")+"');\r\r";
+                libfile.close();
+            */
+            str += "// " + SUI.name+ " v"+SUI.version + "\r"+app.resources.SimpleUIcode+"\r\r";
+        }
         doc.file.write(str + doc.getSourceString());
         doc.file.close();
     } catch(e) { trace(e); return false; }
@@ -79,10 +91,7 @@ BuilderDocument.prototype.saveAs = function() {
 BuilderDocument.prototype.addItem = function (rcString) {
     if(!rcString) return null;
     var doc = this,
-        app = doc.app,
-        uiControls = app.uiControls,
-        CPROPS = COLORSTYLES.CS,
-        dlgs = "dialog,palette,window";
+        app = doc.app;
     // Добываем type добавляемого ScriptUI объекта в нижнем регистре!
     var type = rcString.match(/^\w+/)[0].toLowerCase();
     var item = app.hashControls[type];
@@ -94,10 +103,16 @@ BuilderDocument.prototype.addItem = function (rcString) {
 
     if (doc.activeControl) app.unmarkControl(doc.activeControl);
     
-    var rcString = (type == 'separator' ? SUI.Separator.toString() : (item == "Window" ? 'panel' : type) + rcString.slice(type.length));
+    var rcControl = rcString;
+    if (app.hashUserControls.hasOwnProperty(type)) {
+        // Специальная обработка для UserControls (подмена ресурсной строки):
+        rcControl = app.hashUserControls[type].toString();
+    } else {
+        rcControl = (type == 'separator' ? SUI.Separator.toString() : (item == "Window" ? 'panel' : type) + rcString.slice(type.length));
+    }
     
     try {
-        var model = new uiModel(new uiView(doc, item, type).createControl(doc.activeContainer, rcString));
+        var model = new uiModel(new uiView(doc, item, type).createControl(doc.activeContainer, rcControl));
     } catch(e) { trace(e); return null; }
 
     // если установлен autofocus и добавлен контейнер - переустанавливаем фокус на него:
@@ -162,6 +177,7 @@ BuilderDocument.prototype.removeItem = function(model) {
 };
 
 BuilderDocument.prototype.getSourceString = function() {
+    this.presentUserControl = this.isUserControlPresent();
     var code = [],
         winModel = this.app.treeView.control.items[0].model,
         winName = winModel.control.jsname,
@@ -169,10 +185,24 @@ BuilderDocument.prototype.getSourceString = function() {
     // Добавляем косые вконце строк
     str = "var " + winName + " = new Window (\"" + str.replace(/\r/mg, " \\\r") + "\");\r";
     // Специальная обработка для Window
-    if (winModel.properties.properties.resizeable) code.push(winName + ".onResizing = " + winName+ ".onResize = function() { this.layout.resize () };");
+    if (this.presentUserControl) code.push("SUI.initWindow("+winName+");"); else {
+        if (winModel.properties.properties.resizeable) code.push(winName + ".onResizing = " + winName +
+                                                                 ".onResize = function() { this.layout.resize () };");
+    };
+
     code.push(winName + ".show();");
-    
     return str + code.join("\r");
+};
+
+// Возвращает true, если в структуре документа есть элементы из группы UserControls
+BuilderDocument.prototype.isUserControlPresent = function() {
+    var present = false,
+        models = this.models;
+    for (var i=0, max = models.length; i<max; i++)
+        if (models[i].control.type.match(/User/) || (models[i].control.label == "Separator" && models[i].control.properties.dragged)) { 
+            present = true; break; 
+    }; //for
+    return present;
 };
 
 // Обеспечивается корректная очистка коллекций моделей в родительском приложении:
@@ -344,8 +374,11 @@ BuilderDocument.prototype.appendItems = function(jsname, control, rcControl, eva
     
     // Создаём модели для всех элементов control
     (function _creatItems(doc, control, evalcode) {
-        var type = (control.isSeparator ? 'separator' : control.type),
-            item = doc.app.hashControls[type],
+        var type = control.type;
+        if (control.isSeparator) type = 'separator';
+        if (control.isWebLink) type = 'weblink';
+        if (control.isUnitBox) type = 'unitbox';
+        var item = doc.app.hashControls[type],
             tree = doc.app.treeView.control,
             prop_str = arrObj[counts++],
             jsname = prop_str.slice(0, prop_str.indexOf(":")),
@@ -357,7 +390,12 @@ BuilderDocument.prototype.appendItems = function(jsname, control, rcControl, eva
             tree.activeItem.text = model.control.jsname = jsname;
             tree.activeNode = tree;
         } else {
-            view = new uiView(doc, item, type),
+            view = new uiView(doc, item, type);
+            switch (type) {
+                case 'separator': SUI.initSeparator(control); break;
+                case 'weblink': SUI.initWebLink(control); delete control.onClick; break;
+                case 'unitbox': SUI.initUnitBox(control); break;
+            }
             model = new uiModel(view.registerHandlers(control, prop_str, jsname));
         }
         model.updateProperties(prop_str);
@@ -377,7 +415,7 @@ BuilderDocument.prototype.appendItems = function(jsname, control, rcControl, eva
             tree.activeNode = currentNode;
         }
     }(doc, control, evalcode));
-
+    doc.window.layout.layout(true);
     app.enabledTabs = true; // Включаем обновление панелей свойств
     } catch(e) { trace(e, counts) }
 }

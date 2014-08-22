@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  06uiModel.jsx
  *  DESCRIPTION: uiModel: Класс ui-модели (представляет данные элемента управления в диалоге)
- *  @@@BUILDINFO@@@ 06uiModel.jsx 1.80 Sat Aug 02 2014 21:24:10 GMT+0300
+ *  @@@BUILDINFO@@@ 06uiModel.jsx 1.90 Fri Aug 22 2014 18:21:57 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -49,8 +49,9 @@ uiModel.prototype.initDefaults = function() {
 uiModel.prototype.registerComponents = function() {
     var doc = this.doc,
         app = this.doc.app;
-    if (doc.getModelByID(this.id)) throw Error("Invalid model.id: "+this.id+" alredy present in doc.models collection");
-    if (doc.getViewByID(this.id)) throw Error("Invalid model.view.id: "+this.id+" alredy present in doc.views collection");
+    // Нужно только для отладочной версии!
+    //if (doc.getModelByID(this.id)) throw Error("Invalid model.id: "+this.id+" alredy present in doc.models collection");
+    //if (doc.getViewByID(this.id)) throw Error("Invalid model.view.id: "+this.id+" alredy present in doc.views collection");
     this.control.jsname = this.view.jsname;
     //this.control.id = this.id;
     doc.views.add(this.view);
@@ -94,11 +95,9 @@ uiModel.prototype._updCodeProperty = function() {
         code = model.code;
     switch (model.view.item) {
         case 'Separator':
-            // Пока до конца не решён вопрос с использованием библиотеки SimpleUI (как собственно и с её архитектурной) будем временно использовать
-            // костыль с предварительным парсингом представлений из данной библиотеки и последующей специальной инициализацией.
+            // Костыль если код диалога не включает метод SUI.initWindow() - не включается библиотека SimpleUI
             code.initcode = "if (<this>.parent.orientation == 'column') { <this>.maximumSize[1] = 1; <this>.alignment = ['fill', 'top']; } else { <this>.maximumSize[0] = 1; <this>.alignment = ['left', 'fill']; };";
             break;
-
         case 'Window':
             //code.initcode = model.control.jsname +".show();"
             break;          
@@ -182,12 +181,16 @@ uiModel.prototype.toSourceString = function(tr) {
     var app = this.doc.app,
         model = this.control,
         props = this.properties,
-        control = this.view.control;
-    if (model.label == "Separator") return model.jsname+":Panel { isSeparator:true }";
+        control = this.view.control,
+        label = (model.label == "Tab" ? "Panel" : model.label).replace(/Tabbed/, ""),
+        str = "";
+    //if (model.label == "Separator") return model.jsname+":Panel { isSeparator:true }";
+    str = model.jsname+":"+ label+" {";
+    if (model.label == "Separator")    str = model.jsname+":Panel { isSeparator:true, ";
+    else if (model.label == "UnitBox") str = model.jsname+":Group { isUnitBox:true, ";
+    else if (model.label == "WebLink") str = model.jsname+":StaticText { isWebLink:true, ";
 
-    var label = (model.label == "Tab" ? "Panel" : model.label).replace(/Tabbed/, "");
-        str = model.jsname+":"+ label+" {",
-        ptr = "properties:{" + _toSource(props.properties, control.properties, model.properties.properties, "prop"),
+    var ptr = "properties:{" + _toSource(props.properties, control.properties, model.properties.properties, "prop"),
         sstr = _toSource(props, control, model.properties, "main");
     if ( model.label == "TabbedPanel" || model.label == "Tab" ) str += "type:'"+model.label.toLowerCase()+"'"+(sstr.length == 0 ? "": ", ");
     if (sstr.length) str += sstr;
@@ -337,7 +340,7 @@ uiModel.prototype.getCode = function() {
     var gfxStr = model.getGfxString();
     if (gfxStr) code = code.concat(gfxStr);
     if (model.code.initcode) {
-        code.push(model.code.initcode.replace(/<this>/g, model.control.jsname));
+        if (!model.doc.presentUserControl) code.push(model.code.initcode.replace(/<this>/g, model.control.jsname));
     };
     if (model.view.item == "Window") return (code.length ? code.join(";\r")+";\r" : "");
     

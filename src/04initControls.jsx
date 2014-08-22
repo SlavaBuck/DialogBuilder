@@ -25,10 +25,10 @@
 // Инициализация списков (цветовых наборов и шрифтов)
 BuilderApplication.prototype.initControls = function() {
     var app = this;
-    app.pBar.hit(localize(app.LStr.uiApp[41])+ "Images");
+    app.progressBar.hit(localize(app.LStr.uiApp[41])+ "Images");
     app._initImageListView();
     app._initColorListView();
-    app.pBar.hit(localize(app.LStr.uiApp[41])+ "Fonts");
+    app.progressBar.hit(localize(app.LStr.uiApp[41])+ "Fonts");
     app._initFontListView();
     app._initCaptionFontControls();
     app._initListButtons();
@@ -83,9 +83,9 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
 					btAdd:Button {text:'Add'},  \
 					btRename:Button {text:'Edit...'},  \
 					btRemove:Button {text:'Remove'},  \
-					sp0:"+SUI.Separator+"  \
+					sp0:"+SUI.Separator+",  \
 					btImport:Button {text:'Import...', helpTip:'"+localize(app.LStr.uiApp[42])+"'},  \
-					sp1:"+SUI.Separator+"  \
+					sp1:"+SUI.Separator+",  \
 					btUp:Button {text:'Up'},  \
 					btDown:Button {text:'Down'},  \
 						g2:Group {spacing:5, orientation:'column', alignment:['fill', 'bottom'],  \
@@ -93,9 +93,9 @@ BuilderApplication.prototype._EditArray = function(orig_arr) {
 							btCancel:Button {text:'Cancel'},  \
 							btOk:Button {text:'Ok'}}}}}");
     SUI.WindowInit(w);
-    SUI.SeparatorInit(w.g0.g1.sp0, "line");
-    SUI.SeparatorInit(w.g0.g1.sp1, "line");
-    SUI.SeparatorInit(w.g0.g1.g2.sp2, "line");
+    SUI.initSeparator(w.g0.g1.sp0);
+    SUI.initSeparator(w.g0.g1.sp1);
+    SUI.initSeparator(w.g0.g1.g2.sp2);
     var list = w.g0.lb0;
     each(arr, function(str) { list.add("item", str); });
     if (arr.length) list.selection = 0;
@@ -202,7 +202,7 @@ BuilderApplication.prototype.createEditDlg = function(str, title) {
     w.g0.img0.image = app.resources.images._PConsole_R;
     w.g0.et0.text = str;
     SUI.WindowInit(w);
-    SUI.SeparatorInit(w.sp0, "line");
+    SUI.initSeparator(w.sp0);
     w.onShow = function() { 
         w.g0.minimumSize = w.g0.size; 
         w.g0.et0.active = true;
@@ -572,20 +572,20 @@ BuilderApplication.prototype._initColorListView = function() {
                 'CC disabledBackgroundColor':COLORSTYLES.CC.disabledBackgroundColor,
                 'disabledForegroundColor':COLORSTYLES.CS.disabledForegroundColor        
               };
-    app.pBar.hit(localize(app.LStr.uiApp[41])+ "System colors");
+    app.progressBar.hit(localize(app.LStr.uiApp[41])+ "System colors");
     // инициализация всех списков цветами из стандартного набора CS/CC
     each(CLS, function(val, key) {
         app._addToAllColorLists(val, key, "system");
     });
     app._addToAllColorLists(0, "separator");
-    app.pBar.hit(localize(app.LStr.uiApp[41])+ "System colors");
+    app.progressBar.hit(localize(app.LStr.uiApp[41])+ "System colors");
     // инициализация всех списков цветами из общего стандартного набора COLORS
     each(COLORS, function(val, key) {
         app._addToAllColorLists(val, key, "system");
     });
     app._addToAllColorLists(0, "separator");
     
-    app.pBar.hit(localize(app.LStr.uiApp[41])+ "User colors");
+    app.progressBar.hit(localize(app.LStr.uiApp[41])+ "User colors");
     // пополнение options.usercolors цветами из настроек (если требуется)
     var color = parseInt(parseColor(app.options.highlightColor)),
         control = app.getViewByID("fontColor").control;
@@ -617,12 +617,12 @@ BuilderApplication.prototype._initColorListView = function() {
         var model = (newVal)||null;
         if (!model) return this.unbind();
         var control = this.control,
-               val = model.control.properties.graphics[control.__key]; // (control.__key = foregroundColor || backgroundColor || ....) устанавливается при создании данного View
+            val = model.control.properties.graphics[control.__key]; // (control.__key = foregroundColor || backgroundColor || ....) устанавливается при создании данного View
         control.model = model;
         control.enabled = true;
         delete control.onChange;
-        //if (control.hasOwnProperty(val)) control.selection = control[val].item;
-        control.selection = control._colors[val].item;
+        //if (val in control._colors) control.selection = control[val].item;
+        control.selection = control._colors[val].item; /* проблемы под СС!!! */
         control.onChange = _changeColorField;
     };
     

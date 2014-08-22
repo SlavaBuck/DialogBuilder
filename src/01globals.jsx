@@ -16,6 +16,33 @@ var UILANGUAGES = [
     {text:'Russian', value:"ru" }
 ];
 
+// Список целевых платформ
+var UITARGETS = [
+    {text:'Auto', value:""},
+    {text:'CS - Adobe Creative Suite', value:"CS" },
+    {text:'CC - Adobe Creative Cloud', value:"CC" }
+];
+
+// true если запущено под Adobe InDesign СС (в противном случае - false, в том числе и под ESTK CC);
+const CC_FLAG = (function isCC() {
+    return ($.global.app && $.global.app.name.match(/Adobe InDesign/)) ? parseInt($.global.app.version) > 8 : false;
+//~     // Определяем косвенно - по наличию папки 'AppData/Adobe/InDesign/Version X.X'
+//~     var indFolder = Folder(Folder.appData + "/Adobe/InDesign"),
+//~         indFile = indFolder.getFiles("Version ?.*")[0],
+//~         indVersion = parseInt(File.decode(indFile.name).split(" ")[1]);
+//~     return indVersion > 8;
+}());
+
+// Current Platform:
+var CP = CC_FLAG ? {
+        target:"CC",
+        CLICK:"mousedown"
+    } : {
+        target:"CS",
+        CLICK:"click"
+    };
+
+// Цветовые наборы по умолчанию для соответствующих платформ
 var COLORSTYLES = {
     CS: {
         backgroundColor:0xF0F0F0,
@@ -24,22 +51,42 @@ var COLORSTYLES = {
         disabledForegroundColor:0x6D6D6D
     },
     CC: {
-        backgroundColor:0xD6D6D6,
-        foregroundColor:0x000000,
-        disabledBackgroundColor:0xD9D9D9,
-        disabledForegroundColor:0x6D6D6D
+        backgroundColor:0x494949,
+        foregroundColor:0xE0E0E0,
+        disabledBackgroundColor:0x494949,
+        disabledForegroundColor:0x8A8A8A
     }
 };
 
+/* Цвета для платформы CC
+Для EditText:
+        backgroundColor:0xA2A2A2,
+        foregroundColor:0x000000,
+        disabledBackgroundColor:0x888888,
+        disabledForegroundColor:0x333333
+Для ListBox:
+        backgroundColor:0x494949,
+        foregroundColor:0xE0E0E0,
+        disabledBackgroundColor:0x494949,
+        disabledForegroundColor:0x333333
+*/
+
+// цвет рабочей области документов:
+var DOCVIEWCOLOR = {
+    CS:0x808080, // 50% серого
+    CC:0x202020  // почти чёрный
+}
+
 var DEFOPTIONS = {
-    locale:'',             // - язык интерфейса по умолчанию '' - локаль системы (Примеры: "ru" || "en" ...)
+    locale:'',             // язык интерфейса (по умолчанию '' - текущая локаль системы). Примеры: "ru" || "en" ...
+    target:'',             // целевая платформа 'CS' || 'CC' || '' (Auto - определяется флагом CC_FLAG)
     autofocus:false,       // авто-переключение фокуса на добавляемый контейнер
     dialogtype:'dialog',   // тип окна по умолчанию для создаваемого документа (dialog || palette || window)
-    appcolors:'CS',        // цветовой набор оформления главного окна по умолчанию
+    appcolors:'',          // цветовой набор оформления главного окна по умолчанию
     doccolors:'',          // doccolors = appcolors 
     jsname:'full',         // способ наименования эл.управления Возможные значения 'user' - задаются настройками из jsnames:{}
-                                // 'full' или 'small' - предустановленные способы наименования см. JSNAMES
-    highlightColor:0xF0B8F0     // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5]
+                           // 'full' или 'small' - предустановленные способы наименования см. JSNAMES
+    highlightColor:0xF0B8F0,   // соответствует прозрачно-розовому - [0.94, 0.72, 0.94, 0.5]
 };
 var w = new Window('window');
 
@@ -94,7 +141,9 @@ var JSNAMES = {
         TreeView:"treeView",
         Image:"imgImage",
         Scrollbar:"scrBar",
-        Progressbar:"pBar"
+        Progressbar:"pBar",
+        WebLink:"url",
+        UnitBox:"uBox"
     },
     small: {
         Window:"w",
@@ -115,9 +164,8 @@ var JSNAMES = {
         TreeView:"tree",
         Image:"img",
         Scrollbar:"scr",
-        Progressbar:"pb"
+        Progressbar:"pb",
+        WebLink:"url",
+        UnitBox:"box"
     }
 };
-
-
-

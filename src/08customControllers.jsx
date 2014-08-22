@@ -27,6 +27,7 @@ function _updViewMsts(newVal, oldVal, key) {
         control = this.view.control,
         prop = this.binding.split(':')[0].split('.');
     prop = (key == 'characters') ? key : prop[prop.length -2];
+    if (!newVal) newVal = 0;
     switch (prop) {
         case 'characters':
             control.characters = newVal;

@@ -1,7 +1,7 @@
 ﻿/* *************************************************************************
  *  00main.jsx
  *  DESCRIPTION: Файл сборки приложения DialogBuilder
- *  @@@BUILDINFO@@@ 00main.jsx 1.83 Sat Aug 02 2014 21:23:03 GMT+0300
+ *  @@@BUILDINFO@@@ 00main.jsx 1.90 Fri Aug 22 2014 18:22:43 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -21,10 +21,11 @@
     #include "06uiModel.jsx"
     #include "07uiView.jsx"
     #include "08customControllers.jsx"
-    
-    trace.echo = debugmode; // Вывод отладочной информации в консль только для отладочных запусков
-    MVC.fastmode = true;    // Включение быстрого режима обработки коллекций
-    var app = new BuilderApplication((debugmode ? "palette" : "dialog" ));
-    app.run();
-    
+    #include "09initMainWindow.jsx"
+    try {
+        trace.echo = debugmode; // Вывод отладочной информации в консль только для отладочных запусков
+        MVC.fastmode = true;    // Включение быстрого режима обработки коллекций
+        var app = new BuilderApplication((debugmode ? "palette" : "dialog" ));
+        app.run();
+    } catch(e) { trace(e) };
 }((typeof debugmode == 'undefined' ? 0 : debugmode)));
