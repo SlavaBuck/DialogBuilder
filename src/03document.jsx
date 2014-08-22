@@ -49,12 +49,15 @@ BuilderDocument.prototype.save = function(file) {
         var str = localize(LStr.uiApp[46]) + doc.app.name + " v"+doc.app.version + "\r\r";
         // включаем библиотеку SimpleUI:
         if (doc.presentUserControl) {
+            /*
             var libfile = File(app.resFolder+"SimpleUI.jsxbin");
                 if (libfile.exists) {
                 libfile.open("r");
                 //libfile.encoding = "BINARY";
                 str += "// " + SUI.name+ " v"+SUI.version + "\reval('"+libfile.read().replace(/\n/mg,"")+"');\r\r";
                 libfile.close();
+            */
+                str += "// " + SUI.name+ " v"+SUI.version + "\r"+app.resources+"\r\r";
             }
         }
         doc.file.write(str + doc.getSourceString());
