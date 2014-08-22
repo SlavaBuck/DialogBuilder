@@ -1,13 +1,14 @@
 ﻿/**************************************************************************
  *  02application.jsx
  *  DESCRIPTION: BuilderApplication: Основной класс приложения 
- *  @@@BUILDINFO@@@ 02application.jsx 1.83 Sun Aug 03 2014 15:36:02 GMT+0300
+ *  @@@BUILDINFO@@@ 02application.jsx 1.90 Fri Aug 22 2014 18:22:56 GMT+0300
  * 
  * NOTICE: 
  * 
 /**************************************************************************
  * © Вячеслав aka SlavaBuck, 10.02.2014.  slava.boyko#hotmail.com
  */
+
 // #includepath нужно настроить на папку с библиотеками
 #includepath "../../Includes/"
 #include "MVC.DOM.jsx"
@@ -22,8 +23,8 @@ function BuilderApplication (wtype) { // wtype = dialog || palette
         wtype = (wtype) || "dialog";
     BuilderApplication.prototype.__super__.constructor.call(this, {
     name:"Dialog Builder",
-    version:"1.83",
-    caption:"1.83 Dialog Builder (build 0803, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
+    version:"1.90",
+    caption:"1.90 Dialog Builder (build 0822, MVC v"+MVC.version+", MVC.DOM v"+MVC.DOM.version+", SimpleUI v"+SUI.version+")",
     view:wtype + "{spacing:2, margins:[5,5,5,5], orientation:'column', alignChildren:'top', properties:{resizeable: true, closeButton:true, maximizeButton:true }, \
                       pCaption:Panel { margins:[0,1,5,1], spacing:2,alignment:['fill','top'], orientation:'row'}, \
                       pMain:Panel { margins:[0,0,0,0], spacing:0, alignment:['fill','fill'], orientation:'row', \

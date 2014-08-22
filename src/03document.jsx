@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
  *  03document.jsx
  *  DESCRIPTION: BuilderDocument: Класс документа (представляет редактируемый диалог)
- *  @@@BUILDINFO@@@ 03document.jsx 1.82 Sun Aug 03 2014 14:52:20 GMT+0300
+ *  @@@BUILDINFO@@@ 03document.jsx 1.90 Fri Aug 22 2014 18:22:23 GMT+0300
  * 
  * NOTICE: 
  * 
@@ -57,8 +57,7 @@ BuilderDocument.prototype.save = function(file) {
                 str += "// " + SUI.name+ " v"+SUI.version + "\reval('"+libfile.read().replace(/\n/mg,"")+"');\r\r";
                 libfile.close();
             */
-                str += "// " + SUI.name+ " v"+SUI.version + "\r"+app.resources+"\r\r";
-            }
+            str += "// " + SUI.name+ " v"+SUI.version + "\r"+app.resources.SimpleUIcode+"\r\r";
         }
         doc.file.write(str + doc.getSourceString());
         doc.file.close();

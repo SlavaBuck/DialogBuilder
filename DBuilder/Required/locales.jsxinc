@@ -159,7 +159,15 @@ LStr.uiProp[63] = { ru:"Только с окнами Bridge: если True - о�
                     en:"Bridge only. When true, the title bar includes a button to minimize or iconify the window" };
 LStr.uiProp[64] = { ru:"Прозрачность окна, числовое значение с плавающей точкой в диапазоне [0 .. 1] (по умолчанию 1.0 - полностью непрозрачное).", 
                     en:"The opacity of the window, in the range [0..1]. A value of 1.0 (the default) makes the window completely opaque" };
-LStr.uiCtrl = [];  
+LStr.uiProp[65] = { ru:"Ширина элемента",
+                    en:"Width of element in pixels." };
+LStr.uiProp[66] = { ru:"Когда true - элемент реагирует на перетаскивание мышкой",
+                    en:"When True, the element is draggable" };
+LStr.uiProp[67] = { ru:"Тип значения поля, соответствует встроенным типам для javascript-объекта UnitValue",
+                    en:"Type of native UnitValue objects which encapsulated by this control" };
+LStr.uiProp[68] = { ru:"url-ссылка в корректном для браузера формате, например: http://domain.com/",
+                    en:"url-link in the correct format for the browsers, for example: http://domain.com/" };
+LStr.uiCtrl = [];
 LStr.uiCtrl[0]  = { ru:"Panel: Панель (контейнер для элементов управления с рамкой)", 
                     en:"Panel: A container for other types of controls, with an optional frame." };
 LStr.uiCtrl[1]  = { ru:"Group: Группа (контейнер для элементов управления без рамки)", 
@@ -198,6 +206,10 @@ LStr.uiCtrl[17] = { ru:"Progressbar: Индикатор выполнения о�
                     en:"Progressbar: A horizontal bar with an indicator that shows the progress of an operation." };
 LStr.uiCtrl[18] = { ru:"Window: Элемент окно (dialog или palette)", 
                     en:"Window: The instance represents a top-level window or dialog box, which contains user-interface elements." };
+LStr.uiCtrl[19] = { ru:"WebLink: Элемент гиперссылка (на базе элемента StaticText)", 
+                    en:"WebLink: A hyperlink control (based on StaticText)" };
+LStr.uiCtrl[20] = { ru:"UnitBox: Параметризированное поле редактирование (на базе элемента EditText)", 
+                    en:"UnitBox: Measurements EditBox field" };
 LStr.uiApp = [];
 LStr.uiApp[0]  = { ru:"Тип значения: ", en:"Type of value: " };
 LStr.uiApp[1]  = { ru:"Значение по умолчанию: ", en:"Default value: " };
@@ -305,5 +317,6 @@ LStr.uiSet[15] = { ru:"Введите PostScript имя шрифта", en:"Enter
 LStr.uiSet[16] = { ru:"Шрифт по умолчанию", en:"Font by default" };
 LStr.uiSet[17] = { ru:"Шрифт, используемый при создании нового элемента", en:"Font for new instance of this element" };
 LStr.uiSet[18] = { ru:"Размер", en:"Size" };
-LStr.uiSet[19] = { ru:"Ввести другое имя шрифта?", en:"Enter ather name of font?" }
+LStr.uiSet[19] = { ru:"Ввести другое имя шрифта?", en:"Enter ather name of font?" };
+LStr.uiSet[20] = { ru:"Целевая платформа", en:"Target platform" };
 LStr;

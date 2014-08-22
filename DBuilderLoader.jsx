@@ -1,7 +1,7 @@
 ﻿/**************************************************************************
 *  DBuilderLoader.jsx
 *  DESCRIPTION: Дизанер диалоговых окон для Adobe InDesign
-*  @@@BUILDINFO@@@ DBuilderLoader.jsx 1.80 Sun May 25 2014 19:20:06 GMT+0300
+*  @@@BUILDINFO@@@ DBuilderLoader.jsx 1.90 Fri Aug 22 2014 18:23:27 GMT+0300
 * 
 * NOTICE: Только для разработки...
 *       - /DBuilder   - последняя стабильная сборка
